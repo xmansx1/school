@@ -1,0 +1,140 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تقرير برنامج - {{ r.program_name }}</title>
+
+  <style>
+    :root{
+      --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+      --brand:#2563eb; --accent:#059669; --bg:#f8fafc;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Tahoma,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--ink);background:#fff}
+
+    /* شريط الأدوات */
+    .toolbar{display:flex;gap:8px;padding:10px;background:#f3f6ff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:9}
+    .btn{padding:10px 14px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-weight:700;text-decoration:none;color:#1e293b}
+    .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+    .btn:hover{filter:brightness(.97)}
+
+    .container{max-width:980px;margin:auto;padding:16px}
+    .sheet{border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(2,6,23,.05)}
+
+    /* الهيدر */
+    .hero{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg, var(--brand) 0%, var(--accent) 100%);color:#fff;padding:20px;position:relative}
+    .hero .logo{width:68px;height:68px;object-fit:contain;background:rgba(255,255,255,.15);border-radius:12px;padding:8px}
+    .hero .title{font-size:1.3rem;font-weight:800}
+    .hero .sub{opacity:.95;font-size:.9rem}
+
+    /* المحتوى */
+    .content{padding:20px;background:#fff}
+    .section-title{margin:12px 0 8px;font-weight:800;color:var(--ink)}
+
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+    .row{display:grid;grid-template-columns:180px 1fr;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
+    .label{color:var(--muted);font-weight:700}
+    .value{white-space:pre-wrap;word-break:break-word}
+
+    /* الصور */
+    .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:14px}
+    .photos img{
+      width:100%; height:200px;
+      object-fit:contain;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      box-shadow:0 6px 14px rgba(2,6,23,.05);
+      padding:6px;
+      transition:transform .2s ease, box-shadow .2s ease;
+    }
+    .photos img:hover{transform:scale(1.05);box-shadow:0 10px 20px rgba(0,0,0,.12)}
+
+    /* التواقيع */
+    .sign{display:flex;justify-content:space-between;gap:14px;margin-top:20px}
+    .sign .box{border:1px dashed var(--line);border-radius:12px;padding:14px;min-height:90px;flex:1;background:var(--bg)}
+    .muted{color:var(--muted)}
+
+    /* استجابة */
+    @media (max-width:640px){
+      .grid{grid-template-columns:1fr}
+      .row{grid-template-columns:1fr}
+      .hero .logo{width:54px;height:54px}
+      .photos{grid-template-columns:1fr 1fr}
+      .photos img{height:160px}
+    }
+
+    /* الطباعة */
+    @page{size:A4;margin:12mm 10mm}
+    @media print{
+      body{background:#fff}
+      .toolbar{display:none!important}
+      .sheet{box-shadow:none;border:none}
+      a[href]:after{content:""}
+    }
+  </style>
+</head>
+<body>
+
+<!-- أدوات العرض -->
+<div class="toolbar no-print">
+  <button class="btn btn-primary" onclick="window.print()">🖨️ طباعة</button>
+</div>
+
+<div class="container">
+  <div class="sheet">
+
+    <!-- الهيدر -->
+    <div class="hero">
+      <img class="logo"
+           src="{% if SCHOOL_LOGO_URL %}{{ SCHOOL_LOGO_URL }}{% else %}{% static 'img/school-logo.png' %}{% endif %}"
+           alt="{{ SCHOOL_NAME|default:'شعار المدرسة' }}">
+      <div>
+        <div class="title">تقرير برنامج / نشاط</div>
+        <div class="sub">نظام توثيق أعمال المعلمين</div>
+      </div>
+    </div>
+
+    <!-- المحتوى -->
+    <div class="content">
+      <div class="grid">
+        <div class="row"><div class="label">اسم البرنامج</div><div class="value">{{ r.program_name }}</div></div>
+        <div class="row"><div class="label">تاريخ التنفيذ</div><div class="value">{{ r.date|date:"Y-m-d" }}</div></div>
+        <div class="row"><div class="label">منفّذ البرنامج</div><div class="value">{{ r.teacher.name }}</div></div>
+        <div class="row"><div class="label">عدد المستفيدين</div><div class="value">{{ r.beneficiaries_count }}</div></div>
+      </div>
+
+      <h3 class="section-title">فكرة البرنامج</h3>
+      <div class="value" style="padding:10px;border:1px solid var(--line);border-radius:12px;background:#fafafa">
+        {{ r.idea }}
+      </div>
+
+      {% if r.image1 or r.image2 or r.image3 or r.image4 %}
+        <h3 class="section-title">📷 الصور المرفقة</h3>
+        <div class="photos">
+          {% if r.image1 %}<img src="{{ r.image1.url }}" alt="صورة 1">{% endif %}
+          {% if r.image2 %}<img src="{{ r.image2.url }}" alt="صورة 2">{% endif %}
+          {% if r.image3 %}<img src="{{ r.image3.url }}" alt="صورة 3">{% endif %}
+          {% if r.image4 %}<img src="{{ r.image4.url }}" alt="صورة 4">{% endif %}
+        </div>
+      {% endif %}
+
+      <div class="sign">
+        <div class="box">
+          <b>توقيع منفّذ البرنامج</b>
+          <div class="muted">.............................</div>
+        </div>
+        <div class="box">
+          <b>اعتماد مدير المدرسة</b>
+          <div class="muted">.............................</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

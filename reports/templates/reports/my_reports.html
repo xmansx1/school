@@ -1,0 +1,560 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}أعمالي{% endblock %}
+
+{% block head %}
+<style>
+  :root {
+    --ink: #0f172a;
+    --ink-soft: #1f2937;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --brand: #2563eb;
+    --brand-light: #3b82f6;
+    --accent: #059669;
+    --accent-light: #10b981;
+    --card: #ffffff;
+    --bg: #f8fafc;
+    --shadow: 0 4px 12px rgba(2, 6, 23, 0.08);
+    --shadow-hover: 0 10px 25px rgba(2, 6, 23, 0.12);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --transition: all 0.2s ease;
+  }
+
+  body {
+    background-color: var(--bg);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-top: 20px;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-hover);
+  }
+
+  .section-title {
+    font-size: 1.6rem;
+    font-weight: 900;
+    margin-bottom: 20px;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f1f5f9;
+  }
+
+  /* فلترة */
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+    margin-bottom: 24px;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filters label {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+  }
+
+  .filters input {
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    transition: var(--transition);
+  }
+
+  .filters input:focus {
+    outline: none;
+    border-color: var(--brand-light);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn {
+    padding: 12px 20px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    border: none;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 100%);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--brand);
+    border: 1px solid var(--brand);
+  }
+
+  .btn-outline:hover {
+    background: #eff6ff;
+  }
+
+  .btn-block {
+    width: 100%;
+    text-align: center;
+    margin-top: 16px;
+  }
+
+  /* بطاقات (موبايل) */
+  .cards {
+    display: grid;
+    gap: 20px;
+  }
+
+  .report-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+  }
+
+  .report-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .card-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+
+  .card-row:last-child {
+    border-bottom: none;
+  }
+
+  .card-label {
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .card-value {
+    font-weight: 700;
+    color: var(--ink-soft);
+    text-align: left;
+  }
+
+  .idea-content {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.6;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: var(--radius-sm);
+    margin-top: 8px;
+  }
+
+  .image-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .gallery-img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: #f9fafb;
+    padding: 4px;
+    transition: var(--transition);
+    cursor: pointer;
+  }
+
+  .gallery-img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  /* جدول (للكمبيوتر) */
+  .table-container {
+    margin-top: 24px;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  table th, table td {
+    border: 1px solid var(--line);
+    padding: 14px;
+    text-align: center;
+    vertical-align: top;
+  }
+
+  table th {
+    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    color: var(--ink-soft);
+    font-weight: 800;
+    font-size: 0.9rem;
+  }
+
+  table td {
+    background: var(--card);
+  }
+
+  table tr:hover td {
+    background: #f8fafc;
+  }
+
+  .table-images {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+    min-width: 220px;
+  }
+
+  .table-images img {
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    transition: var(--transition);
+  }
+
+  .table-images img:hover {
+    transform: scale(1.1);
+  }
+
+  .idea-cell {
+    max-width: 320px;
+    white-space: pre-wrap;
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  /* ترقيم الصفحات */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .page-link, .page-current {
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    font-weight: 700;
+    text-decoration: none;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+  }
+
+  .page-link {
+    color: var(--brand);
+    background: #fff;
+  }
+
+  .page-link:hover {
+    background: #f0f4ff;
+    transform: translateY(-2px);
+  }
+
+  .page-current {
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 100%);
+    color: #fff;
+    border-color: var(--brand);
+  }
+
+  .no-reports {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 1.1rem;
+  }
+
+  .no-reports-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  /* تحسينات للشاشات المتوسطة والكبيرة */
+  @media (min-width: 1024px) {
+    .filters {
+      flex-wrap: nowrap;
+    }
+    
+    .filter-group {
+      flex: 1;
+    }
+  }
+
+  /* تحسينات للشاشات الصغيرة */
+  @media (max-width: 700px) {
+    .table-container {
+      display: none;
+    }
+    
+    .filters {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .filter-actions {
+      justify-content: center;
+    }
+    
+    .section-title {
+      font-size: 1.4rem;
+    }
+  }
+
+  @media (min-width: 701px) {
+    .cards {
+      display: none;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .card {
+      padding: 16px;
+    }
+    
+    .image-gallery {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .gallery-img {
+      height: 150px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card">
+    <h2 class="section-title">📋 أعمالي</h2>
+
+    <!-- فلترة -->
+    <form method="GET" class="filters">
+      <div class="filter-group">
+        <label for="start_date">من تاريخ</label>
+        <input type="date" id="start_date" name="start_date" value="{{ request.GET.start_date }}" />
+      </div>
+      <div class="filter-group">
+        <label for="end_date">إلى تاريخ</label>
+        <input type="date" id="end_date" name="end_date" value="{{ request.GET.end_date }}" />
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">🔍 تصفية</button>
+        {% if request.GET.start_date or request.GET.end_date %}
+          <a class="btn btn-outline" href="{% url 'reports:my_reports' %}">🗑️ مسح الفلاتر</a>
+        {% endif %}
+      </div>
+    </form>
+
+    <!-- بطاقات (موبايل) -->
+    <div class="cards">
+      {% for report in reports %}
+        <div class="report-card">
+          <div class="card-row">
+            <span class="card-label">التاريخ</span>
+            <span class="card-value">{{ report.date }}</span>
+          </div>
+          <div class="card-row">
+            <span class="card-label">البرنامج</span>
+            <span class="card-value">{{ report.program_name }}</span>
+          </div>
+          <div class="card-row">
+            <span class="card-label">عدد المستفيدين</span>
+            <span class="card-value">{{ report.beneficiaries_count }}</span>
+          </div>
+          <div class="card-row" style="flex-direction: column; align-items: flex-start;">
+            <span class="card-label">فكرة البرنامج</span>
+            <div class="idea-content">{{ report.idea }}</div>
+          </div>
+          {% if report.image1 or report.image2 or report.image3 or report.image4 %}
+          <div class="card-row" style="flex-direction: column; align-items: flex-start;">
+            <span class="card-label">الصور</span>
+            <div class="image-gallery">
+              {% if report.image1 %}<img class="gallery-img" src="{{ report.image1.url }}" alt="صورة 1">{% endif %}
+              {% if report.image2 %}<img class="gallery-img" src="{{ report.image2.url }}" alt="صورة 2">{% endif %}
+              {% if report.image3 %}<img class="gallery-img" src="{{ report.image3.url }}" alt="صورة 3">{% endif %}
+              {% if report.image4 %}<img class="gallery-img" src="{{ report.image4.url }}" alt="صورة 4">{% endif %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div class="no-reports">
+          <div class="no-reports-icon">📭</div>
+          <p>لا توجد تقارير لعرضها</p>
+          {% if request.GET.start_date or request.GET.end_date %}
+            <p>جرب تغيير معايير البحث</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- جدول (كمبيوتر) -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th width="120">التاريخ</th>
+            <th width="200">اسم البرنامج</th>
+            <th width="100">عدد المستفيدين</th>
+            <th>فكرة البرنامج</th>
+            <th width="240">الصور</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in reports %}
+            <tr>
+              <td>{{ report.date }}</td>
+              <td><strong>{{ report.program_name }}</strong></td>
+              <td>{{ report.beneficiaries_count }}</td>
+              <td class="idea-cell">{{ report.idea }}</td>
+              <td>
+                <div class="table-images">
+                  {% if report.image1 %}<img src="{{ report.image1.url }}" alt="صورة 1">{% endif %}
+                  {% if report.image2 %}<img src="{{ report.image2.url }}" alt="صورة 2">{% endif %}
+                  {% if report.image3 %}<img src="{{ report.image3.url }}" alt="صورة 3">{% endif %}
+                  {% if report.image4 %}<img src="{{ report.image4.url }}" alt="صورة 4">{% endif %}
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" style="text-align: center; padding: 30px; color: var(--muted);">
+                لا توجد تقارير لعرضها
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ترقيم الصفحات -->
+    {% if reports.paginator.num_pages > 1 %}
+      <div class="pagination">
+        {% if reports.has_previous %}
+          <a class="page-link" href="?page={{ reports.previous_page_number }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">‹ السابق</a>
+        {% endif %}
+        
+        {% for num in reports.paginator.page_range %}
+          {% if num == reports.number %}
+            <span class="page-current">{{ num }}</span>
+          {% elif num > reports.number|add:'-3' and num < reports.number|add:'3' %}
+            <a class="page-link" href="?page={{ num }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+        
+        {% if reports.has_next %}
+          <a class="page-link" href="?page={{ reports.next_page_number }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">التالي ›</a>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <a class="btn btn-outline btn-block" href="{% url 'reports:home' %}">↩ العودة للصفحة الرئيسية</a>
+  </div>
+</div>
+
+<!-- نموذج عرض الصورة بشكل مكبر -->
+<div id="imageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center;">
+  <span style="position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer;" onclick="closeModal()">&times;</span>
+  <img id="modalImage" style="max-width: 90%; max-height: 80%; object-fit: contain;">
+</div>
+
+<script>
+  // فتح الصورة في نموذج عرض مكبر
+  function openModal(imgSrc) {
+    document.getElementById('modalImage').src = imgSrc;
+    document.getElementById('imageModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+  
+  // إغلاق النموذج
+  function closeModal() {
+    document.getElementById('imageModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+  }
+  
+  // إضافة حدث النقر لجميع الصور
+  document.addEventListener('DOMContentLoaded', function() {
+    const images = document.querySelectorAll('.gallery-img, .table-images img');
+    images.forEach(img => {
+      img.addEventListener('click', function() {
+        openModal(this.src);
+      });
+    });
+    
+    // إغلاق النموذج عند النقر خارج الصورة
+    document.getElementById('imageModal').addEventListener('click', function(e) {
+      if (e.target.id === 'imageModal') {
+        closeModal();
+      }
+    });
+  });
+</script>
+{% endblock %}

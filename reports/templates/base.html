@@ -1,0 +1,102 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}نظام التقارير{% endblock %}</title>
+
+  <link rel="stylesheet" href="{% static 'css/app.css' %}"/>
+
+  <style>
+    :root{
+      --brand:#2563eb; --accent:#059669; --ink:#0f172a; --muted:#64748b;
+      --line:#e2e8f0; --bg:#f5f7fb;
+    }
+
+    /* تخطيط يضمن بقاء الفوتر بأسفل الصفحة */
+    body.layout{ min-height:100vh; display:flex; flex-direction:column; background:var(--bg); margin:0; }
+
+    /* حاوية عامة */
+    .container{ width:100%; max-width:1100px; margin-inline:auto; padding:16px; }
+    .row-between{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+
+    /* الهيدر */
+    header.site-header{ background:#ffffff; border-bottom:1px solid #eef0f4; position:sticky; top:0; z-index:50; }
+    .brand{ display:flex; align-items:center; gap:10px; font-weight:800; color:var(--ink); font-size:1.1rem; }
+    .brand img{ width:32px; height:32px; object-fit:contain; }
+    .nav a{ margin-inline:8px; text-decoration:none; color:#1f6feb; font-weight:700; }
+    .nav a:hover{ text-decoration:underline; }
+
+    /* المحتوى يتمدّد ويدفع الفوتر للأسفل */
+    main.page-main{ flex:1 0 auto; }
+
+    /* رسائل تنبيه */
+    .messages{ margin:10px 0; }
+    .msg{ padding:10px 12px; border-radius:10px; background:#f0f4ff; border:1px solid #dbe5ff; }
+    .msg.error{ background:#fff0f0; border-color:#ffd4d4; }
+    .msg.success{ background:#f0fff6; border-color:#c8f3d6; }
+
+    /* الفوتر (بدون روابط) */
+    footer.site-footer{
+      margin-top:auto;
+      color:#dbe7ff;
+      background:linear-gradient(180deg,#0b1220 0%, #0e1a2f 100%);
+      text-align:center;
+    }
+    footer.site-footer::before{
+      content:""; display:block; height:3px;
+      background:linear-gradient(90deg,var(--brand),var(--accent));
+    }
+    .footer-wrap{ padding:18px 16px; display:grid; gap:8px; }
+    .f-title{ font-weight:900; font-size:1.05rem; }
+    .f-sub{ font-size:.9rem; opacity:.85; }
+    .f-copy{ font-size:.85rem; color:#b6c3df; margin-top:4px; }
+  </style>
+
+  {% block head %}{% endblock %}
+</head>
+<body class="layout">
+  <!-- الهيدر -->
+  <header class="site-header">
+    <div class="container row-between">
+      <div class="brand">
+        <img src="{% static 'img/school-logo.png' %}" alt="شعار المدرسة">
+        <span>نظام التقارير</span>
+      </div>
+      <nav class="nav">
+        {% if request.user.is_authenticated %}
+          <a href="{% url 'reports:home' %}">الرئيسية</a>
+          <a href="{% url 'reports:my_reports' %}">أعمالي</a>
+          {% url 'reports:admin_reports' as admin_reports_url %}
+          {% if request.user.is_staff and admin_reports_url %}
+            <a href="{{ admin_reports_url }}">لوحة المدير</a>
+          {% endif %}
+          <a href="{% url 'reports:logout' %}">تسجيل الخروج</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <!-- المحتوى -->
+  <main class="container page-main">
+    {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+          <div class="msg {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- الفوتر (بدون روابط وبدون شعار) -->
+  <footer class="site-footer">
+    <div class="container footer-wrap">
+      <div class="f-title">ثانوية عبدالعزيز بن باز</div>
+      <div class="f-sub">نظام توثيق أعمال المعلمين</div>
+      <div class="f-copy">© {{ now|date:"Y" }} جميع الحقوق محفوظة</div>
+    </div>
+  </footer>
+</body>
+</html>
