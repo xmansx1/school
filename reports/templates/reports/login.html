@@ -1,13 +1,16 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}تسجيل الدخول{% endblock %}
 
 {% block content %}
 <div class="login-container">
   <div class="login-card">
     <div class="login-header">
-      <div class="login-icon">
-        <i class="fas fa-lock"></i>
+      <!-- ✅ الشعار -->
+      <div class="login-logo">
+        <img src="{% static 'img/school-logo.png' %}" alt="شعار النظام" width="120">
       </div>
+
       <h1 class="login-title">تسجيل الدخول</h1>
       <p class="login-subtitle">مرحباً بك، يرجى إدخال بيانات الدخول الخاصة بك</p>
     </div>
@@ -48,8 +51,6 @@
         <i class="fas fa-sign-in-alt"></i>
         دخول إلى النظام
       </button>
-
-
     </form>
   </div>
 
@@ -61,7 +62,6 @@
 </div>
 
 <style>
-  /* التنسيقات العامة */
   body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
@@ -108,17 +108,11 @@
     margin-bottom: 30px;
   }
 
-  .login-icon {
-    width: 70px;
-    height: 70px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .login-logo img {
+    display: block;
     margin: 0 auto 20px;
-    color: white;
-    font-size: 28px;
+    max-width: 150px;
+    height: auto;
   }
 
   .login-title {
@@ -134,7 +128,6 @@
     margin: 0;
   }
 
-  /* نموذج الدخول */
   .login-form {
     display: flex;
     flex-direction: column;
@@ -178,7 +171,6 @@
     margin-top: 4px;
   }
 
-  /* زر الدخول */
   .btn-login {
     padding: 15px;
     border-radius: 12px;
@@ -205,7 +197,6 @@
     transform: translateY(0);
   }
 
-  /* تذييل النموذج */
   .login-footer {
     text-align: center;
     margin-top: 20px;
@@ -231,7 +222,6 @@
     text-decoration: underline;
   }
 
-  /* خلفية متحركة */
   .login-background {
     position: absolute;
     top: 0;
@@ -281,7 +271,6 @@
     }
   }
 
-  /* التجاوب مع الشاشات المختلفة */
   @media (max-width: 480px) {
     .login-card {
       padding: 25px 20px;
@@ -291,10 +280,8 @@
       font-size: 24px;
     }
     
-    .login-icon {
-      width: 60px;
-      height: 60px;
-      font-size: 24px;
+    .login-logo img {
+      max-width: 120px;
     }
     
     .form-input {
@@ -306,7 +293,6 @@
     }
   }
 
-  /* تأثيرات للرسائل إن وجدت */
   .alert {
     padding: 12px 16px;
     border-radius: 10px;
@@ -327,16 +313,13 @@
   }
 </style>
 
-<!-- إضافة Font Awesome للرموز -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<!-- تأثيرات للرسائل الديناميكية -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('.login-form');
     const inputs = document.querySelectorAll('.form-input');
     
-    // إضافة تأثير للتركيز على الحقول
     inputs.forEach(input => {
       input.addEventListener('focus', function() {
         this.parentElement.classList.add('focused');
@@ -349,7 +332,6 @@
       });
     });
     
-    // تأثير عند إرسال النموذج
     form.addEventListener('submit', function(e) {
       const btn = this.querySelector('.btn-login');
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الدخول...';
