@@ -6,52 +6,319 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}نظام التقارير{% endblock %}</title>
 
+  <!-- تحسين أداء التحميل -->
+  <link rel="preload" href="{% static 'css/app.css' %}" as="style">
   <link rel="stylesheet" href="{% static 'css/app.css' %}"/>
 
+  <!-- خطوط محسنة -->
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+
   <style>
-    :root{
-      --brand:#2563eb; --accent:#059669; --ink:#0f172a; --muted:#64748b;
-      --line:#e2e8f0; --bg:#f5f7fb;
+    :root {
+      --brand: #2563eb;
+      --brand-light: #3b82f6;
+      --brand-dark: #1d4ed8;
+      --accent: #059669;
+      --accent-light: #10b981;
+      --accent-dark: #047857;
+      --ink: #0f172a;
+      --ink-light: #334155;
+      --muted: #64748b;
+      --muted-light: #94a3b8;
+      --line: #e2e8f0;
+      --line-light: #f1f5f9;
+      --bg: #f8fafc;
+      --bg-card: #ffffff;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --transition: all 0.3s ease;
     }
 
-    /* تخطيط يضمن بقاء الفوتر بأسفل الصفحة */
-    body.layout{ min-height:100vh; display:flex; flex-direction:column; background:var(--bg); margin:0; }
-
-    /* حاوية عامة */
-    .container{ width:100%; max-width:1100px; margin-inline:auto; padding:16px; }
-    .row-between{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
-
-    /* الهيدر */
-    header.site-header{ background:#ffffff; border-bottom:1px solid #eef0f4; position:sticky; top:0; z-index:50; }
-    .brand{ display:flex; align-items:center; gap:10px; font-weight:800; color:var(--ink); font-size:1.1rem; }
-    .brand img{ width:32px; height:32px; object-fit:contain; }
-    .nav a{ margin-inline:8px; text-decoration:none; color:#1f6feb; font-weight:700; }
-    .nav a:hover{ text-decoration:underline; }
-
-    /* المحتوى يتمدّد ويدفع الفوتر للأسفل */
-    main.page-main{ flex:1 0 auto; }
-
-    /* رسائل تنبيه */
-    .messages{ margin:10px 0; }
-    .msg{ padding:10px 12px; border-radius:10px; background:#f0f4ff; border:1px solid #dbe5ff; }
-    .msg.error{ background:#fff0f0; border-color:#ffd4d4; }
-    .msg.success{ background:#f0fff6; border-color:#c8f3d6; }
-
-    /* الفوتر (بدون روابط) */
-    footer.site-footer{
-      margin-top:auto;
-      color:#dbe7ff;
-      background:linear-gradient(180deg,#0b1220 0%, #0e1a2f 100%);
-      text-align:center;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-    footer.site-footer::before{
-      content:""; display:block; height:3px;
-      background:linear-gradient(90deg,var(--brand),var(--accent));
+
+    body {
+      font-family: 'Tajawal', sans-serif;
+      color: var(--ink);
+      line-height: 1.6;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
-    .footer-wrap{ padding:18px 16px; display:grid; gap:8px; }
-    .f-title{ font-weight:900; font-size:1.05rem; }
-    .f-sub{ font-size:.9rem; opacity:.85; }
-    .f-copy{ font-size:.85rem; color:#b6c3df; margin-top:4px; }
+
+    /* تحسينات التخطيط العام */
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin-inline: auto;
+      padding: 0 16px;
+    }
+
+    .row-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* تحسين الهيدر */
+    header.site-header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      padding: 8px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      color: var(--ink);
+      font-size: 1.25rem;
+      text-decoration: none;
+    }
+
+    .brand img {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      transition: var(--transition);
+    }
+
+    .brand:hover img {
+      transform: scale(1.05);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .nav a {
+      padding: 10px 16px;
+      text-decoration: none;
+      color: var(--muted);
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .nav a:hover {
+      color: var(--brand);
+      background: rgba(37, 99, 235, 0.05);
+    }
+
+    .nav a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: 16px;
+      left: 16px;
+      height: 2px;
+      background: var(--brand);
+      transform: scaleX(0);
+      transition: var(--transition);
+    }
+
+    .nav a:hover::after {
+      transform: scaleX(1);
+    }
+
+    /* المحتوى الرئيسي */
+    main.page-main {
+      flex: 1;
+      padding: 24px 0;
+    }
+
+    /* تحسينات الرسائل */
+    .messages {
+      margin: 16px 0;
+    }
+
+    .msg {
+      padding: 14px 20px;
+      border-radius: var(--radius-sm);
+      background: #f0f4ff;
+      border: 1px solid #dbe5ff;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .msg::before {
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      font-size: 18px;
+    }
+
+    .msg.info::before {
+      content: "\f05a";
+      color: var(--brand);
+    }
+
+    .msg.error {
+      background: #fff0f0;
+      border-color: #ffd4d4;
+    }
+
+    .msg.error::before {
+      content: "\f06a";
+      color: #ef4444;
+    }
+
+    .msg.success {
+      background: #f0fff6;
+      border-color: #c8f3d6;
+    }
+
+    .msg.success::before {
+      content: "\f058";
+      color: var(--accent);
+    }
+
+    .msg.warning {
+      background: #fffbeb;
+      border-color: #fed7aa;
+    }
+
+    .msg.warning::before {
+      content: "\f071";
+      color: #f59e0b;
+    }
+
+    /* تحسينات الفوتر */
+    footer.site-footer {
+      margin-top: auto;
+      color: #e2e8f0;
+      background: linear-gradient(180deg, #0b1220 0%, #0e1a2f 100%);
+      text-align: center;
+      position: relative;
+    }
+
+    footer.site-footer::before {
+      content: "";
+      display: block;
+      height: 3px;
+      background: linear-gradient(90deg, var(--brand), var(--accent));
+    }
+
+    .footer-wrap {
+      padding: 32px 16px 24px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .f-title {
+      font-weight: 900;
+      font-size: 1.25rem;
+      background: linear-gradient(90deg, var(--brand-light), var(--accent-light));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .f-sub {
+      font-size: 0.95rem;
+      opacity: 0.85;
+      margin-bottom: 8px;
+    }
+
+    .f-copy {
+      font-size: 0.85rem;
+      color: #b6c3df;
+      margin-top: 16px;
+      opacity: 0.7;
+    }
+
+    /* تحسينات للهواتف */
+    @media (max-width: 768px) {
+      .container {
+        padding: 0 12px;
+      }
+      
+      .row-between {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+      }
+      
+      .brand {
+        justify-content: center;
+        padding: 8px 0;
+      }
+      
+      .nav {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      
+      .nav a {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+      }
+      
+      main.page-main {
+        padding: 16px 0;
+      }
+    }
+
+    /* تأثيرات للعناصر التفاعلية */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* تحسينات إضافية للوحة المدير */
+    {% if request.user.is_staff %}
+    .nav a[href*="admin"] {
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--brand);
+    }
+    {% endif %}
+
+    /* تأثيرات التركيز للوصولية */
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--brand);
+      outline-offset: 2px;
+    }
+
+    /* تحسينات للوضع الداكن */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --ink: #f1f5f9;
+        --ink-light: #cbd5e1;
+        --muted: #94a3b8;
+        --muted-light: #64748b;
+        --line: #334155;
+        --line-light: #1e293b;
+        --bg: #0f172a;
+        --bg-card: #1e293b;
+      }
+      
+      header.site-header {
+        background: var(--bg-card);
+        border-bottom-color: var(--line);
+      }
+    }
   </style>
 
   {% block head %}{% endblock %}
@@ -60,10 +327,10 @@
   <!-- الهيدر -->
   <header class="site-header">
     <div class="container row-between">
-      <div class="brand">
+      <a href="{% url 'reports:home' %}" class="brand">
         <img src="{% static 'img/school-logo.png' %}" alt="شعار المدرسة">
         <span>نظام التقارير</span>
-      </div>
+      </a>
       <nav class="nav">
         {% if request.user.is_authenticated %}
           <a href="{% url 'reports:home' %}">الرئيسية</a>
@@ -90,13 +357,27 @@
     {% block content %}{% endblock %}
   </main>
 
-  <!-- الفوتر (بدون روابط وبدون شعار) -->
+  <!-- الفوتر -->
   <footer class="site-footer">
     <div class="container footer-wrap">
       <div class="f-title">ثانوية عبدالعزيز بن باز</div>
       <div class="f-sub">نظام توثيق أعمال المعلمين</div>
-      <div class="f-copy">© {{ now|date:"Y" }} جميع الحقوق محفوظة</div>
+      <div class="f-copy">© {{ now|date:"Y" }}تصميم MANS جميع الحقوق محفوظة</div>
     </div>
   </footer>
+
+  <!-- إضافة أيقونات Font Awesome للرسائل -->
+  <script>
+    // إضافة Font Awesome إذا لم تكن مضمنة مسبقاً
+    if (!document.querySelector('link[href*="font-awesome"]')) {
+      const faLink = document.createElement('link');
+      faLink.rel = 'stylesheet';
+      faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+      faLink.integrity = 'sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==';
+      faLink.crossOrigin = 'anonymous';
+      faLink.referrerPolicy = 'no-referrer';
+      document.head.appendChild(faLink);
+    }
+  </script>
 </body>
 </html>

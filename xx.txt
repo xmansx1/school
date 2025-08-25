@@ -1,3 +1,85 @@
+env\Scripts\activate
 
-venv\Scripts\activate
+python manage.py runserver
 
+git add . 
+git commit -m "الرفع116ريندر"
+git push origin main
+
+تحديث قاعدة البيانات على ريندر 
+python manage.py migrate
+
+
+git add .
+git commit -m "🚀 إصلاح: إضافة psycopg لدعم PostgreSQL"
+git push origin main
+
+
+python manage.py makemigrations
+python manage.py migrate
+
+البيئة المحلية 
+copy .env.development .env
+
+python manage.py migrate
+
+python manage.py collectstatic --noinput
+
+
+copy .env.development .env
+
+python manage.py runserver
+
+--------------------------------
+نحتاج المتغيرات في بيئة الانتاج 
+
+ENVIRONMENT=production
+DEBUG=False
+
+SECRET_KEY=u)vypmxs+0+93ckk!z$@-qu9fv%#x9*3!a(dq)lp8*09$z@y8l
+
+# 🗄️ قاعدة البيانات PostgreSQL من Render
+DATABASE_URL=postgresql://ahali_db_umeb_user:KxjWhqnbLMhJlvpLLzMUrNuzWaFALqHz@dpg-d1sf2c2dbo4c73895ccg-a/ahali_db_umeb
+
+ALLOWED_HOSTS=ahali-platform.onrender.com,.onrender.com
+
+# ☁️ Cloudinary
+CLOUDINARY_CLOUD_NAME=dvptglfs2
+CLOUDINARY_API_KEY=997257163374881
+CLOUDINARY_API_SECRET=u5XPED3CQa2gd7PyHuEaw7BFsbY
+
+------------------------
+
+
+
+🏪 هل لديك متجر محلي؟
+📲 انضم إلى منصة أهالي الحي وسهّل على أهالي حيّك التواصل معك وطلب خدماتك!
+
+منصة أهالي الحي تمكِّن المتاجر من استقبال الطلبات بسهولة من الزوار دون الحاجة لعرض منتجات.
+
+✅ مزايا الانضمام إلى المنصة:
+
+📍 ظهور متجرك في صفحة مخصصة حسب الموقع الجغرافي
+
+📝 نموذج طلب مباشر يملؤه العميل ويصل إليك فورًا
+
+📦 دعم خيار التوصيل أو الاستلام حسب رغبتك
+
+👨‍💼 لوحة تحكم بسيطة لإدارة الطلبات وتحديث بيانات المتجر
+
+📨 إشعارات وتنبيهات تلقائية عند استلام الطلبات الجديدة
+
+🎯 هدفنا: دعم المتاجر المحلية وربطها بأهالي الحي بطريقة ذكية وسهلة
+
+🚀 سجّل الآن مجانًا وكن جزءًا من مجتمعنا المحلي
+
+📞 للتسجيل أو الاستفسار:
+📱 واتساب: [054688219]
+🌐 رابط المنصة: [https://forms.office.com/r/qzWtjShYWk]
+
+--------------------------------------------------------------------------
+
+http://127.0.0.1:8000/control-panel-9x8z/
+
+فحص المشروع 
+python manage.py check
