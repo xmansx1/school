@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import dj_database_url  # لإدارة PostgreSQL من DATABASE_URL
 
 # تحميل متغيرات البيئة من ملف .env
 load_dotenv()
@@ -10,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ----------------- الأمان -----------------
 SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-secret")
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
 
 # ----------------- التطبيقات -----------------
 INSTALLED_APPS = [
@@ -20,7 +21,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "reports",  # تطبيقنا
+
+    # تطبيقات الطرف الثالث
+    "cloudinary",
+    "cloudinary_storage",
+
+    # تطبيقاتنا
+    "reports",
 ]
 
 MIDDLEWARE = [
@@ -38,7 +45,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "templates"],  # مجلد للقوالب
+        'DIRS': [BASE_DIR / "templates"],  # مجلد القوالب
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -54,16 +61,26 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # ----------------- قاعدة البيانات -----------------
-DATABASES = {
-    'default': {
-        'ENGINE': os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
-        'NAME': os.getenv("DB_NAME", BASE_DIR / "db.sqlite3"),
-        'USER': os.getenv("DB_USER", ""),
-        'PASSWORD': os.getenv("DB_PASSWORD", ""),
-        'HOST': os.getenv("DB_HOST", ""),
-        'PORT': os.getenv("DB_PORT", ""),
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            'ENGINE': os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
+            'NAME': os.getenv("DB_NAME", BASE_DIR / "db.sqlite3"),
+            'USER': os.getenv("DB_USER", ""),
+            'PASSWORD': os.getenv("DB_PASSWORD", ""),
+            'HOST': os.getenv("DB_HOST", ""),
+            'PORT': os.getenv("DB_PORT", ""),
+        }
+    }
 
 # ----------------- كلمات المرور -----------------
 AUTH_PASSWORD_VALIDATORS = [
@@ -79,13 +96,23 @@ TIME_ZONE = 'Asia/Riyadh'   # توقيت السعودية
 USE_I18N = True
 USE_TZ = True
 
-# ----------------- الملفات الثابتة والوسائط -----------------
+# ----------------- الملفات الثابتة -----------------
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / "static"]  # لو عندك ملفات ثابتة
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]  # أثناء التطوير
+STATIC_ROOT = BASE_DIR / "staticfiles"    # للإنتاج
 
+# ----------------- ملفات الوسائط -----------------
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / "media"
+
+# ----------------- Cloudinary -----------------
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
+}
 
 # ----------------- الإعدادات الافتراضية -----------------
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
