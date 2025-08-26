@@ -88,7 +88,8 @@
     <div class="hero-top">
       <div>
         {% if request.user.is_authenticated %}
-          <div class="hello">  مرحباً {{ request.user.get_full_name|default:request.user.username }} 👋</div>
+          <div class="hello">مرحباً {{ request.user.name }} 👋</div>
+
         {% else %}
           <div class="hello">مرحباً ضيف 👋</div>
         {% endif %}
