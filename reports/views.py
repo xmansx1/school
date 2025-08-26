@@ -1,6 +1,6 @@
-# reports/views.py
 from __future__ import annotations
 
+import logging
 from datetime import date
 from urllib.parse import urlparse
 
@@ -11,12 +11,16 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_http_methods
+from django.template.loader import render_to_string
+from django.http import HttpResponse
 
-from .forms import ActivityReportForm
-from .models import ActivityReport
+from .forms import ActivityReportForm, TeacherForm
+from .models import ActivityReport, Teacher
 
+logger = logging.getLogger(__name__)
 
 # ---------- أدوات مساعدة ----------
 
@@ -82,45 +86,15 @@ def logout_view(request: HttpRequest) -> HttpResponse:
     return redirect("reports:login")
 
 
-# ---------- واجهة المعلم ----------
-
-# reports/views.py (تحديث home_view)
-from django.utils import timezone
+# ---------- الواجهة الرئيسية للمعلم ----------
 
 @login_required(login_url="reports:login")
 @require_http_methods(["GET"])
-def home_view(request):
-    my_qs = ActivityReport.objects.filter(teacher=request.user)
-    total_count = my_qs.count()
-    today = timezone.localdate()
-    today_count = my_qs.filter(report_date=today).count()
-    last_report = my_qs.order_by("-report_date", "-id").first()
-    recent_reports = my_qs.order_by("-report_date", "-id")[:5]
-
-
-    ctx = {
-        "stats": {
-            "total_count": total_count,
-            "today_count": today_count,
-            "last_program": (last_report.program_name if last_report else ""),
-        },
-        "recent_reports": recent_reports,
-    }
-    return render(request, "reports/home.html", ctx)
-
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from django.utils.timezone import now
-
-# استورد الموديل إذا موجود
-try:
-    from .models import Report
-except ImportError:
-    Report = None
-
-@login_required
-def home(request):
-    # بيانات افتراضية
+def home(request: HttpRequest) -> HttpResponse:
+    """
+    لوحة المعلم: إحصائيات + آخر 5 تقارير للمعلم الحالي.
+    آمن ضد Null/قواعد بيانات فارغة، ويسجل الأخطاء بدل إسقاط الصفحة.
+    """
     stats = {
         "today_count": 0,
         "total_count": 0,
@@ -128,40 +102,35 @@ def home(request):
     }
     recent_reports = []
 
-    if Report:  # إذا الموديل موجود
-        try:
-            # عدد تقارير اليوم
-            stats["today_count"] = Report.objects.filter(
-                report_date=now().date()
-            ).count()
+    try:
+        my_qs = ActivityReport.objects.select_related("teacher").filter(teacher=request.user)
+        today = timezone.localdate()
 
-            # إجمالي التقارير
-            stats["total_count"] = Report.objects.count()
+        stats["total_count"] = my_qs.count()
+        stats["today_count"] = my_qs.filter(report_date=today).count()
 
-            # آخر برنامج
-            last = Report.objects.order_by("-report_date").first()
-            if last:
-                stats["last_program"] = last.program_name
+        last_report = my_qs.order_by("-report_date", "-id").first()
+        if last_report:
+            stats["last_program"] = last_report.program_name or "—"
 
-            # آخر 5 تقارير
-            recent_reports = Report.objects.order_by("-report_date")[:5]
+        recent_reports = my_qs.order_by("-report_date", "-id")[:5]
 
-        except Exception as e:
-            # إذا حصل خطأ (قاعدة فاضية أو migration ناقص) لا يوقف الصفحة
-            print("⚠️ home view error:", e)
+    except Exception as e:
+        logger.exception("Home view failed: %s", e)
 
-    return render(request, "home.html", {
+    return render(request, "reports/home.html", {
         "stats": stats,
         "recent_reports": recent_reports,
     })
 
 
+# ---------- إضافة وعرض تقارير المعلم ----------
+
 @login_required(login_url="reports:login")
 @require_http_methods(["GET", "POST"])
 def add_report(request: HttpRequest) -> HttpResponse:
     """
-    إضافة تقرير جديد. يربط التقرير تلقائيًا بالمعلم الحالي،
-    ويُسجَّل التاريخ تلقائيًا من الموديل (auto_now_add).
+    إضافة تقرير جديد. يربط التقرير تلقائيًا بالمعلم الحالي.
     """
     if request.method == "POST":
         form = ActivityReportForm(request.POST, request.FILES)
@@ -178,6 +147,7 @@ def add_report(request: HttpRequest) -> HttpResponse:
 
     return render(request, "reports/add_report.html", {"form": form})
 
+
 @login_required(login_url="reports:login")
 @require_http_methods(["GET"])
 def my_reports(request: HttpRequest) -> HttpResponse:
@@ -188,7 +158,7 @@ def my_reports(request: HttpRequest) -> HttpResponse:
         ActivityReport.objects
         .select_related("teacher")
         .filter(teacher=request.user)
-        .order_by("-report_date", "-id")   # ✅ استخدم report_date
+        .order_by("-report_date", "-id")
     )
 
     # فلترة بالتاريخ
@@ -196,9 +166,9 @@ def my_reports(request: HttpRequest) -> HttpResponse:
     end_date = _parse_date_safe(request.GET.get("end_date"))
 
     if start_date:
-        qs = qs.filter(report_date__gte=start_date)   # ✅ تحديث الحقل
+        qs = qs.filter(report_date__gte=start_date)
     if end_date:
-        qs = qs.filter(report_date__lte=end_date)     # ✅ تحديث الحقل
+        qs = qs.filter(report_date__lte=end_date)
 
     # ترقيم الصفحات
     page = request.GET.get("page", 1)
@@ -227,16 +197,16 @@ def admin_reports(request: HttpRequest) -> HttpResponse:
     قائمة تقارير لجميع المعلمين للمدير فقط (is_staff=True) مع فلاتر اختيارية.
     يدعم فلترة بالتاريخ وبحسب المعلّم (teacher_national_id).
     """
-    qs = ActivityReport.objects.select_related("teacher").order_by("-report_date", "-id")  # ✅ تحديث الحقل
+    qs = ActivityReport.objects.select_related("teacher").order_by("-report_date", "-id")
 
     start_date = _parse_date_safe(request.GET.get("start_date"))
     end_date = _parse_date_safe(request.GET.get("end_date"))
     teacher_nid = (request.GET.get("teacher_national_id") or "").strip()
 
     if start_date:
-        qs = qs.filter(report_date__gte=start_date)   # ✅ تحديث
+        qs = qs.filter(report_date__gte=start_date)
     if end_date:
-        qs = qs.filter(report_date__lte=end_date)     # ✅ تحديث
+        qs = qs.filter(report_date__lte=end_date)
     if teacher_nid:
         qs = qs.filter(teacher__national_id=teacher_nid)
 
@@ -267,20 +237,15 @@ def admin_delete_report(request: HttpRequest, pk: int) -> HttpResponse:
     report = get_object_or_404(ActivityReport, pk=pk)
     report.delete()
     messages.success(request, "تم حذف التقرير بنجاح.")
-    # الرجوع للصفحة السابقة إن وُجدت وإلا إلى صفحة قائمة التقارير
     next_url = _safe_next_url(request.POST.get("next"))
     return redirect(next_url or "reports:admin_reports")
 
-# reports/views.py (إضافات)
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, render
-from django.http import HttpResponseForbidden, HttpResponse
-from django.template.loader import render_to_string
 
-from .models import ActivityReport
+# ---------- طباعة/تصدير التقارير ----------
 
 @login_required(login_url="reports:login")
-def report_print(request, pk: int):
+@require_http_methods(["GET"])
+def report_print(request: HttpRequest, pk: int) -> HttpResponse:
     """
     عرض HTML قابل للطباعة لتقرير واحد.
     المعلم يرى تقاريره فقط. المدير (is_staff) يرى الكل.
@@ -292,13 +257,12 @@ def report_print(request, pk: int):
     return render(request, "reports/report_print.html", {"r": report})
 
 
-# ----- خيار PDF عبر WeasyPrint (اختياري) -----
 @login_required(login_url="reports:login")
-def report_pdf(request, pk: int):
+@require_http_methods(["GET"])
+def report_pdf(request: HttpRequest, pk: int) -> HttpResponse:
     """
     يُصدر PDF من نفس قالب الطباعة باستخدام WeasyPrint.
-    يتطلب: pip install weasyprint
-    وعلى السيرفر: مكتبات النظام لـ weasyprint/cairo.
+    يتطلب: pip install weasyprint ومكتبات النظام.
     """
     try:
         from weasyprint import HTML, CSS
@@ -311,51 +275,36 @@ def report_pdf(request, pk: int):
         report = get_object_or_404(ActivityReport.objects.select_related("teacher"), pk=pk, teacher=request.user)
 
     html = render_to_string("reports/report_print.html", {"r": report, "for_pdf": True}, request=request)
-    # base_url مهم لقراءة static/media داخل PDF
     pdf = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf(
-        stylesheets=[CSS(string="""
-            @page { size: A4; margin: 14mm 12mm; }
-        """)]
+        stylesheets=[CSS(string="""@page { size: A4; margin: 14mm 12mm; }""")]
     )
     resp = HttpResponse(pdf, content_type="application/pdf")
-    filename = f"report-{report.pk}.pdf"
-    resp["Content-Disposition"] = f'inline; filename="{filename}"'
+    resp["Content-Disposition"] = f'inline; filename="report-{report.pk}.pdf"'
     return resp
 
-# reports/views.py — استبدل دوال إدارة المعلمين بالنسخة التالية
-from django.contrib.auth.decorators import user_passes_test
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from .models import Teacher
-from .forms import TeacherForm
 
-# استخدم الدالة المعرّفة مسبقًا
-def _is_staff(user):
-    return bool(user and user.is_authenticated and user.is_staff)
-
+# ---------- إدارة المعلّمين ----------
 
 @user_passes_test(_is_staff, login_url="reports:login")
-def manage_teachers(request):
+@require_http_methods(["GET"])
+def manage_teachers(request: HttpRequest) -> HttpResponse:
     teachers = Teacher.objects.all().order_by("-id")
     return render(request, "reports/manage_teachers.html", {"teachers": teachers})
 
 
 @user_passes_test(_is_staff, login_url="reports:login")
-def add_teacher(request):
+@require_http_methods(["GET", "POST"])
+def add_teacher(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = TeacherForm(request.POST)
         if form.is_valid():
             teacher = form.save(commit=False)
-
             # كلمة المرور
             password = form.cleaned_data.get("password")
             if password:
                 teacher.set_password(password)
-
             # نوع الحساب (معلم / مدير)
-            is_staff = request.POST.get("is_staff")
-            teacher.is_staff = True if is_staff == "1" else False
-
+            teacher.is_staff = (request.POST.get("is_staff") == "1")
             teacher.save()
             messages.success(request, "✅ تم إضافة المعلم بنجاح")
             return redirect("reports:manage_teachers")
@@ -365,22 +314,17 @@ def add_teacher(request):
 
 
 @user_passes_test(_is_staff, login_url="reports:login")
-def edit_teacher(request, pk):
+@require_http_methods(["GET", "POST"])
+def edit_teacher(request: HttpRequest, pk: int) -> HttpResponse:
     teacher = get_object_or_404(Teacher, pk=pk)
     if request.method == "POST":
         form = TeacherForm(request.POST, instance=teacher)
         if form.is_valid():
             teacher = form.save(commit=False)
-
-            # كلمة المرور (فقط إذا أدخل المستخدم كلمة جديدة)
             password = form.cleaned_data.get("password")
             if password:
                 teacher.set_password(password)
-
-            # نوع الحساب (معلم / مدير)
-            is_staff = request.POST.get("is_staff")
-            teacher.is_staff = True if is_staff == "1" else False
-
+            teacher.is_staff = (request.POST.get("is_staff") == "1")
             teacher.save()
             messages.success(request, "✏️ تم تحديث بيانات المعلم بنجاح")
             return redirect("reports:manage_teachers")
@@ -390,7 +334,8 @@ def edit_teacher(request, pk):
 
 
 @user_passes_test(_is_staff, login_url="reports:login")
-def delete_teacher(request, pk):
+@require_http_methods(["POST"])
+def delete_teacher(request: HttpRequest, pk: int) -> HttpResponse:
     teacher = get_object_or_404(Teacher, pk=pk)
     teacher.delete()
     messages.success(request, "🗑️ تم حذف المعلم")
