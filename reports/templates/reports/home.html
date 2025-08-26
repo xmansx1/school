@@ -58,6 +58,7 @@
   .ico.list{background:linear-gradient(135deg,var(--brand),var(--brand-light));}
   .ico.admin{background:linear-gradient(135deg,var(--purple),#8b5cf6);}
   .ico.teachers{background:linear-gradient(135deg,#f59e0b,#fbbf24);}
+
   .tile-title { font-weight:900; color:var(--ink-soft); }
   .tile-desc { color:var(--muted); font-size:.92rem; }
 
@@ -86,7 +87,11 @@
   <section class="hero">
     <div class="hero-top">
       <div>
-        <div class="hello">مرحباً {{ request.user.username }}👋</div>
+        {% if request.user.is_authenticated %}
+          <div class="hello">مرحباً {{ request.user.username }} 👋</div>
+        {% else %}
+          <div class="hello">مرحباً ضيف 👋</div>
+        {% endif %}
         <div class="sub">اليوم: {% now "Y-m-d" %}</div>
       </div>
     </div>
@@ -115,20 +120,32 @@
       <div class="actions">
         <a class="tile" href="{% url 'reports:add_report' %}">
           <span class="ico plus">＋</span>
-          <div><div class="tile-title">إضافة تقرير جديد</div><div class="tile-desc">سجّل البرنامج والصور والملاحظات بسهولة</div></div>
+          <div>
+            <div class="tile-title">إضافة تقرير جديد</div>
+            <div class="tile-desc">سجّل البرنامج والصور والملاحظات بسهولة</div>
+          </div>
         </a>
         <a class="tile" href="{% url 'reports:my_reports' %}">
           <span class="ico list">📋</span>
-          <div><div class="tile-title">عرض أعمالي</div><div class="tile-desc">فلترة حسب التاريخ واستعراض الصور</div></div>
+          <div>
+            <div class="tile-title">عرض أعمالي</div>
+            <div class="tile-desc">فلترة حسب التاريخ واستعراض الصور</div>
+          </div>
         </a>
         {% if request.user.is_staff %}
         <a class="tile" href="{% url 'reports:admin_reports' %}">
           <span class="ico admin">🛡️</span>
-          <div><div class="tile-title">لوحة المدير</div><div class="tile-desc">عرض وحذف تقارير جميع المعلمين</div></div>
+          <div>
+            <div class="tile-title">لوحة المدير</div>
+            <div class="tile-desc">عرض وحذف تقارير جميع المعلمين</div>
+          </div>
         </a>
         <a class="tile" href="{% url 'reports:manage_teachers' %}">
           <span class="ico teachers">👨‍🏫</span>
-          <div><div class="tile-title">إدارة المعلمين</div><div class="tile-desc">إضافة، تعديل أو حذف معلم</div></div>
+          <div>
+            <div class="tile-title">إدارة المعلمين</div>
+            <div class="tile-desc">إضافة، تعديل أو حذف معلم</div>
+          </div>
         </a>
         {% endif %}
       </div>
@@ -140,9 +157,11 @@
         {% for r in recent_reports %}
           <div class="item">
             <div>
-              <div class="name">{{ r.program_name }}</div>
+              <div class="name">{{ r.program_name|default:"—" }}</div>
               <div class="meta">
-                التاريخ: {{ r.report_date|date:"Y-m-d" }}{% if r.day_name %} • {{ r.day_name }}{% endif %} • المستفيدون: {{ r.beneficiaries_count }}
+                التاريخ: {{ r.report_date|date:"Y-m-d"|default:"—" }}
+                {% if r.day_name %} • {{ r.day_name }}{% endif %}
+                • المستفيدون: {{ r.beneficiaries_count|default:"0" }}
               </div>
             </div>
             <div class="btns">

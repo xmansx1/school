@@ -110,10 +110,17 @@ def home_view(request):
 
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from django.utils.timezone import now
+
+# استورد الموديل إذا موجود
+try:
+    from .models import Report
+except ImportError:
+    Report = None
 
 @login_required
 def home(request):
-    # قيم افتراضية فارغة حتى لا يعمل القالب خطأ
+    # بيانات افتراضية
     stats = {
         "today_count": 0,
         "total_count": 0,
@@ -121,7 +128,28 @@ def home(request):
     }
     recent_reports = []
 
-    # رجّع القالب مع البيانات
+    if Report:  # إذا الموديل موجود
+        try:
+            # عدد تقارير اليوم
+            stats["today_count"] = Report.objects.filter(
+                report_date=now().date()
+            ).count()
+
+            # إجمالي التقارير
+            stats["total_count"] = Report.objects.count()
+
+            # آخر برنامج
+            last = Report.objects.order_by("-report_date").first()
+            if last:
+                stats["last_program"] = last.program_name
+
+            # آخر 5 تقارير
+            recent_reports = Report.objects.order_by("-report_date")[:5]
+
+        except Exception as e:
+            # إذا حصل خطأ (قاعدة فاضية أو migration ناقص) لا يوقف الصفحة
+            print("⚠️ home view error:", e)
+
     return render(request, "home.html", {
         "stats": stats,
         "recent_reports": recent_reports,
