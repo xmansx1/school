@@ -1,23 +1,62 @@
 from django import forms
 from .models import ActivityReport
+import datetime
 
 class ActivityReportForm(forms.ModelForm):
     class Meta:
         model = ActivityReport
-        fields = ["program_name", "beneficiaries_count", "idea", "image1", "image2", "image3", "image4"]
+        fields = [
+            "program_name", 
+            "report_date",   # ✅ التاريخ المدخل من المعلم
+            "day_name",      # ✅ اليوم يظهر تلقائياً أو يمكن تعديله
+            "beneficiaries_count", 
+            "idea", 
+            "image1", "image2", "image3", "image4"
+        ]
         widgets = {
-            "program_name": forms.TextInput(attrs={"class": "input", "placeholder": "اسم البرنامج"}),
-            "beneficiaries_count": forms.NumberInput(attrs={"class": "input", "min": "0", "inputmode": "numeric"}),
-            "idea": forms.Textarea(attrs={"class": "textarea", "rows": 4, "placeholder": "وصف مختصر للفكرة"}),
+            "program_name": forms.TextInput(attrs={
+                "class": "input", 
+                "placeholder": "اسم البرنامج"
+            }),
+            "report_date": forms.DateInput(attrs={
+                "class": "input", 
+                "type": "date"
+            }),
+            "day_name": forms.TextInput(attrs={
+                "class": "input", 
+                "readonly": "readonly",  # يظهر فقط - يمنع التعديل
+                "placeholder": "سيتم توليد اليوم تلقائياً"
+            }),
+            "beneficiaries_count": forms.NumberInput(attrs={
+                "class": "input", 
+                "min": "0", 
+                "inputmode": "numeric"
+            }),
+            "idea": forms.Textarea(attrs={
+                "class": "textarea", 
+                "rows": 4, 
+                "placeholder": "وصف مختصر للفكرة"
+            }),
         }
 
     def clean(self):
         cleaned = super().clean()
+
+        # ✅ التأكد من حجم الصور
         for f in ["image1", "image2", "image3", "image4"]:
             img = cleaned.get(f)
             if img and img.size > 2 * 1024 * 1024:  # 2MB
                 self.add_error(f, "حجم الصورة أكبر من 2MB")
+
+        # ✅ حساب اليوم تلقائياً عند إدخال التاريخ
+        report_date = cleaned.get("report_date")
+        if report_date:
+            days = ["الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت","الأحد"]
+            cleaned["day_name"] = days[report_date.weekday()]
+
         return cleaned
+
+
 from django import forms
 from .models import Teacher
 

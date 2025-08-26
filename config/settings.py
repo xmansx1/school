@@ -10,8 +10,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ----------------- الأمان -----------------
 SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-secret")
-DEBUG = os.getenv("DEBUG", "True").lower() == "true"
-ALLOWED_HOSTS = ["school-7lgm.onrender.com", "localhost", "127.0.0.1"]
+
+# تحديد البيئة: development أو production
+ENV = os.getenv("ENV", "development").lower()
+
+DEBUG = ENV == "development"
+
+ALLOWED_HOSTS = os.getenv(
+    "ALLOWED_HOSTS",
+    "localhost,127.0.0.1,school-7lgm.onrender.com"
+).split(",")
 
 # ----------------- التطبيقات -----------------
 INSTALLED_APPS = [
@@ -32,7 +40,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # ✅ إضافة هنا
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # ✅ لملفات static
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -60,19 +68,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # ----------------- قاعدة البيانات -----------------
-DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL:
+if ENV == "production":
     DATABASES = {
         "default": dj_database_url.config(
-            default=DATABASE_URL,
+            default=os.getenv("DATABASE_URL"),
             conn_max_age=600,
             ssl_require=True
         )
     }
-else:
+else:  # Development (SQLite by default)
     DATABASES = {
         "default": {
             'ENGINE': os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
@@ -93,15 +99,19 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # ----------------- اللغة والتوقيت -----------------
-LANGUAGE_CODE = 'ar'        # الواجهة بالعربي
-TIME_ZONE = 'Asia/Riyadh'   # توقيت السعودية
+LANGUAGE_CODE = 'ar'
+TIME_ZONE = 'Asia/Riyadh'
 USE_I18N = True
 USE_TZ = True
 
 # ----------------- الملفات الثابتة -----------------
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / "static"]  # أثناء التطوير
-STATIC_ROOT = BASE_DIR / "staticfiles"    # للإنتاج
+
+if ENV == "production":
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    STATIC_ROOT = BASE_DIR / "staticfiles"
+else:
+    STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # ----------------- ملفات الوسائط -----------------
 MEDIA_URL = '/media/'

@@ -3,7 +3,7 @@ venv\Scripts\activate      # على Windows
 python manage.py runserver
 
 git add . 
-git commit -m "الرفع03ريندر"
+git commit -m "الرفع05ريندر"
 git push origin main
 
 تحديث قاعدة البيانات على ريندر 
@@ -18,69 +18,34 @@ git push origin main
 python manage.py makemigrations
 python manage.py migrate
 
-
-البيئة المحلية 
-copy .env.development .env
-
-python manage.py migrate
-
-python manage.py collectstatic --noinput
-
-
-copy .env.development .env
-
-python manage.py runserver
-
---------------------------------
-نحتاج المتغيرات في بيئة الانتاج 
-
-ENVIRONMENT=production
+ENV=production
 DEBUG=False
+SECRET_KEY=$!$0hwnsd^@52b)4n%*k=iu%+9gs@w3qqco7g9#h_gm%-2yruz
 
-SECRET_KEY=u)vypmxs+0+93ckk!z$@-qu9fv%#x9*3!a(dq)lp8*09$z@y8l
+DATABASE_URL=postgresql://school_db_hp0k_user:c6JNeWO8Urlhy7pgK46AHAelXTcr47FJ@dpg-d2m48pbuibrs73fr1530-a/school_db_hp0k
 
-# 🗄️ قاعدة البيانات PostgreSQL من Render
-DATABASE_URL=postgresql://ahali_db_umeb_user:KxjWhqnbLMhJlvpLLzMUrNuzWaFALqHz@dpg-d1sf2c2dbo4c73895ccg-a/ahali_db_umeb
-
-ALLOWED_HOSTS=ahali-platform.onrender.com,.onrender.com
-
-# ☁️ Cloudinary
 CLOUDINARY_CLOUD_NAME=dvptglfs2
-CLOUDINARY_API_KEY=997257163374881
-CLOUDINARY_API_SECRET=u5XPED3CQa2gd7PyHuEaw7BFsbY
+CLOUDINARY_API_KEY=469557475625854
+CLOUDINARY_API_SECRET=aJXnXwL_PeGjRXxsQKBYAGj6F7o
 
-------------------------
+ALLOWED_HOSTS=school-7lgm.onrender.com
 
 
+ENV=development
+DEBUG=True
+SECRET_KEY=$!$0hwnsd^@52b)4n%*k=iu%+9gs@w3qqco7g9#h_gm%-2yruz
 
-🏪 هل لديك متجر محلي؟
-📲 انضم إلى منصة أهالي الحي وسهّل على أهالي حيّك التواصل معك وطلب خدماتك!
+# SQLite محلي (التطوير)
+# DATABASE_URL=sqlite:///db.sqlite3
 
-منصة أهالي الحي تمكِّن المتاجر من استقبال الطلبات بسهولة من الزوار دون الحاجة لعرض منتجات.
+# إذا حاب تجرب PostgreSQL محليًا
+# DATABASE_URL=postgres://postgres:password@localhost:5432/school_db
 
-✅ مزايا الانضمام إلى المنصة:
+CLOUDINARY_CLOUD_NAME=dvptglfs2
+CLOUDINARY_API_KEY=469557475625854
+CLOUDINARY_API_SECRET=aJXnXwL_PeGjRXxsQKBYAGj6F7o
 
-📍 ظهور متجرك في صفحة مخصصة حسب الموقع الجغرافي
+ALLOWED_HOSTS=localhost,127.0.0.1
 
-📝 نموذج طلب مباشر يملؤه العميل ويصل إليك فورًا
 
-📦 دعم خيار التوصيل أو الاستلام حسب رغبتك
-
-👨‍💼 لوحة تحكم بسيطة لإدارة الطلبات وتحديث بيانات المتجر
-
-📨 إشعارات وتنبيهات تلقائية عند استلام الطلبات الجديدة
-
-🎯 هدفنا: دعم المتاجر المحلية وربطها بأهالي الحي بطريقة ذكية وسهلة
-
-🚀 سجّل الآن مجانًا وكن جزءًا من مجتمعنا المحلي
-
-📞 للتسجيل أو الاستفسار:
-📱 واتساب: [054688219]
-🌐 رابط المنصة: [https://forms.office.com/r/qzWtjShYWk]
-
---------------------------------------------------------------------------
-
-http://127.0.0.1:8000/control-panel-9x8z/
-
-فحص المشروع 
 python manage.py check

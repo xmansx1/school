@@ -64,7 +64,13 @@ class Teacher(AbstractBaseUser, PermissionsMixin):
 class ActivityReport(models.Model):
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name="reports")
     program_name = models.CharField(max_length=255, verbose_name="البرنامج")
-    date = models.DateField(auto_now_add=True, verbose_name="تاريخ البرنامج")
+    
+    # تاريخ البرنامج (يدخله المعلّم بنفسه)
+    report_date = models.DateField(verbose_name="تاريخ البرنامج")
+    
+    # اليوم (يتم توليده تلقائيًا عند الحفظ أو تعبئته من الفورم)
+    day_name = models.CharField(max_length=20, verbose_name="اليوم", blank=True, null=True)
+
     beneficiaries_count = models.PositiveIntegerField(verbose_name="عدد المستفيدين")
     idea = models.TextField(verbose_name="فكرة البرنامج")
     
@@ -75,5 +81,12 @@ class ActivityReport(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        # لو لم يتم إدخال اليوم، نستنتجه من التاريخ
+        if self.report_date and not self.day_name:
+            days = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"]
+            self.day_name = days[self.report_date.weekday()]
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.program_name} - {self.teacher.name} ({self.date})"
+        return f"{self.program_name} - {self.teacher.name} ({self.report_date})"

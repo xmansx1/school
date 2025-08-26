@@ -93,9 +93,10 @@ def home_view(request):
     my_qs = ActivityReport.objects.filter(teacher=request.user)
     total_count = my_qs.count()
     today = timezone.localdate()
-    today_count = my_qs.filter(date=today).count()
-    last_report = my_qs.order_by("-date", "-id").first()
-    recent_reports = my_qs.order_by("-date", "-id")[:5]
+    today_count = my_qs.filter(report_date=today).count()
+    last_report = my_qs.order_by("-report_date", "-id").first()
+    recent_reports = my_qs.order_by("-report_date", "-id")[:5]
+
 
     ctx = {
         "stats": {
@@ -131,7 +132,6 @@ def add_report(request: HttpRequest) -> HttpResponse:
 
     return render(request, "reports/add_report.html", {"form": form})
 
-
 @login_required(login_url="reports:login")
 @require_http_methods(["GET"])
 def my_reports(request: HttpRequest) -> HttpResponse:
@@ -142,16 +142,17 @@ def my_reports(request: HttpRequest) -> HttpResponse:
         ActivityReport.objects
         .select_related("teacher")
         .filter(teacher=request.user)
-        .order_by("-date", "-id")
+        .order_by("-report_date", "-id")   # ✅ استخدم report_date
     )
 
+    # فلترة بالتاريخ
     start_date = _parse_date_safe(request.GET.get("start_date"))
     end_date = _parse_date_safe(request.GET.get("end_date"))
 
     if start_date:
-        qs = qs.filter(date__gte=start_date)
+        qs = qs.filter(report_date__gte=start_date)   # ✅ تحديث الحقل
     if end_date:
-        qs = qs.filter(date__lte=end_date)
+        qs = qs.filter(report_date__lte=end_date)     # ✅ تحديث الحقل
 
     # ترقيم الصفحات
     page = request.GET.get("page", 1)
@@ -164,7 +165,7 @@ def my_reports(request: HttpRequest) -> HttpResponse:
         reports_page = paginator.page(paginator.num_pages)
 
     context = {
-        "reports": reports_page,  # استخدم reports في القالب كما هو
+        "reports": reports_page,
         "start_date": request.GET.get("start_date", ""),
         "end_date": request.GET.get("end_date", ""),
     }
@@ -180,16 +181,16 @@ def admin_reports(request: HttpRequest) -> HttpResponse:
     قائمة تقارير لجميع المعلمين للمدير فقط (is_staff=True) مع فلاتر اختيارية.
     يدعم فلترة بالتاريخ وبحسب المعلّم (teacher_national_id).
     """
-    qs = ActivityReport.objects.select_related("teacher").order_by("-date", "-id")
+    qs = ActivityReport.objects.select_related("teacher").order_by("-report_date", "-id")  # ✅ تحديث الحقل
 
     start_date = _parse_date_safe(request.GET.get("start_date"))
     end_date = _parse_date_safe(request.GET.get("end_date"))
     teacher_nid = (request.GET.get("teacher_national_id") or "").strip()
 
     if start_date:
-        qs = qs.filter(date__gte=start_date)
+        qs = qs.filter(report_date__gte=start_date)   # ✅ تحديث
     if end_date:
-        qs = qs.filter(date__lte=end_date)
+        qs = qs.filter(report_date__lte=end_date)     # ✅ تحديث
     if teacher_nid:
         qs = qs.filter(teacher__national_id=teacher_nid)
 

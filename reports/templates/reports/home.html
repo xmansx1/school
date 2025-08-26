@@ -4,493 +4,135 @@
 
 {% block head %}
 <style>
-  :root {
-    --ink: #0f172a;
-    --ink-soft: #1f2937;
-    --muted: #64748b;
-    --line: #e5e7eb;
-    --brand: #2563eb;
-    --brand-light: #3b82f6;
-    --accent: #059669;
-    --accent-light: #10b981;
-    --purple: #7c3aed;
-    --card: #ffffff;
-    --bg: #f8fafc;
-    --chip: #eef2ff;
-    --chip-ink: #1e40af;
-    --shadow: 0 4px 12px rgba(2, 6, 23, 0.08);
-    --shadow-hover: 0 10px 25px rgba(2, 6, 23, 0.12);
-    --radius: 16px;
-    --transition: all 0.2s ease;
+  :root{
+    --ink:#0f172a;--ink-soft:#1f2937;--muted:#64748b;--line:#e5e7eb;
+    --brand:#2563eb;--brand-light:#3b82f6;--accent:#059669;--accent-light:#10b981;
+    --purple:#7c3aed;--card:#ffffff;--bg:#f8fafc;--shadow:0 4px 12px rgba(2,6,23,.08);
+    --shadow-hover:0 14px 30px rgba(2,6,23,.14);--radius:18px;--rsm:12px;--t:all .22s ease;
+  }
+  body{background:var(--bg);font-family:'Tajawal',system-ui,-apple-system,Segoe UI,Roboto}
+  .container{max-width:1200px;margin:0 auto;padding:18px}
+
+  /* ===== HERO (بدون لوقو) ===== */
+  .hero{
+    position:relative;overflow:hidden;border-radius:24px;
+    background:linear-gradient(135deg,var(--brand) 0%,var(--accent) 100%);
+    padding:28px 22px;color:#fff;box-shadow:var(--shadow);
+    display:grid;gap:12px
+  }
+  .hero-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .hello{font-size:1.7rem;font-weight:900;letter-spacing:.2px}
+  .sub{opacity:.95;font-weight:600}
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);
+        color:#fff;padding:8px 12px;border-radius:999px;font-weight:800;font-size:.9rem}
+  .hero::after{
+    content:"";position:absolute;inset:-40% -10% auto auto;height:280px;width:60%;
+    background:radial-gradient(ellipse at center,rgba(255,255,255,.45),transparent 60%);
+    filter:blur(26px);pointer-events:none
   }
 
-  body {
-    background-color: var(--bg);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
+  /* ===== GRID ===== */
+  .grid{display:grid;gap:24px;margin-top:22px}
+  @media(min-width:1024px){.grid{grid-template-columns:1.15fr .85fr}}
 
-  .hero {
-    position: relative;
-    overflow: hidden;
-    color: #fff;
-    border-radius: var(--radius);
-    background: linear-gradient(135deg, var(--brand) 0%, var(--accent) 100%);
-    padding: 24px 20px;
-    display: grid;
-    gap: 14px;
-    grid-template-columns: 1fr;
-    box-shadow: var(--shadow);
-    margin-bottom: 24px;
+  /* ===== KPIs ===== */
+  .kpis{display:grid;gap:16px}
+  @media(min-width:640px){.kpis{grid-template-columns:repeat(3,1fr)}}
+  .kpi{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px;text-align:center;box-shadow:var(--shadow);transition:var(--t)
   }
+  .kpi:hover{transform:translateY(-4px);box-shadow:var(--shadow-hover)}
+  .kpi .num{font-size:1.9rem;font-weight:900;color:#1d4ed8;margin-bottom:6px}
+  .kpi .lbl{color:var(--ink-soft);font-weight:800}
+  .kpi .hint{color:var(--muted);font-size:.9rem}
 
-  .hero .row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+  /* ===== Actions ===== */
+  .actions{display:grid;gap:16px;margin-top:18px}
+  @media(min-width:640px){.actions{grid-template-columns:repeat(2,1fr)}}
+  .tile{
+    display:flex;gap:16px;align-items:center;background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius);padding:18px;text-decoration:none;color:var(--ink);
+    position:relative;overflow:hidden;box-shadow:var(--shadow);transition:var(--t)
   }
+  .tile::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(37,99,235,.07),transparent);
+                transform:translateX(-100%);transition:transform .6s ease}
+  .tile:hover{transform:translateY(-3px);border-color:#dbeafe}
+  .tile:hover::before{transform:translateX(0)}
+  .ico{
+    width:52px;height:52px;border-radius:14px;display:grid;place-items:center;color:#fff;
+    font-size:1.4rem;flex-shrink:0
+  }
+  .ico.plus{background:linear-gradient(135deg,var(--accent),var(--accent-light))}
+  .ico.list{background:linear-gradient(135deg,var(--brand),var(--brand-light))}
+  .ico.admin{background:linear-gradient(135deg,var(--purple),#8b5cf6)}
+  .ico.teachers{background:linear-gradient(135deg,#f59e0b,#fbbf24)}
+  .tile-title{font-weight:900;color:var(--ink-soft)}
+  .tile-desc{color:var(--muted);font-size:.92rem}
 
-  .hero .info {
-    display: flex;
-    align-items: center;
-    gap: 16px;
+  /* ===== Card (آخر التقارير) ===== */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card-hd{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line)}
+  .card-title{margin:0;font-size:1.1rem;font-weight:900;color:var(--ink-soft)}
+  .list{display:grid;gap:12px;padding:18px}
+  .item{
+    display:grid;gap:12px;grid-template-columns:1fr auto;background:#fff;border:1px solid var(--line);
+    border-radius:14px;padding:14px;transition:var(--t)
   }
+  .item:hover{border-color:#c7d2fe;box-shadow:0 8px 20px rgba(30,58,138,.08)}
+  .name{font-weight:800;color:var(--ink-soft)}
+  .meta{color:var(--muted);font-size:.92rem}
+  .btns{display:flex;gap:8px;align-items:flex-start}
+  .chip-id{padding:6px 10px;border-radius:999px;background:#eff6ff;color:#1e40af;font-weight:800;font-size:.85rem}
+  .btn-xs{padding:8px 11px;border-radius:10px;border:1px solid #dbeafe;background:#eef2ff;color:#1e3a8a;
+          text-decoration:none;font-weight:800;font-size:.86rem}
+  .btn-xs:hover{background:#e0e7ff}
 
-  .hero .logo {
-    width: 72px;
-    height: 72px;
-    object-fit: contain;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 16px;
-    padding: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(4px);
-    transition: var(--transition);
+  /* زر عائم */
+  .fab{
+    position:fixed;bottom:24px;right:24px;width:60px;height:60px;border-radius:50%;
+    display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-light));
+    color:#fff;font-size:28px;box-shadow:0 10px 28px rgba(5,150,105,.45);text-decoration:none;transition:var(--t);z-index:30
   }
-
-  .hero .logo:hover {
-    transform: scale(1.05);
-  }
-
-  .hello {
-    font-size: 1.4rem;
-    font-weight: 900;
-    line-height: 1.3;
-    margin-bottom: 4px;
-  }
-
-  .sub {
-    opacity: 0.9;
-    font-weight: 600;
-    font-size: 0.95rem;
-  }
-
-  .glow {
-    position: absolute;
-    top: -50%;
-    right: -20%;
-    width: 70%;
-    height: 240px;
-    background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
-    filter: blur(20px);
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 16px;
-  }
-
-  .wrap {
-    display: grid;
-    gap: 24px;
-    margin-bottom: 80px;
-  }
-
-  .kpis {
-    display: grid;
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-
-  .kpi {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
-    box-shadow: var(--shadow);
-    transition: var(--transition);
-  }
-
-  .kpi:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-hover);
-  }
-
-  .kpi .num {
-    font-size: 1.7rem;
-    font-weight: 900;
-    color: var(--brand);
-    margin-bottom: 8px;
-  }
-
-  .kpi .lbl {
-    color: var(--ink-soft);
-    font-weight: 700;
-    font-size: 0.95rem;
-    margin-bottom: 6px;
-  }
-
-  .kpi .hint {
-    font-size: 0.85rem;
-    color: var(--muted);
-    line-height: 1.4;
-  }
-
-  .actions {
-    display: grid;
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-
-  .tile {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    text-decoration: none;
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 20px;
-    box-shadow: var(--shadow);
-    color: var(--ink);
-    transition: var(--transition);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .tile::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: var(--brand);
-    opacity: 0;
-    transition: var(--transition);
-  }
-
-  .tile:hover {
-    transform: translateY(-3px);
-    border-color: var(--brand-light);
-    box-shadow: var(--shadow-hover);
-  }
-
-  .tile:hover::before {
-    opacity: 1;
-  }
-
-  .ico {
-    width: 50px;
-    height: 50px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 1.4rem;
-    flex-shrink: 0;
-    transition: var(--transition);
-  }
-
-  .tile:hover .ico {
-    transform: scale(1.1);
-  }
-
-  .ico.plus {
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
-  }
-
-  .ico.list {
-    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 100%);
-  }
-
-  .ico.admin {
-    background: linear-gradient(135deg, var(--purple) 0%, #8b5cf6 100%);
-  }
-
-  .ico.teachers {
-    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
-  }
-
-  .tile-content {
-    flex-grow: 1;
-  }
-
-  .tile-title {
-    font-weight: 900;
-    font-size: 1.1rem;
-    margin-bottom: 6px;
-    color: var(--ink-soft);
-  }
-
-  .tile-desc {
-    color: var(--muted);
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-
-  .card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 24px;
-    box-shadow: var(--shadow);
-    transition: var(--transition);
-  }
-
-  .card:hover {
-    box-shadow: var(--shadow-hover);
-  }
-
-  .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-
-  .card-title {
-    margin: 0;
-    font-weight: 900;
-    color: var(--ink-soft);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 1.2rem;
-  }
-
-  .list {
-    display: grid;
-    gap: 14px;
-  }
-
-  .item {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 14px;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 16px;
-    background: var(--card);
-    transition: var(--transition);
-  }
-
-  .item:hover {
-    border-color: var(--brand-light);
-    box-shadow: var(--shadow);
-  }
-
-  .name {
-    font-weight: 800;
-    color: var(--ink-soft);
-    margin-bottom: 6px;
-  }
-
-  .meta {
-    color: var(--muted);
-    font-size: 0.92rem;
-  }
-
-  .btns {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-  }
-
-  .chip {
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: var(--chip);
-    color: var(--chip-ink);
-    font-weight: 800;
-    font-size: 0.85rem;
-    white-space: nowrap;
-  }
-
-  .btn-xs {
-    padding: 8px 12px;
-    border-radius: 10px;
-    border: 1px solid #dbeafe;
-    color: var(--brand);
-    background: #eff6ff;
-    text-decoration: none;
-    font-weight: 800;
-    font-size: 0.85rem;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .btn-xs:hover {
-    background: #dbeafe;
-    color: #1e40af;
-  }
-
-  .view-all {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 16px;
-    padding: 10px 16px;
-    background: #f1f5f9;
-    color: var(--ink-soft);
-    text-decoration: none;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 0.9rem;
-    transition: var(--transition);
-  }
-
-  .view-all:hover {
-    background: #e2e8f0;
-    gap: 10px;
-  }
-
-  .fab {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    text-decoration: none;
-    box-shadow: 0 8px 20px rgba(5, 150, 105, 0.4);
-    z-index: 50;
-    transition: var(--transition);
-  }
-
-  .fab:hover {
-    transform: scale(1.1) rotate(90deg);
-    box-shadow: 0 12px 30px rgba(5, 150, 105, 0.5);
-  }
-
-  /* تحسينات للشاشات المتوسطة */
-  @media (min-width: 640px) {
-    .kpis {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .actions {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  /* تحسينات للشاشات الكبيرة */
-  @media (min-width: 1024px) {
-    .hero {
-      padding: 32px 28px;
-    }
-    
-    .wrap {
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 32px;
-    }
-    
-    .kpis {
-      grid-template-columns: repeat(3, 1fr);
-    }
-    
-    .actions {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  /* تحسينات للشاشات الصغيرة */
-  @media (max-width: 639px) {
-    .hero .info {
-      flex-direction: column;
-      text-align: center;
-      gap: 12px;
-    }
-    
-    .hero .logo {
-      width: 60px;
-      height: 60px;
-    }
-    
-    .hello {
-      font-size: 1.2rem;
-    }
-    
-    .item {
-      grid-template-columns: 1fr;
-      text-align: center;
-    }
-    
-    .btns {
-      justify-content: center;
-    }
-    
-    .ico {
-      width: 44px;
-      height: 44px;
-    }
-  }
+  .fab:hover{transform:scale(1.08) rotate(6deg)}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-  <!-- HERO -->
+
+  <!-- HERO (بدون لوقو بجانب الاسم) -->
   <section class="hero">
-    <div class="row">
-      <div class="info">
-        <img class="logo"
-             src="{% if SCHOOL_LOGO_URL %}{{ SCHOOL_LOGO_URL }}{% else %}{% static 'img/logo.png' %}{% endif %}"
-             alt="{{ SCHOOL_NAME|default:'شعار المدرسة' }}" loading="lazy" decoding="async">
-        <div>
-          <div class="hello">مرحباً {{ request.user.name }} 👋</div>
-          <div class="sub">اليوم: {% now 'Y-m-d' %}</div>
-        </div>
+    <div class="hero-top">
+      <div>
+        <div class="hello">مرحباً {{ request.user.name }} 👋</div>
+        <div class="sub">اليوم: {% now "Y-m-d" %}</div>
+
       </div>
     </div>
-    <span class="glow" aria-hidden="true"></span>
   </section>
 
   <!-- المحتوى -->
-  <section class="wrap">
+  <section class="grid">
+
     <div>
       <!-- KPIs -->
       <div class="kpis">
         <div class="kpi">
           <div class="num">{{ stats.today_count|default:"0" }}</div>
           <div class="lbl">تقارير اليوم</div>
-          <div class="hint">{% if stats.today_count %}عمل رائع!{% else %}ابدأ بتقريرك الأول اليوم{% endif %}</div>
+          <div class="hint">{% if stats.today_count %}عمل رائع!{% else %}ابدأ بتقريرك اليوم{% endif %}</div>
         </div>
         <div class="kpi">
           <div class="num">{{ stats.total_count|default:"0" }}</div>
-          <div class="lbl">إجمالي تقاريري</div>
-          <div class="hint">جميع تقاريرك الموثقة</div>
+          <div class="lbl">إجمالي التقارير</div>
+          <div class="hint">كل أعمالك الموثقة</div>
         </div>
         <div class="kpi">
-          <div class="num" style="font-size:1.2rem">{{ stats.last_program|default:"—" }}</div>
+          <div class="num" style="font-size:1.05rem">{{ stats.last_program|default:"—" }}</div>
           <div class="lbl">آخر برنامج</div>
-          <div class="hint">يتحدث تلقائياً بعد الحفظ</div>
+          <div class="hint">يتحدّث تلقائياً بعد الحفظ</div>
         </div>
       </div>
 
@@ -498,7 +140,7 @@
       <div class="actions">
         <a class="tile" href="{% url 'reports:add_report' %}">
           <span class="ico plus">＋</span>
-          <div class="tile-content">
+          <div>
             <div class="tile-title">إضافة تقرير جديد</div>
             <div class="tile-desc">سجّل البرنامج والصور والملاحظات بسهولة</div>
           </div>
@@ -506,7 +148,7 @@
 
         <a class="tile" href="{% url 'reports:my_reports' %}">
           <span class="ico list">📋</span>
-          <div class="tile-content">
+          <div>
             <div class="tile-title">عرض أعمالي</div>
             <div class="tile-desc">فلترة حسب التاريخ واستعراض الصور</div>
           </div>
@@ -515,7 +157,7 @@
         {% if request.user.is_staff %}
         <a class="tile" href="{% url 'reports:admin_reports' %}">
           <span class="ico admin">🛡️</span>
-          <div class="tile-content">
+          <div>
             <div class="tile-title">لوحة المدير</div>
             <div class="tile-desc">عرض وحذف تقارير جميع المعلمين</div>
           </div>
@@ -523,7 +165,7 @@
 
         <a class="tile" href="{% url 'reports:manage_teachers' %}">
           <span class="ico teachers">👨‍🏫</span>
-          <div class="tile-content">
+          <div>
             <div class="tile-title">إدارة المعلمين</div>
             <div class="tile-desc">إضافة، تعديل أو حذف معلم</div>
           </div>
@@ -534,7 +176,7 @@
 
     <!-- آخر التقارير -->
     <div class="card">
-      <div class="card-header">
+      <div class="card-hd">
         <h3 class="card-title">🕘 آخر تقاريري</h3>
       </div>
       <div class="list">
@@ -542,10 +184,13 @@
           <div class="item">
             <div>
               <div class="name">{{ r.program_name }}</div>
-              <div class="meta">التاريخ: {{ r.date }} • المستفيدون: {{ r.beneficiaries_count }}</div>
+              <div class="meta">
+                التاريخ: {{ r.report_date|date:"Y-m-d" }}{% if r.day_name %} • {{ r.day_name }}{% endif %}
+                • المستفيدون: {{ r.beneficiaries_count }}
+              </div>
             </div>
             <div class="btns">
-              <span class="chip">#{{ r.pk }}</span>
+              <span class="chip-id">#{{ r.pk }}</span>
               <a class="btn-xs" href="{% url 'reports:report_print' r.pk %}" target="_blank" rel="noopener">🖨️ طباعة</a>
             </div>
           </div>
@@ -553,13 +198,10 @@
           <div class="item"><div class="meta">لا توجد تقارير حتى الآن.</div></div>
         {% endfor %}
       </div>
-      <div>
-        <a class="view-all" href="{% url 'reports:my_reports' %}">عرض كل التقارير</a>
-      </div>
     </div>
   </section>
 </div>
 
-  <!-- زر عائم -->
-  <a class="fab" href="{% url 'reports:add_report' %}" title="إضافة تقرير">＋</a>
+<!-- زر عائم لإضافة تقرير -->
+<a class="fab" href="{% url 'reports:add_report' %}" title="إضافة تقرير">＋</a>
 {% endblock %}
