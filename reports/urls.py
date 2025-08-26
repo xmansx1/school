@@ -1,13 +1,18 @@
-# reports/urls.py  (استبدل الكتلة الخاصة بالمعلمين فقط)
+# reports/urls.py
 from django.urls import path
 from . import views
 
 app_name = "reports"
 
 urlpatterns = [
+    # تسجيل الدخول والخروج
     path("", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
-    path("home/", views.home_view, name="home"),
+
+    # الصفحة الرئيسية
+    path("home/", views.home, name="home"),
+
+    # تقارير المعلم
     path("add/", views.add_report, name="add_report"),
     path("my-reports/", views.my_reports, name="my_reports"),
 
