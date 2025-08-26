@@ -4,120 +4,96 @@
 
 {% block head %}
 <style>
-  :root{
+  :root {
     --ink:#0f172a;--ink-soft:#1f2937;--muted:#64748b;--line:#e5e7eb;
     --brand:#2563eb;--brand-light:#3b82f6;--accent:#059669;--accent-light:#10b981;
-    --purple:#7c3aed;--card:#ffffff;--bg:#f8fafc;--shadow:0 4px 12px rgba(2,6,23,.08);
-    --shadow-hover:0 14px 30px rgba(2,6,23,.14);--radius:18px;--rsm:12px;--t:all .22s ease;
+    --purple:#7c3aed;--card:#ffffff;--bg:#f8fafc;
+    --shadow:0 4px 12px rgba(2,6,23,.08);
+    --shadow-hover:0 14px 30px rgba(2,6,23,.14);
+    --radius:18px;--rsm:12px;--t:all .22s ease;
   }
-  body{background:var(--bg);font-family:'Tajawal',system-ui,-apple-system,Segoe UI,Roboto}
-  .container{max-width:1200px;margin:0 auto;padding:18px}
+  body { background:var(--bg); font-family:'Tajawal',system-ui; }
+  .container { max-width:1200px; margin:0 auto; padding:18px; }
 
-  /* ===== HERO (بدون لوقو) ===== */
-  .hero{
-    position:relative;overflow:hidden;border-radius:24px;
-    background:linear-gradient(135deg,var(--brand) 0%,var(--accent) 100%);
-    padding:28px 22px;color:#fff;box-shadow:var(--shadow);
-    display:grid;gap:12px
+  /* HERO */
+  .hero {
+    position:relative; overflow:hidden; border-radius:24px;
+    background:linear-gradient(135deg,var(--brand),var(--accent));
+    padding:28px 22px; color:#fff; box-shadow:var(--shadow);
   }
-  .hero-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-  .hello{font-size:1.7rem;font-weight:900;letter-spacing:.2px}
-  .sub{opacity:.95;font-weight:600}
-  .chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-  .chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);
-        color:#fff;padding:8px 12px;border-radius:999px;font-weight:800;font-size:.9rem}
-  .hero::after{
-    content:"";position:absolute;inset:-40% -10% auto auto;height:280px;width:60%;
-    background:radial-gradient(ellipse at center,rgba(255,255,255,.45),transparent 60%);
-    filter:blur(26px);pointer-events:none
-  }
+  .hero-top { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+  .hello { font-size:1.7rem; font-weight:900; }
+  .sub { opacity:.95; font-weight:600; }
 
-  /* ===== GRID ===== */
-  .grid{display:grid;gap:24px;margin-top:22px}
-  @media(min-width:1024px){.grid{grid-template-columns:1.15fr .85fr}}
+  /* GRID */
+  .grid { display:grid; gap:24px; margin-top:22px; }
+  @media(min-width:1024px){ .grid{ grid-template-columns:1.15fr .85fr; } }
 
-  /* ===== KPIs ===== */
-  .kpis{display:grid;gap:16px}
-  @media(min-width:640px){.kpis{grid-template-columns:repeat(3,1fr)}}
-  .kpi{
-    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-    padding:22px;text-align:center;box-shadow:var(--shadow);transition:var(--t)
+  /* KPIs */
+  .kpis { display:grid; gap:16px; }
+  @media(min-width:640px){ .kpis{ grid-template-columns:repeat(3,1fr); } }
+  .kpi {
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:22px; text-align:center; box-shadow:var(--shadow); transition:var(--t);
   }
-  .kpi:hover{transform:translateY(-4px);box-shadow:var(--shadow-hover)}
-  .kpi .num{font-size:1.9rem;font-weight:900;color:#1d4ed8;margin-bottom:6px}
-  .kpi .lbl{color:var(--ink-soft);font-weight:800}
-  .kpi .hint{color:var(--muted);font-size:.9rem}
+  .kpi:hover { transform:translateY(-4px); box-shadow:var(--shadow-hover); }
+  .kpi .num { font-size:1.9rem; font-weight:900; color:#1d4ed8; }
+  .kpi .lbl { color:var(--ink-soft); font-weight:800; }
+  .kpi .hint { color:var(--muted); font-size:.9rem; }
 
-  /* ===== Actions ===== */
-  .actions{display:grid;gap:16px;margin-top:18px}
-  @media(min-width:640px){.actions{grid-template-columns:repeat(2,1fr)}}
-  .tile{
-    display:flex;gap:16px;align-items:center;background:var(--card);border:1px solid var(--line);
-    border-radius:var(--radius);padding:18px;text-decoration:none;color:var(--ink);
-    position:relative;overflow:hidden;box-shadow:var(--shadow);transition:var(--t)
+  /* Actions */
+  .actions { display:grid; gap:16px; margin-top:18px; }
+  @media(min-width:640px){ .actions{ grid-template-columns:repeat(2,1fr); } }
+  .tile {
+    display:flex; gap:16px; align-items:center;
+    background:var(--card); border:1px solid var(--line);
+    border-radius:var(--radius); padding:18px;
+    text-decoration:none; color:var(--ink);
+    box-shadow:var(--shadow); transition:var(--t);
+    position:relative; overflow:hidden;
   }
-  .tile::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(37,99,235,.07),transparent);
-                transform:translateX(-100%);transition:transform .6s ease}
-  .tile:hover{transform:translateY(-3px);border-color:#dbeafe}
-  .tile:hover::before{transform:translateX(0)}
-  .ico{
-    width:52px;height:52px;border-radius:14px;display:grid;place-items:center;color:#fff;
-    font-size:1.4rem;flex-shrink:0
-  }
-  .ico.plus{background:linear-gradient(135deg,var(--accent),var(--accent-light))}
-  .ico.list{background:linear-gradient(135deg,var(--brand),var(--brand-light))}
-  .ico.admin{background:linear-gradient(135deg,var(--purple),#8b5cf6)}
-  .ico.teachers{background:linear-gradient(135deg,#f59e0b,#fbbf24)}
-  .tile-title{font-weight:900;color:var(--ink-soft)}
-  .tile-desc{color:var(--muted);font-size:.92rem}
+  .tile:hover { transform:translateY(-3px); border-color:#dbeafe; }
+  .ico { width:52px; height:52px; border-radius:14px; display:grid; place-items:center; color:#fff; font-size:1.4rem; }
+  .ico.plus{background:linear-gradient(135deg,var(--accent),var(--accent-light));}
+  .ico.list{background:linear-gradient(135deg,var(--brand),var(--brand-light));}
+  .ico.admin{background:linear-gradient(135deg,var(--purple),#8b5cf6);}
+  .ico.teachers{background:linear-gradient(135deg,#f59e0b,#fbbf24);}
+  .tile-title { font-weight:900; color:var(--ink-soft); }
+  .tile-desc { color:var(--muted); font-size:.92rem; }
 
-  /* ===== Card (آخر التقارير) ===== */
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
-  .card-hd{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line)}
-  .card-title{margin:0;font-size:1.1rem;font-weight:900;color:var(--ink-soft)}
-  .list{display:grid;gap:12px;padding:18px}
-  .item{
-    display:grid;gap:12px;grid-template-columns:1fr auto;background:#fff;border:1px solid var(--line);
-    border-radius:14px;padding:14px;transition:var(--t)
-  }
-  .item:hover{border-color:#c7d2fe;box-shadow:0 8px 20px rgba(30,58,138,.08)}
-  .name{font-weight:800;color:var(--ink-soft)}
-  .meta{color:var(--muted);font-size:.92rem}
-  .btns{display:flex;gap:8px;align-items:flex-start}
-  .chip-id{padding:6px 10px;border-radius:999px;background:#eff6ff;color:#1e40af;font-weight:800;font-size:.85rem}
-  .btn-xs{padding:8px 11px;border-radius:10px;border:1px solid #dbeafe;background:#eef2ff;color:#1e3a8a;
-          text-decoration:none;font-weight:800;font-size:.86rem}
-  .btn-xs:hover{background:#e0e7ff}
+  /* Card */
+  .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .card-hd { padding:18px 20px; border-bottom:1px solid var(--line); }
+  .card-title { margin:0; font-size:1.1rem; font-weight:900; color:var(--ink-soft); }
+  .list { display:grid; gap:12px; padding:18px; }
+  .item { display:grid; grid-template-columns:1fr auto; gap:12px; border:1px solid var(--line); border-radius:14px; padding:14px; background:#fff; transition:var(--t); }
+  .item:hover { border-color:#c7d2fe; box-shadow:0 8px 20px rgba(30,58,138,.08); }
+  .name { font-weight:800; color:var(--ink-soft); }
+  .meta { color:var(--muted); font-size:.92rem; }
+  .btns { display:flex; gap:8px; }
+  .chip-id { background:#eff6ff; color:#1e40af; padding:6px 10px; border-radius:999px; font-weight:800; }
+  .btn-xs { padding:7px 10px; border-radius:10px; background:#eef2ff; color:#1e3a8a; font-weight:800; text-decoration:none; }
+  .btn-xs:hover { background:#e0e7ff; }
 
-  /* زر عائم */
-  .fab{
-    position:fixed;bottom:24px;right:24px;width:60px;height:60px;border-radius:50%;
-    display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-light));
-    color:#fff;font-size:28px;box-shadow:0 10px 28px rgba(5,150,105,.45);text-decoration:none;transition:var(--t);z-index:30
-  }
-  .fab:hover{transform:scale(1.08) rotate(6deg)}
+  /* Fab */
+  .fab { position:fixed; bottom:24px; right:24px; width:60px; height:60px; border-radius:50%; display:grid; place-items:center; background:linear-gradient(135deg,var(--accent),var(--accent-light)); color:#fff; font-size:28px; box-shadow:0 10px 28px rgba(5,150,105,.45); text-decoration:none; transition:var(--t); z-index:30; }
+  .fab:hover { transform:scale(1.08) rotate(6deg); }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-
-  <!-- HERO (بدون لوقو بجانب الاسم) -->
   <section class="hero">
     <div class="hero-top">
       <div>
         <div class="hello">مرحباً {{ request.user.name }} 👋</div>
         <div class="sub">اليوم: {% now "Y-m-d" %}</div>
-
       </div>
     </div>
   </section>
 
-  <!-- المحتوى -->
   <section class="grid">
-
     <div>
-      <!-- KPIs -->
       <div class="kpis">
         <div class="kpi">
           <div class="num">{{ stats.today_count|default:"0" }}</div>
@@ -136,57 +112,37 @@
         </div>
       </div>
 
-      <!-- الإجراءات -->
       <div class="actions">
         <a class="tile" href="{% url 'reports:add_report' %}">
           <span class="ico plus">＋</span>
-          <div>
-            <div class="tile-title">إضافة تقرير جديد</div>
-            <div class="tile-desc">سجّل البرنامج والصور والملاحظات بسهولة</div>
-          </div>
+          <div><div class="tile-title">إضافة تقرير جديد</div><div class="tile-desc">سجّل البرنامج والصور والملاحظات بسهولة</div></div>
         </a>
-
         <a class="tile" href="{% url 'reports:my_reports' %}">
           <span class="ico list">📋</span>
-          <div>
-            <div class="tile-title">عرض أعمالي</div>
-            <div class="tile-desc">فلترة حسب التاريخ واستعراض الصور</div>
-          </div>
+          <div><div class="tile-title">عرض أعمالي</div><div class="tile-desc">فلترة حسب التاريخ واستعراض الصور</div></div>
         </a>
-
         {% if request.user.is_staff %}
         <a class="tile" href="{% url 'reports:admin_reports' %}">
           <span class="ico admin">🛡️</span>
-          <div>
-            <div class="tile-title">لوحة المدير</div>
-            <div class="tile-desc">عرض وحذف تقارير جميع المعلمين</div>
-          </div>
+          <div><div class="tile-title">لوحة المدير</div><div class="tile-desc">عرض وحذف تقارير جميع المعلمين</div></div>
         </a>
-
         <a class="tile" href="{% url 'reports:manage_teachers' %}">
           <span class="ico teachers">👨‍🏫</span>
-          <div>
-            <div class="tile-title">إدارة المعلمين</div>
-            <div class="tile-desc">إضافة، تعديل أو حذف معلم</div>
-          </div>
+          <div><div class="tile-title">إدارة المعلمين</div><div class="tile-desc">إضافة، تعديل أو حذف معلم</div></div>
         </a>
         {% endif %}
       </div>
     </div>
 
-    <!-- آخر التقارير -->
     <div class="card">
-      <div class="card-hd">
-        <h3 class="card-title">🕘 آخر تقاريري</h3>
-      </div>
+      <div class="card-hd"><h3 class="card-title">🕘 آخر تقاريري</h3></div>
       <div class="list">
         {% for r in recent_reports %}
           <div class="item">
             <div>
               <div class="name">{{ r.program_name }}</div>
               <div class="meta">
-                التاريخ: {{ r.report_date|date:"Y-m-d" }}{% if r.day_name %} • {{ r.day_name }}{% endif %}
-                • المستفيدون: {{ r.beneficiaries_count }}
+                التاريخ: {{ r.report_date|date:"Y-m-d" }}{% if r.day_name %} • {{ r.day_name }}{% endif %} • المستفيدون: {{ r.beneficiaries_count }}
               </div>
             </div>
             <div class="btns">
@@ -202,6 +158,5 @@
   </section>
 </div>
 
-<!-- زر عائم لإضافة تقرير -->
 <a class="fab" href="{% url 'reports:add_report' %}" title="إضافة تقرير">＋</a>
 {% endblock %}
