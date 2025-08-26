@@ -1,4 +1,6 @@
 from __future__ import annotations
+# أعلى الملف (إن لم تكن موجودة)
+import os, traceback
 
 import logging
 from datetime import date
@@ -93,35 +95,51 @@ def logout_view(request: HttpRequest) -> HttpResponse:
 def home(request: HttpRequest) -> HttpResponse:
     """
     لوحة المعلم: إحصائيات + آخر 5 تقارير للمعلم الحالي.
-    آمن ضد Null/قواعد بيانات فارغة، ويسجل الأخطاء بدل إسقاط الصفحة.
+    - تتعامل بأمان مع قواعد بيانات فارغة/أخطاء.
+    - تسجّل الاستثناء في اللوجز.
+    - يمكن إظهار الـ traceback مؤقتًا عند تفعيل SHOW_ERRORS=1.
     """
-    stats = {
-        "today_count": 0,
-        "total_count": 0,
-        "last_program": "—",
-    }
+    stats = {"today_count": 0, "total_count": 0, "last_program": "—"}
     recent_reports = []
 
     try:
-        my_qs = ActivityReport.objects.select_related("teacher").filter(teacher=request.user)
+        # استعلامات مقيّدة بالمستخدم الحالي
+        my_qs = (
+            ActivityReport.objects
+            .select_related("teacher")
+            .filter(teacher=request.user)
+        )
+
         today = timezone.localdate()
 
         stats["total_count"] = my_qs.count()
         stats["today_count"] = my_qs.filter(report_date=today).count()
 
         last_report = my_qs.order_by("-report_date", "-id").first()
-        if last_report:
-            stats["last_program"] = last_report.program_name or "—"
+        stats["last_program"] = (last_report.program_name if last_report else "—")
 
         recent_reports = my_qs.order_by("-report_date", "-id")[:5]
 
-    except Exception as e:
-        logger.exception("Home view failed: %s", e)
+        # ✅ انتبه لمسار القالب الصحيح
+        return render(
+            request,
+            "reports/home.html",
+            {"stats": stats, "recent_reports": recent_reports},
+        )
 
-    return render(request, "reports/home.html", {
-        "stats": stats,
-        "recent_reports": recent_reports,
-    })
+    except Exception as exc:
+        # يُسجَّل كامل الخطأ في لوجز Render
+        logger.exception("Home view failed")
+        # إظهار الخطأ على الصفحة مؤقتًا عند الحاجة للتشخيص
+        if settings.DEBUG or os.getenv("SHOW_ERRORS") == "1":
+            return HttpResponse(
+                "<h2>Home exception</h2><pre>"
+                + traceback.format_exc()
+                + "</pre>",
+                status=500,
+            )
+        # سلوك الإنتاج الطبيعي: 500 قياسي
+        raise
 
 
 # ---------- إضافة وعرض تقارير المعلم ----------
