@@ -108,6 +108,24 @@ def home_view(request):
     }
     return render(request, "reports/home.html", ctx)
 
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def home(request):
+    # قيم افتراضية فارغة حتى لا يعمل القالب خطأ
+    stats = {
+        "today_count": 0,
+        "total_count": 0,
+        "last_program": "—",
+    }
+    recent_reports = []
+
+    # رجّع القالب مع البيانات
+    return render(request, "home.html", {
+        "stats": stats,
+        "recent_reports": recent_reports,
+    })
 
 
 @login_required(login_url="reports:login")
