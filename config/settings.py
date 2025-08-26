@@ -106,6 +106,7 @@ USE_TZ = True
 
 # ----------------- الملفات الثابتة -----------------
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 if ENV == "production":
     STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
