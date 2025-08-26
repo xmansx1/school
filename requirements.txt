@@ -27,3 +27,4 @@ dj-database-url==3.0.1
 # Cloudinary
 cloudinary
 django-cloudinary-storage
+dj-database-url
