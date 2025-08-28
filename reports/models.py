@@ -8,16 +8,15 @@ from django.core.validators import RegexValidator
 
 
 class TeacherManager(BaseUserManager):
-    def create_user(self, national_id, name, phone=None, password=None, **extra_fields):
-        if not national_id:
-            raise ValueError("يجب إدخال رقم الهوية")
+    def create_user(self, phone, name, password=None, **extra_fields):
+        if not phone:
+            raise ValueError("يجب إدخال رقم الجوال")
         if not name:
             raise ValueError("يجب إدخال اسم المعلم")
 
         user = self.model(
-            national_id=national_id,
-            name=name,
             phone=phone,
+            name=name,
             **extra_fields
         )
         if password:
@@ -27,38 +26,34 @@ class TeacherManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, national_id, name, phone=None, password=None, **extra_fields):
+    def create_superuser(self, phone, name, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        return self.create_user(national_id, name, phone, password, **extra_fields)
 
+        if not password:
+            raise ValueError("يجب تعيين كلمة مرور للمشرف")
+        return self.create_user(phone, name, password, **extra_fields)
 
 class Teacher(AbstractBaseUser, PermissionsMixin):
-    national_id = models.CharField(
-        max_length=10, unique=True,
-        validators=[
-            RegexValidator(r'^\d{10}$', "رقم الهوية يجب أن يكون 10 أرقام فقط")
-        ],
-        verbose_name="رقم الهوية"
-    )
     phone = models.CharField(
-        max_length=10, blank=True, null=True,
+        max_length=10, unique=True,
         validators=[
             RegexValidator(r'^0\d{9}$', "رقم الجوال يجب أن يبدأ بـ 0 ويتكون من 10 أرقام")
         ],
         verbose_name="رقم الجوال"
     )
     name = models.CharField(max_length=100, verbose_name="اسم المعلم")
+
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
     objects = TeacherManager()
 
-    USERNAME_FIELD = "national_id"
-    REQUIRED_FIELDS = ["name", "phone"]
+    USERNAME_FIELD = "phone"   # ✅ تسجيل الدخول برقم الجوال
+    REQUIRED_FIELDS = ["name"]
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.phone})"
 
 # نموذج التقرير
 class ActivityReport(models.Model):

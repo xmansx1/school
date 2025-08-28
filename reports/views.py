@@ -55,26 +55,28 @@ def _is_staff(user) -> bool:
 @require_http_methods(["GET", "POST"])
 def login_view(request: HttpRequest) -> HttpResponse:
     """
-    تسجيل الدخول باستخدام (رقم الهوية + كلمة المرور).
+    تسجيل الدخول باستخدام (رقم الجوال + كلمة المرور).
     يدعم ?next=/path لإعادة التوجيه الآمن بعد الدخول.
     """
     if request.user.is_authenticated:
         return redirect("reports:home")
 
     if request.method == "POST":
-        national_id = (request.POST.get("national_id") or "").strip()
+        phone = (request.POST.get("phone") or "").strip()
         password = request.POST.get("password") or ""
-        # تمرير username لضمان التوافق مع أي Backend يعتمد USERNAME_FIELD
-        user = authenticate(request, username=national_id, password=password)
+
+        # ✅ تمرير username = phone لأنه مرتبط بـ USERNAME_FIELD في الموديل Teacher
+        user = authenticate(request, username=phone, password=password)
 
         if user is not None:
             login(request, user)
             next_url = _safe_next_url(request.POST.get("next") or request.GET.get("next"))
             return redirect(next_url or "reports:home")
-        messages.error(request, "رقم الهوية أو كلمة المرور غير صحيحة")
+        messages.error(request, "رقم الجوال أو كلمة المرور غير صحيحة")
 
     context = {"next": _safe_next_url(request.GET.get("next"))}
     return render(request, "reports/login.html", context)
+
 
 
 @require_http_methods(["POST", "GET"])

@@ -23,10 +23,6 @@
       padding: 20px;
       color: white;
     }
-    .login-logo {
-      max-width: 80px;
-      margin-bottom: 10px;
-    }
     .login-system-title {
       font-size: 1.5rem;
       margin: 0;
@@ -194,20 +190,22 @@
       {% if form.errors %}
       <div class="alert alert-error">
         <i class="fas fa-exclamation-circle"></i>
-        رقم الهوية أو كلمة المرور غير صحيحة
+        رقم الجوال أو كلمة المرور غير صحيحة
       </div>
       {% endif %}
 
       <form method="POST" class="login-form">
         {% csrf_token %}
         
+        <!-- رقم الجوال -->
         <div class="form-group">
-          <label class="form-label"><i class="fas fa-id-card"></i> رقم الهوية</label>
-          <input class="form-input" type="text" name="national_id" maxlength="10" minlength="10"
+          <label class="form-label"><i class="fas fa-phone"></i> رقم الجوال</label>
+          <input class="form-input" type="text" name="phone" pattern="0\d{9}" maxlength="10" minlength="10"
                  inputmode="numeric" autocomplete="username"
-                 placeholder="أدخل رقم الهوية (10 أرقام)" required>
+                 placeholder="أدخل رقم الجوال (10 أرقام)" required>
         </div>
 
+        <!-- كلمة المرور -->
         <div class="form-group">
           <label class="form-label"><i class="fas fa-key"></i> كلمة المرور</label>
           <input class="form-input" type="password" name="password"

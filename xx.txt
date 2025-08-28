@@ -49,3 +49,7 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 
 
 python manage.py check
+
+
+
+# تصميم و تطوير عقاب الشهري 
