@@ -7,14 +7,14 @@ from .models import Teacher, ActivityReport
 # ----------------- إدارة المعلمين -----------------
 class TeacherAdmin(UserAdmin):
     model = Teacher
-    list_display = ("name", "national_id", "phone", "is_active", "is_staff")
+    list_display = ("name", "phone", "is_active", "is_staff")
     list_filter = ("is_active", "is_staff")
-    search_fields = ("name", "national_id", "phone")
-    ordering = ("national_id",)
+    search_fields = ("name", "phone")
+    ordering = ("phone",)
 
     fieldsets = (
-        (None, {"fields": ("national_id", "password")}),
-        ("المعلومات الشخصية", {"fields": ("name", "phone")}),
+        (None, {"fields": ("phone", "password")}),
+        ("المعلومات الشخصية", {"fields": ("name",)}),
         ("الصلاحيات", {
             "fields": (
                 "is_active",
@@ -33,9 +33,8 @@ class TeacherAdmin(UserAdmin):
         (None, {
             "classes": ("wide",),
             "fields": (
-                "national_id",
-                "name",
                 "phone",
+                "name",
                 "password1",
                 "password2",
                 "is_active",
@@ -50,18 +49,21 @@ class ActivityReportAdmin(admin.ModelAdmin):
     list_display = (
         "program_name",
         "teacher",
-        "report_date",   # ✅ التاريخ المدخل من المعلم
-        "day_name",      # ✅ اليوم
+        "date",        # ✅ حقل التاريخ الموجود في الموديل
+        "day",         # ✅ حقل اليوم الموجود في الموديل
         "beneficiaries_count",
-        "preview_image1",  # ✅ عرض صورة مصغرة
+        "preview_image1",
     )
     search_fields = ("program_name", "idea", "teacher__name")
-    list_filter = ("report_date", "day_name", "teacher")
+    list_filter = ("date", "day", "teacher")
 
-    # عرض صورة مصغرة في لوحة الإدارة
     def preview_image1(self, obj):
+        """✅ عرض صورة مصغرة في لوحة الإدارة"""
         if obj.image1:
-            return format_html('<img src="{}" width="60" height="60" style="object-fit: cover; border-radius: 6px;" />', obj.image1.url)
+            return format_html(
+                '<img src="{}" width="60" height="60" style="object-fit: cover; border-radius: 6px;" />',
+                obj.image1.url
+            )
         return "لا توجد صورة"
     preview_image1.short_description = "معاينة الصورة"
 
