@@ -81,6 +81,7 @@
       border-radius: 10px;
       margin-bottom: 10px;
       font-weight: 500;
+      transition: opacity 0.5s ease;
     }
     .alert-error {
       background: #fee2e2;
@@ -199,7 +200,7 @@
           <label class="form-label"><i class="fas fa-phone"></i> رقم الجوال</label>
           <input class="form-input" type="text" name="phone" pattern="0\d{9}" maxlength="10" minlength="10"
                  inputmode="numeric" autocomplete="username"
-                 placeholder="أدخل رقم الجوال" required>
+                 placeholder="أدخل رقم الجوال (10 أرقام)" required>
         </div>
 
         <!-- كلمة المرور -->
@@ -224,6 +225,16 @@
   <footer class="login-footer">
     <p>© تصميم <strong>MANS</strong> | جميع الحقوق محفوظة</p>
   </footer>
+
+  <!-- 🔔 إخفاء الرسائل بعد 3 ثواني -->
+  <script>
+    setTimeout(() => {
+      document.querySelectorAll('.alert').forEach(el => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 500); // يختفي تدريجياً ثم يحذف
+      });
+    }, 3000);
+  </script>
 
 </body>
 </html>
