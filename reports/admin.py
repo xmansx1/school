@@ -49,12 +49,12 @@ class ActivityReportAdmin(admin.ModelAdmin):
     list_display = (
         "program_name",
         "teacher",
-        "report_date",     # الاسم الصحيح في الموديل
-        "day_name",        # الاسم الصحيح في الموديل
+        "report_date",     # ✅ التاريخ الصحيح
+        "day_name",        # ✅ اليوم الصحيح
         "beneficiaries_count",
         "preview_image1",
     )
-    search_fields = ("program_name", "idea", "teacher__name")
+    search_fields = ("program_name", "idea", "teacher__name", "teacher__phone")
     list_filter = ("report_date", "day_name", "teacher")
 
     def preview_image1(self, obj):
