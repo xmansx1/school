@@ -49,16 +49,15 @@ class ActivityReportAdmin(admin.ModelAdmin):
     list_display = (
         "program_name",
         "teacher",
-        "date",        # ✅ حقل التاريخ الموجود في الموديل
-        "day",         # ✅ حقل اليوم الموجود في الموديل
+        "report_date",     # الاسم الصحيح في الموديل
+        "day_name",        # الاسم الصحيح في الموديل
         "beneficiaries_count",
         "preview_image1",
     )
     search_fields = ("program_name", "idea", "teacher__name")
-    list_filter = ("date", "day", "teacher")
+    list_filter = ("report_date", "day_name", "teacher")
 
     def preview_image1(self, obj):
-        """✅ عرض صورة مصغرة في لوحة الإدارة"""
         if obj.image1:
             return format_html(
                 '<img src="{}" width="60" height="60" style="object-fit: cover; border-radius: 6px;" />',
