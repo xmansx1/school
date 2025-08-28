@@ -3,7 +3,7 @@ venv\Scripts\activate      # على Windows
 python manage.py runserver
 
 git add . 
-git commit -m "الرفع09ريندر"
+git commit -m "الرفع10ريندر"
 git push origin main
 
 تحديث قاعدة البيانات على ريندر 

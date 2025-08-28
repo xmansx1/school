@@ -5,13 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>تسجيل الدخول</title>
-  <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-        integrity="sha512-pIVpCfL7Cw3Mqv2GgRrA8w8Gm1r4o2W3fM1d4q7wOoV1+zqU7qGkq3b6bqQxX8wA6N5oO8wP2e7o3Ff3k8mQ3A=="
-        crossorigin="anonymous" referrerpolicy="no-referrer">
-
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* ــــــــ الأساسيات — نفس الهوية البصرية ــــــــ */
     body {
       background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
       min-height: 100vh;
@@ -34,7 +29,7 @@
       font-weight: 800;
     }
 
-    /* الحاوية والكارت */
+    /* الكارت */
     .login-container {
       display: flex;
       justify-content: center;
@@ -57,19 +52,14 @@
       to {opacity: 1; transform: translateY(0);}
     }
 
-    .login-icon {
-      width: 70px;
-      height: 70px;
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 20px;
-      color: white;
-      font-size: 28px;
-      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
+    /* الشعار */
+    .login-logo img {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+      margin-bottom: 20px;
     }
+
     .login-title {
       font-size: 24px;
       font-weight: 800;
@@ -83,28 +73,45 @@
     }
 
     /* الرسائل */
-    .messages { margin-bottom: 15px; }
+    .messages {
+      margin-bottom: 15px;
+    }
     .alert {
       padding: 12px;
       border-radius: 10px;
       margin-bottom: 10px;
       font-weight: 500;
-      border: 1px solid #e5e7eb;
-      transition: opacity .4s ease;
+    }
+    .alert-error {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    .alert-success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    /* الفورم */
+    .form-group {
+      margin-top: 15px;
       text-align: right;
     }
-    .alert-error   { background: #fee2e2; color: #b91c1c; }
-    .alert-success { background: #dcfce7; color: #166534; }
-
-    /* الحقول */
-    .form-group { margin-top: 15px; text-align: right; }
     .form-label {
-      font-size: 14px; font-weight: 600; color: #374151;
-      margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     .form-input {
-      width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 10px;
-      font-size: 15px; transition: 0.2s;
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 15px;
+      transition: 0.2s;
     }
     .form-input:focus {
       border-color: #2563eb;
@@ -114,16 +121,29 @@
 
     /* زر الدخول */
     .btn-login {
-      margin-top: 25px; width: 100%; padding: 14px;
+      margin-top: 25px;
+      width: 100%;
+      padding: 14px;
       background: linear-gradient(135deg, #2563eb, #1d4ed8);
-      color: #fff; font-size: 16px; font-weight: 700;
-      border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s ease;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
-    .btn-login:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(37, 99, 235, 0.4); }
-    .btn-login[disabled]{ opacity:.7; cursor:not-allowed; }
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(37, 99, 235, 0.4);
+    }
 
-    /* نص مساعد */
-    .login-footer-text { margin-top: 15px; font-size: 13px; color: #6b7280; }
+    /* ملاحظة */
+    .login-footer-text {
+      margin-top: 15px;
+      font-size: 13px;
+      color: #6b7280;
+    }
 
     /* الفوتر */
     .login-footer {
@@ -134,7 +154,6 @@
       background: rgba(0,0,0,0.3);
     }
 
-    /* تجاوب */
     @media (max-width: 480px) {
       .login-card { padding: 25px 20px; }
       .login-title { font-size: 20px; }
@@ -151,12 +170,14 @@
   <!-- الكارت -->
   <main class="login-container">
     <div class="login-card">
-      <div class="login-icon"><i class="fas fa-lock"></i></div>
+      <div class="login-logo">
+        <img src="{% static 'img/logo.png' %}" alt="شعار المدرسة">
+      </div>
       <h2 class="login-title">تسجيل الدخول</h2>
       <p class="login-subtitle">مرحباً بك، يرجى إدخال بيانات الدخول الخاصة بك</p>
 
       {% if messages %}
-      <div class="messages" id="messages">
+      <div class="messages">
         {% for message in messages %}
           <div class="alert alert-{{ message.tags }}">{{ message }}</div>
         {% endfor %}
@@ -164,34 +185,31 @@
       {% endif %}
 
       {% if form.errors %}
-      <div class="alert alert-error" id="form-error">
+      <div class="alert alert-error">
         <i class="fas fa-exclamation-circle"></i>
         رقم الجوال أو كلمة المرور غير صحيحة
       </div>
       {% endif %}
 
-      <form method="POST" class="login-form" novalidate>
+      <form method="POST" class="login-form">
         {% csrf_token %}
-        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-
-        <!-- رقم الجوال (10 خانات ويبدأ بـ 0) -->
+        
+        <!-- رقم الجوال -->
         <div class="form-group">
-          <label class="form-label" for="id_phone"><i class="fas fa-phone"></i> رقم الجوال</label>
-          <input id="id_phone" class="form-input" type="text" name="phone"
-                 inputmode="numeric" autocomplete="username" dir="ltr"
-                 placeholder="أدخل رقم الجوال (10 أرقام)"
-                 pattern="0\d{9}" minlength="10" maxlength="10" required
-                 value="{{ request.POST.phone|default_if_none:'' }}">
+          <label class="form-label"><i class="fas fa-phone"></i> رقم الجوال</label>
+          <input class="form-input" type="text" name="phone" pattern="0\d{9}" maxlength="10" minlength="10"
+                 inputmode="numeric" autocomplete="username"
+                 placeholder="أدخل رقم الجوال" required>
         </div>
 
         <!-- كلمة المرور -->
         <div class="form-group">
-          <label class="form-label" for="id_password"><i class="fas fa-key"></i> كلمة المرور</label>
-          <input id="id_password" class="form-input" type="password" name="password"
+          <label class="form-label"><i class="fas fa-key"></i> كلمة المرور</label>
+          <input class="form-input" type="password" name="password"
                  autocomplete="current-password" placeholder="أدخل كلمة المرور" required>
         </div>
 
-        <button class="btn-login" type="submit">
+        <button class="btn-login">
           <i class="fas fa-sign-in-alt"></i> دخول إلى النظام
         </button>
 
@@ -207,26 +225,5 @@
     <p>© تصميم <strong>MANS</strong> | جميع الحقوق محفوظة</p>
   </footer>
 
-  <!-- سلوكيات: إخفاء الرسائل بعد 3 ثوانٍ + منع الإرسال المزدوج -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      // إخفاء الرسائل تلقائياً بعد 3 ثوانٍ (بتأثير تلاشي)
-      setTimeout(function () {
-        document.querySelectorAll('.alert').forEach(function (el) {
-          el.style.opacity = '0';
-          setTimeout(function () { el.remove(); }, 400);
-        });
-      }, 3000);
-
-      // منع الإرسال المزدوج
-      const form = document.querySelector('.login-form');
-      if (form) {
-        form.addEventListener('submit', function () {
-          const btn = form.querySelector('.btn-login');
-          if (btn) btn.setAttribute('disabled', 'disabled');
-        });
-      }
-    });
-  </script>
 </body>
 </html>
