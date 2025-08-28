@@ -61,6 +61,7 @@ from django import forms
 from .models import Teacher
 
 
+# reports/forms.py
 class TeacherForm(forms.ModelForm):
     password = forms.CharField(
         label="كلمة المرور",
@@ -75,7 +76,7 @@ class TeacherForm(forms.ModelForm):
         label="نشط",
         required=False,
         initial=True,
-        widget=forms.CheckboxInput(attrs={"class": "toggle-switch"})
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input"})
     )
 
     is_staff = forms.ChoiceField(
@@ -87,19 +88,11 @@ class TeacherForm(forms.ModelForm):
 
     class Meta:
         model = Teacher
-        fields = ["name", "national_id", "phone", "password", "is_active", "is_staff"]
-
+        fields = ["name", "phone", "password", "is_active", "is_staff"]
         widgets = {
             "name": forms.TextInput(attrs={
                 "class": "form-control",
                 "placeholder": "اسم المعلم"
-            }),
-            "national_id": forms.TextInput(attrs={
-                "class": "form-control",
-                "placeholder": "رقم الهوية (10 أرقام)",
-                "maxlength": "10",
-                "pattern": r"\d{10}",
-                "title": "رقم الهوية يجب أن يتكون من 10 أرقام فقط"
             }),
             "phone": forms.TextInput(attrs={
                 "class": "form-control",
@@ -109,3 +102,12 @@ class TeacherForm(forms.ModelForm):
                 "title": "رقم الجوال يجب أن يبدأ بـ 0 ويتكون من 10 أرقام"
             }),
         }
+
+    def save(self, commit=True):
+        teacher = super().save(commit=False)
+        password = self.cleaned_data.get("password")
+        if password:
+            teacher.set_password(password)  # تشفير كلمة المرور
+        if commit:
+            teacher.save()
+        return teacher
