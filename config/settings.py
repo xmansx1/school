@@ -1,4 +1,3 @@
-# config/settings.py
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -11,18 +10,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ----------------- البيئة -----------------
 SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-secret")
 ENV = os.getenv("ENV", "development").lower()
+
+# كشف تلقائي لبيئة Render (اختياري لكن مفيد)
+if os.getenv("RENDER", "") or os.getenv("RENDER_EXTERNAL_URL", ""):
+    ENV = "production"
+
 DEBUG = ENV == "development"
 
 def _split_env_list(val: str) -> list[str]:
     return [x.strip() for x in (val or "").split(",") if x.strip()]
 
 ALLOWED_HOSTS = _split_env_list(
-    os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,school-7lgm.onrender.com")
+    os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,school-7lgm.onrender.com,.onrender.com")
 )
 
-# CSRF مطلوب في Render/الإنتاج
 CSRF_TRUSTED_ORIGINS = _split_env_list(
-    os.getenv("CSRF_TRUSTED_ORIGINS", "https://*.onrender.com,https://*.render.com")
+    os.getenv("CSRF_TRUSTED_ORIGINS", "https://*.onrender.com,https://*.render.com,https://school-7lgm.onrender.com")
 )
 
 # ----------------- التطبيقات -----------------
@@ -83,7 +86,6 @@ if ENV == "production":
         )
     }
 else:
-    # Development (SQLite افتراضيًا)
     DB_ENGINE = os.getenv("DB_ENGINE", "django.db.backends.sqlite3")
     if "sqlite" in DB_ENGINE:
         DATABASES = {
@@ -104,10 +106,7 @@ else:
             }
         }
 
-
-
-
-# لو خلف Proxy (مثل Render) حافظ على HTTPS
+# خلف Proxy (مثل Render) حافظ على HTTPS
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # ----------------- كلمات المرور -----------------
@@ -122,17 +121,19 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = "ar"
 TIME_ZONE = "Asia/Riyadh"
 USE_I18N = True
-USE_TZ = True  # قاعدة البيانات بالـ UTC، والعرض حسب TIME_ZONE
+USE_TZ = True
 
 # ----------------- الملفات الثابتة -----------------
 STATIC_URL = "/static/"
+# مهم: عرّف دائماً STATIC_ROOT + STATICFILES_DIRS ليتم جمع مجلد المشروع "static"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]  # هنا يوجد img/logo.png
 
+# WhiteNoise storage في الإنتاج فقط (يولد manifest وملفات مضغوطة)
 if ENV == "production":
-    STATIC_ROOT = BASE_DIR / "staticfiles"
     STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-else:
-    # في التطوير نخدم من مجلد static داخل المشروع
-    STATICFILES_DIRS = [BASE_DIR / "static"]
+    # (اختياري) عمر الكاش للملفات الثابتة سنة
+    WHITENOISE_MAX_AGE = 60 * 60 * 24 * 365
 
 # ----------------- ملفات الوسائط -----------------
 MEDIA_URL = "/media/"
@@ -150,7 +151,6 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         "API_KEY": CLOUDINARY_API_KEY,
         "API_SECRET": CLOUDINARY_API_SECRET,
     }
-# إن لم تتوفر القيم أعلاه سنستخدم FileSystemStorage محليًا تلقائيًا.
 
 # ----------------- الأمان في الإنتاج -----------------
 if ENV == "production":
@@ -162,7 +162,6 @@ if ENV == "production":
     SECURE_HSTS_PRELOAD = True
     X_FRAME_OPTIONS = "DENY"
 else:
-    # تسهيل التطوير
     SECURE_SSL_REDIRECT = False
 
 # ----------------- تسجيل الأحداث (Logging) -----------------
@@ -170,9 +169,7 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "handlers": {
-        "console": {"class": "logging.StreamHandler"},
-    },
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
     "root": {"handlers": ["console"], "level": LOG_LEVEL},
     "loggers": {
         "django.request": {"handlers": ["console"], "level": LOG_LEVEL, "propagate": False},
@@ -182,10 +179,9 @@ LOGGING = {
 # ----------------- المستخدم المخصص -----------------
 AUTH_USER_MODEL = "reports.Teacher"
 
-# (اختياري) إعادة التوجيه بعد الدخول/الخروج
+# توجيه افتراضي
 LOGIN_URL = "reports:login"
 LOGIN_REDIRECT_URL = "reports:home"
 LOGOUT_REDIRECT_URL = "reports:login"
 
-# الحقل الافتراضي
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
