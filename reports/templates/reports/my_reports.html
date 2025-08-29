@@ -168,15 +168,15 @@
     <form method="GET" class="filters">
       <div class="filter-group">
         <label>من تاريخ</label>
-        <input type="date" name="start_date" value="{{ request.GET.start_date }}">
+        <input type="date" name="start_date" value="{{ start_date }}">
       </div>
       <div class="filter-group">
         <label>إلى تاريخ</label>
-        <input type="date" name="end_date" value="{{ request.GET.end_date }}">
+        <input type="date" name="end_date" value="{{ end_date }}">
       </div>
       <div>
         <button type="submit" class="btn btn-primary">🔍 تصفية</button>
-        {% if request.GET.start_date or request.GET.end_date %}
+        {% if start_date or end_date %}
           <a href="{% url 'reports:my_reports' %}" class="btn btn-outline">🗑️ مسح</a>
         {% endif %}
       </div>
@@ -185,22 +185,34 @@
     <!-- بطاقات (موبايل) -->
     {% for report in reports %}
       <div class="report-card">
-        <div class="card-row"><span class="card-label">📅 التاريخ:</span>
-          <span class="card-value">{{ report.report_date|date:"Y-m-d" }} - {{ report.day_name }}</span></div>
-        <div class="card-row"><span class="card-label">📘 البرنامج:</span>
-          <span class="card-value">{{ report.program_name }}</span></div>
-        <div class="card-row"><span class="card-label">👥 المستفيدون:</span>
-          <span class="card-value">{{ report.beneficiaries_count }}</span></div>
-        <div class="card-row"><span class="card-label">💡 الفكرة:</span>
-          <div class="idea-content">{{ report.idea }}</div></div>
+        <div class="card-row">
+          <span class="card-label">📅 التاريخ:</span>
+          <span class="card-value">{{ report.report_date|date:"Y-m-d" }} - {{ report.day_name|default_if_none:"" }}</span>
+        </div>
+        <div class="card-row">
+          <span class="card-label">📘 العنوان:</span>
+          <span class="card-value">{{ report.title }}</span>
+        </div>
+        <div class="card-row">
+          <span class="card-label">🏷️ التصنيف:</span>
+          <span class="card-value">{{ report.get_category_display }}</span>
+        </div>
+        <div class="card-row">
+          <span class="card-label">👥 المستفيدون:</span>
+          <span class="card-value">{{ report.beneficiaries_count|default_if_none:"-" }}</span>
+        </div>
+        <div class="card-row">
+          <span class="card-label">💡 الفكرة:</span>
+          <div class="idea-content">{{ report.idea|default_if_none:""|linebreaksbr }}</div>
+        </div>
         {% if report.image1 or report.image2 or report.image3 or report.image4 %}
         <div class="card-row">
           <span class="card-label">🖼️ الصور:</span>
           <div class="image-gallery">
-            {% if report.image1 %}<img src="{{ report.image1.url }}" onclick="openModal(this.src)">{% endif %}
-            {% if report.image2 %}<img src="{{ report.image2.url }}" onclick="openModal(this.src)">{% endif %}
-            {% if report.image3 %}<img src="{{ report.image3.url }}" onclick="openModal(this.src)">{% endif %}
-            {% if report.image4 %}<img src="{{ report.image4.url }}" onclick="openModal(this.src)">{% endif %}
+            {% if report.image1 %}<img src="{{ report.image1.url }}" alt="image1" onclick="openModal(this.src)">{% endif %}
+            {% if report.image2 %}<img src="{{ report.image2.url }}" alt="image2" onclick="openModal(this.src)">{% endif %}
+            {% if report.image3 %}<img src="{{ report.image3.url }}" alt="image3" onclick="openModal(this.src)">{% endif %}
+            {% if report.image4 %}<img src="{{ report.image4.url }}" alt="image4" onclick="openModal(this.src)">{% endif %}
           </div>
         </div>
         {% endif %}
@@ -218,7 +230,8 @@
         <thead>
           <tr>
             <th>📅 التاريخ</th>
-            <th>📘 البرنامج</th>
+            <th>📘 العنوان</th>
+            <th>🏷️ التصنيف</th>
             <th>👥 المستفيدون</th>
             <th>💡 الفكرة</th>
             <th>🖼️ الصور</th>
@@ -227,39 +240,40 @@
         <tbody>
           {% for report in reports %}
           <tr>
-            <td>{{ report.report_date|date:"Y-m-d" }}<br><small>{{ report.day_name }}</small></td>
-            <td>{{ report.program_name }}</td>
-            <td>{{ report.beneficiaries_count }}</td>
-            <td>{{ report.idea }}</td>
+            <td>{{ report.report_date|date:"Y-m-d" }}<br><small>{{ report.day_name|default_if_none:"" }}</small></td>
+            <td>{{ report.title }}</td>
+            <td>{{ report.get_category_display }}</td>
+            <td>{{ report.beneficiaries_count|default_if_none:"-" }}</td>
+            <td>{{ report.idea|default_if_none:""|truncatewords:20 }}</td>
             <td>
-              {% if report.image1 %}<img src="{{ report.image1.url }}" onclick="openModal(this.src)">{% endif %}
-              {% if report.image2 %}<img src="{{ report.image2.url }}" onclick="openModal(this.src)">{% endif %}
-              {% if report.image3 %}<img src="{{ report.image3.url }}" onclick="openModal(this.src)">{% endif %}
-              {% if report.image4 %}<img src="{{ report.image4.url }}" onclick="openModal(this.src)">{% endif %}
+              {% if report.image1 %}<img src="{{ report.image1.url }}" alt="img1" onclick="openModal(this.src)">{% endif %}
+              {% if report.image2 %}<img src="{{ report.image2.url }}" alt="img2" onclick="openModal(this.src)">{% endif %}
+              {% if report.image3 %}<img src="{{ report.image3.url }}" alt="img3" onclick="openModal(this.src)">{% endif %}
+              {% if report.image4 %}<img src="{{ report.image4.url }}" alt="img4" onclick="openModal(this.src)">{% endif %}
             </td>
           </tr>
           {% empty %}
-          <tr><td colspan="5">لا توجد تقارير</td></tr>
+          <tr><td colspan="6">لا توجد تقارير</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
 
-    <!-- ترقيم الصفحات -->
+    <!-- ترقيم الصفحات (يحافظ على الفلاتر) -->
     {% if reports.paginator.num_pages > 1 %}
     <div class="pagination">
       {% if reports.has_previous %}
-        <a class="page-link" href="?page={{ reports.previous_page_number }}">‹ السابق</a>
+        <a class="page-link" href="?page={{ reports.previous_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">‹ السابق</a>
       {% endif %}
       {% for num in reports.paginator.page_range %}
         {% if num == reports.number %}
           <span class="page-current">{{ num }}</span>
         {% else %}
-          <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+          <a class="page-link" href="?page={{ num }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{{ num }}</a>
         {% endif %}
       {% endfor %}
       {% if reports.has_next %}
-        <a class="page-link" href="?page={{ reports.next_page_number }}">التالي ›</a>
+        <a class="page-link" href="?page={{ reports.next_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">التالي ›</a>
       {% endif %}
     </div>
     {% endif %}
@@ -276,8 +290,10 @@
 
 <script>
   function openModal(src) {
-    document.getElementById('modalImage').src = src;
-    document.getElementById('imageModal').style.display = 'flex';
+    const img = document.getElementById('modalImage');
+    img.src = src;
+    const modal = document.getElementById('imageModal');
+    modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
   }
   function closeModal() {

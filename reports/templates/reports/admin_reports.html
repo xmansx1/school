@@ -28,10 +28,23 @@
                  maxlength="10" pattern="\d{10}"
                  placeholder="أدخل 10 أرقام" class="filter-input"/>
         </div>
+
+        {% if categories %}
+        <div class="filter-group">
+          <label>🏷️ التصنيف</label>
+          <select name="category" class="filter-input">
+            <option value="">كل التصنيفات</option>
+            {% for c_val, c_label in categories %}
+              <option value="{{ c_val }}" {% if category == c_val %}selected{% endif %}>{{ c_label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
       </div>
+
       <div class="filter-actions">
         <button class="btn btn-primary" type="submit"><i class="fas fa-check"></i> تطبيق الفلاتر</button>
-        {% if start_date or end_date or teacher_national_id %}
+        {% if start_date or end_date or teacher_national_id or category %}
         <a href="{% url 'reports:admin_reports' %}" class="btn btn-outline"><i class="fas fa-times"></i> مسح الفلاتر</a>
         {% endif %}
       </div>
@@ -44,7 +57,8 @@
           <tr>
             <th>📅 التاريخ</th>
             <th>👨‍🏫 المعلم</th>
-            <th>📖 البرنامج</th>
+            <th>📖 العنوان</th>
+            <th>🏷️ التصنيف</th>
             <th>👥 المستفيدون</th>
             <th>💡 الفكرة</th>
             <th>🖼 الصور</th>
@@ -59,9 +73,16 @@
               <small class="text-muted">{{ r.day_name }}</small>
             </td>
             <td>{{ r.teacher.name }}</td>
-            <td>{{ r.program_name }}</td>
+            <td>{{ r.title }}</td>
+            <td>{{ r.get_category_display }}</td>
             <td class="text-center">{{ r.beneficiaries_count }}</td>
-            <td>{{ r.idea|truncatewords:12 }}</td>
+
+            <td>
+              <!-- نخزن نص التقرير الخام داخل textarea مخفية -->
+              <textarea id="idea-{{ r.pk }}" style="display:none;">{{ r.idea|default_if_none:''|escape }}</textarea>
+              {{ r.idea|truncatewords:12 }}
+            </td>
+
             <td>
               <div class="table-images">
                 {% if r.image1 %}<img src="{{ r.image1.url }}" alt="صورة 1">{% endif %}
@@ -73,16 +94,11 @@
             <td>
               <div class="action-buttons">
                 <button class="btn btn-show-idea"
-                        data-idea="{{ r.idea|escape }}"
-                        data-teacher="{{ r.teacher.name }}"
-                        data-program="{{ r.program_name }}"
-                        data-date="{{ r.report_date|date:'Y-m-d' }} - {{ r.day_name }}"
-                        data-images="
-                          {% if r.image1 %}{{ r.image1.url }}|{% endif %}
-                          {% if r.image2 %}{{ r.image2.url }}|{% endif %}
-                          {% if r.image3 %}{{ r.image3.url }}|{% endif %}
-                          {% if r.image4 %}{{ r.image4.url }}{% endif %}
-                        ">
+                        data-idea-id="idea-{{ r.pk }}"
+                        data-teacher="{{ r.teacher.name|escapejs }}"
+                        data-program="{{ r.title|escapejs }}"
+                        data-date="{{ r.report_date|date:'Y-m-d' }} - {{ r.day_name|default_if_none:''|escapejs }}"
+                        data-images="{% if r.image1 %}{{ r.image1.url }}{% endif %}|{% if r.image2 %}{{ r.image2.url }}{% endif %}|{% if r.image3 %}{{ r.image3.url }}{% endif %}|{% if r.image4 %}{{ r.image4.url }}{% endif %}">
                   <i class="fas fa-eye"></i>
                 </button>
                 <a href="{% url 'reports:report_print' r.pk %}" target="_blank" class="btn btn-print"><i class="fas fa-print"></i></a>
@@ -95,7 +111,7 @@
             </td>
           </tr>
           {% empty %}
-          <tr><td colspan="7" class="text-center">لا توجد تقارير</td></tr>
+          <tr><td colspan="8" class="text-center">لا توجد تقارير</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -109,26 +125,25 @@
           <span>📅 {{ r.report_date|date:"Y-m-d" }} – {{ r.day_name }}</span>
           <span>👨‍🏫 {{ r.teacher.name }}</span>
         </div>
-        <p class="report-program">📖 {{ r.program_name }} | 👥 {{ r.beneficiaries_count }}</p>
+        <p class="report-program">📖 {{ r.title }} | 🏷️ {{ r.get_category_display }} | 👥 {{ r.beneficiaries_count }}</p>
+
+        <!-- نسخة الموبايل من textarea المخفية -->
+        <textarea id="idea-m-{{ r.pk }}" style="display:none;">{{ r.idea|default_if_none:''|escape }}</textarea>
         <p class="report-idea">{{ r.idea|truncatewords:20 }}</p>
+
         <div class="report-images">
-          {% if r.image1 %}<img src="{{ r.image1.url }}">{% endif %}
-          {% if r.image2 %}<img src="{{ r.image2.url }}">{% endif %}
-          {% if r.image3 %}<img src="{{ r.image3.url }}">{% endif %}
-          {% if r.image4 %}<img src="{{ r.image4.url }}">{% endif %}
+          {% if r.image1 %}<img src="{{ r.image1.url }}" alt="img">{% endif %}
+          {% if r.image2 %}<img src="{{ r.image2.url }}" alt="img">{% endif %}
+          {% if r.image3 %}<img src="{{ r.image3.url }}" alt="img">{% endif %}
+          {% if r.image4 %}<img src="{{ r.image4.url }}" alt="img">{% endif %}
         </div>
         <div class="card-actions">
           <button class="btn btn-show-idea"
-                  data-idea="{{ r.idea|escape }}"
-                  data-teacher="{{ r.teacher.name }}"
-                  data-program="{{ r.program_name }}"
-                  data-date="{{ r.report_date|date:'Y-m-d' }} - {{ r.day_name }}"
-                  data-images="
-                    {% if r.image1 %}{{ r.image1.url }}|{% endif %}
-                    {% if r.image2 %}{{ r.image2.url }}|{% endif %}
-                    {% if r.image3 %}{{ r.image3.url }}|{% endif %}
-                    {% if r.image4 %}{{ r.image4.url }}{% endif %}
-                  ">
+                  data-idea-id="idea-m-{{ r.pk }}"
+                  data-teacher="{{ r.teacher.name|escapejs }}"
+                  data-program="{{ r.title|escapejs }}"
+                  data-date="{{ r.report_date|date:'Y-m-d' }} - {{ r.day_name|default_if_none:''|escapejs }}"
+                  data-images="{% if r.image1 %}{{ r.image1.url }}{% endif %}|{% if r.image2 %}{{ r.image2.url }}{% endif %}|{% if r.image3 %}{{ r.image3.url }}{% endif %}|{% if r.image4 %}{{ r.image4.url }}{% endif %}">
             👁 عرض
           </button>
           <a href="{% url 'reports:report_print' r.pk %}" target="_blank" class="btn btn-print">🖨 طباعة</a>
@@ -143,6 +158,19 @@
       <p class="text-center">لا توجد تقارير</p>
       {% endfor %}
     </div>
+
+    <!-- ✅ ترقيم الصفحات -->
+    {% if reports.paginator.num_pages > 1 %}
+    <div class="pagination">
+      {% if reports.has_previous %}
+        <a class="page-btn" href="?page={{ reports.previous_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if teacher_national_id %}&teacher_national_id={{ teacher_national_id }}{% endif %}{% if category %}&category={{ category }}{% endif %}">السابق</a>
+      {% endif %}
+      <span class="page-current">صفحة {{ reports.number }} من {{ reports.paginator.num_pages }}</span>
+      {% if reports.has_next %}
+        <a class="page-btn" href="?page={{ reports.next_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if teacher_national_id %}&teacher_national_id={{ teacher_national_id }}{% endif %}{% if category %}&category={{ category }}{% endif %}">التالي</a>
+      {% endif %}
+    </div>
+    {% endif %}
   </div>
 </div>
 
@@ -150,11 +178,14 @@
 <div id="ideaModal" class="modern-modal">
   <div class="modal-dialog">
     <button class="modal-close"><i class="fas fa-times"></i></button>
-    <h2>💡 الفكرة الكاملة</h2>
-    <p id="modalIdea" class="modal-idea"></p>
+    <h2 style="margin:0 0 8px 0; font-weight:800;">💡 التقرير كامل</h2>
+
+    <!-- هنا نعرض النص كما كُتب بالأسطر -->
+    <div id="modalIdea" class="modal-idea"></div>
+
     <div class="modal-meta">
       <p>👨‍🏫 <b>المعلم:</b> <span id="modalTeacher"></span></p>
-      <p>📖 <b>البرنامج:</b> <span id="modalProgram"></span></p>
+      <p>📖 <b>العنوان:</b> <span id="modalProgram"></span></p>
       <p>📅 <b>التاريخ:</b> <span id="modalDate"></span></p>
     </div>
     <div id="modalImages" class="modal-images"></div>
@@ -187,6 +218,8 @@
 
 /* ✅ الأزرار */
 .btn { padding:6px 12px; border-radius:6px; font-size:13px; cursor:pointer; border:none; }
+.btn-primary { background:#3b82f6; color:#fff; }
+.btn-outline { background:#fff; color:#1f2937; border:1px solid #cbd5e1; }
 .btn-show-idea { background:#3b82f6; color:#fff; }
 .btn-print { background:#10b981; color:#fff; }
 .btn-danger { background:#ef4444; color:#fff; }
@@ -204,9 +237,22 @@
 
 /* ✅ المودال */
 .modern-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:2000; justify-content:center; align-items:center; overflow-y:auto; }
-.modal-dialog { background:#fff; padding:20px; border-radius:16px; width:95%; max-width:600px; position:relative; }
+.modal-dialog { background:#fff; padding:20px; border-radius:16px; width:95%; max-width:650px; position:relative; }
 .modal-close { position:absolute; top:10px; left:10px; background:#ef4444; color:#fff; border:none; width:30px; height:30px; border-radius:50%; cursor:pointer; }
-.modal-idea { white-space:pre-line; margin:12px 0; font-size:15px; line-height:1.6; }
+
+/* ✅ نص التقرير داخل المودال — يحافظ على الأسطر */
+.modal-idea {
+  white-space: pre-line;
+  margin: 12px 0;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #1e293b;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+}
+
 .modal-meta p { margin:4px 0; font-size:14px; color:#475569; }
 
 /* ✅ صور المودال */
@@ -227,6 +273,11 @@
 }
 .modal-images img:hover { transform:scale(1.08); box-shadow:0 8px 20px rgba(0,0,0,0.25); }
 
+/* ✅ الترقيم */
+.pagination { display:flex; gap:10px; align-items:center; justify-content:center; margin-top:16px; }
+.page-btn { padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; color:#111827; text-decoration:none; }
+.page-current { color:#374151; font-size:13px; }
+
 /* ✅ التجاوب */
 .desktop-only { display:block; }
 .mobile-only { display:none; }
@@ -246,31 +297,39 @@ document.addEventListener("DOMContentLoaded", function () {
   const modalImages = document.getElementById("modalImages");
   const closeBtn = document.querySelector(".modal-close");
 
-  document.querySelectorAll(".btn-show-idea").forEach(btn => {
-    btn.addEventListener("click", () => {
-      modalIdea.textContent = btn.dataset.idea;
-      modalTeacher.textContent = btn.dataset.teacher;
-      modalProgram.textContent = btn.dataset.program;
-      modalDate.textContent = btn.dataset.date;
+  function openModalFromBtn(btn) {
+    // نقرأ النص الخام من الـ textarea المخفية
+    const ideaId = btn.dataset.ideaId;
+    const ta = ideaId ? document.getElementById(ideaId) : null;
+    let idea = ta ? ta.value : "";
 
-      modalImages.innerHTML = "";
-      if (btn.dataset.images.trim()) {
-        btn.dataset.images.split("|").forEach(url => {
-          if(url.trim()){
-            const img = document.createElement("img");
-            img.src = url.trim();
-            modalImages.appendChild(img);
-          }
-        });
-      }
-      modal.style.display = "flex";
+    // Normalize: نحذف \r (CR) ونُبقي \n (LF) حتى تعمل pre-line
+    idea = idea.replace(/\r/g, "");
+
+    modalIdea.innerText = idea; // آمن ويعرض الأسطر كما هي
+
+    modalTeacher.innerText = btn.dataset.teacher || "";
+    modalProgram.innerText = btn.dataset.program || "";
+    modalDate.innerText = btn.dataset.date || "";
+
+    modalImages.innerHTML = "";
+    (btn.dataset.images || "").split("|").map(s => s.trim()).filter(Boolean).forEach(url => {
+      const img = document.createElement("img");
+      img.src = url;
+      modalImages.appendChild(img);
     });
+
+    modal.style.display = "flex";
+  }
+
+  document.querySelectorAll(".btn-show-idea").forEach(btn => {
+    btn.addEventListener("click", () => openModalFromBtn(btn));
   });
 
   closeBtn.addEventListener("click", () => modal.style.display = "none");
   window.addEventListener("click", e => { if (e.target === modal) modal.style.display = "none"; });
 
-  /* ✅ Lightbox */
+  // Lightbox بسيط
   document.addEventListener("click", function(e) {
     if (e.target.matches(".modal-images img")) {
       const img = e.target;
@@ -283,10 +342,9 @@ document.addEventListener("DOMContentLoaded", function () {
       overlay.style.justifyContent = "center";
       overlay.style.zIndex = 3000;
       overlay.innerHTML = `
-        <img src="${img.src}" 
-             style="max-width:90%; max-height:90%; 
-                    border-radius:12px; 
-                    box-shadow:0 6px 30px rgba(0,0,0,0.5);">
+        <img src="${img.src}" style="max-width:90%; max-height:90%;
+                                     border-radius:12px;
+                                     box-shadow:0 6px 30px rgba(0,0,0,0.5);">
       `;
       overlay.addEventListener("click", () => overlay.remove());
       document.body.appendChild(overlay);
@@ -294,4 +352,6 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 </script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 {% endblock %}

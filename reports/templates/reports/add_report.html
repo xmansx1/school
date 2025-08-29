@@ -24,229 +24,37 @@
     --transition: all 0.2s ease;
   }
 
-  body {
-    background-color: var(--bg);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-
-  .container {
-    max-width: 850px;
-    margin: 0 auto;
-    padding: 20px 16px;
-  }
-
-  .card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 28px;
-    box-shadow: var(--shadow);
-    transition: var(--transition);
-  }
-
-  .card:hover {
-    box-shadow: var(--shadow-hover);
-  }
-
-  .section-title {
-    font-size: 1.7rem;
-    font-weight: 900;
-    color: var(--ink-soft);
-    margin: 0 0 24px 0;
-    padding-bottom: 16px;
-    border-bottom: 2px solid #f1f5f9;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .form-grid {
-    display: grid;
-    gap: 20px;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  label {
-    font-weight: 700;
-    color: var(--ink-soft);
-    font-size: 0.95rem;
-  }
-
-  input, textarea {
-    padding: 14px 16px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    font-size: 1rem;
-    transition: var(--transition);
-    background: #fff;
-    font-family: inherit;
-  }
-
-  input:focus, textarea:focus {
-    outline: none;
-    border-color: var(--brand-light);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-  }
-
-  textarea {
-    min-height: 120px;
-    resize: vertical;
-  }
-
-  .images-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 16px;
-    margin-top: 8px;
-  }
-
-  .image-upload {
-    position: relative;
-    border: 2px dashed #cbd5e1;
-    border-radius: var(--radius-sm);
-    padding: 20px 10px;
-    text-align: center;
-    transition: var(--transition);
-    background: #fafafa;
-    cursor: pointer;
-  }
-
-  .image-upload:hover {
-    border-color: var(--brand-light);
-    background: #f0f9ff;
-  }
-
-  .image-upload input[type="file"] {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-  }
-
-  .upload-icon {
-    font-size: 2rem;
-    color: #94a3b8;
-    margin-bottom: 8px;
-  }
-
-  .upload-text {
-    font-size: 0.85rem;
-    color: var(--muted);
-  }
-
-  .preview-container {
-    margin-top: 14px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 12px;
-  }
-
-  .image-preview {
-    position: relative;
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    height: 100px;
-    background: #f1f5f9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .image-preview img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: cover;
-  }
-
-  .remove-image {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: rgba(239, 68, 68, 0.9);
-    color: white;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    cursor: pointer;
-    transition: var(--transition);
-  }
-
-  .remove-image:hover {
-    background: var(--error);
-    transform: scale(1.1);
-  }
-
-  .form-note {
-    font-size: 0.85rem;
-    color: var(--muted);
-    margin-top: 6px;
-    padding: 10px 14px;
-    background: #f8fafc;
-    border-radius: var(--radius-sm);
-    border-left: 3px solid var(--brand);
-  }
-
-  .btn {
-    padding: 14px 24px;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: var(--transition);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    text-decoration: none;
-  }
-
-  .btn-accent {
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
-    color: white;
-    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
-  }
-
-  .btn-accent:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(5, 150, 105, 0.35);
-  }
-
-  .btn-outline {
-    background: transparent;
-    color: var(--ink-soft);
-    border: 1px solid var(--line);
-  }
-
-  .btn-outline:hover {
-    background: #f8fafc;
-    border-color: var(--brand-light);
-  }
-
-  .form-actions {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-    margin-top: 24px;
-  }
-
-  @media (min-width: 640px) {
-    .form-actions {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
+  body { background-color: var(--bg); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+  .container { max-width: 850px; margin: 0 auto; padding: 20px 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); transition: var(--transition); }
+  .card:hover { box-shadow: var(--shadow-hover); }
+  .section-title { font-size: 1.7rem; font-weight: 900; color: var(--ink-soft); margin: 0 0 24px 0; padding-bottom: 16px; border-bottom: 2px solid #f1f5f9; display: flex; align-items: center; gap: 10px; }
+  .form-grid { display: grid; gap: 20px; }
+  .form-group { display: flex; flex-direction: column; gap: 8px; }
+  label { font-weight: 700; color: var(--ink-soft); font-size: 0.95rem; }
+  input, textarea, select { padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 1rem; transition: var(--transition); background: #fff; font-family: inherit; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--brand-light); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+  textarea { min-height: 120px; resize: vertical; }
+  .images-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-top: 8px; }
+  .image-upload { position: relative; border: 2px dashed #cbd5e1; border-radius: var(--radius-sm); padding: 20px 10px; text-align: center; transition: var(--transition); background: #fafafa; cursor: pointer; }
+  .image-upload:hover { border-color: var(--brand-light); background: #f0f9ff; }
+  .image-upload input[type="file"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+  .upload-icon { font-size: 2rem; color: #94a3b8; margin-bottom: 8px; }
+  .upload-text { font-size: 0.85rem; color: var(--muted); }
+  .preview-container { margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; }
+  .image-preview { position: relative; border-radius: var(--radius-sm); overflow: hidden; height: 100px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; }
+  .image-preview img { max-width: 100%; max-height: 100%; object-fit: cover; }
+  .remove-image { position: absolute; top: 5px; right: 5px; background: rgba(239,68,68,0.9); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; transition: var(--transition); }
+  .remove-image:hover { background: var(--error); transform: scale(1.1); }
+  .form-note { font-size: 0.85rem; color: var(--muted); margin-top: 6px; padding: 10px 14px; background: #f8fafc; border-radius: var(--radius-sm); border-left: 3px solid var(--brand); }
+  .btn { padding: 14px 24px; border: none; border-radius: var(--radius-sm); font-size: 1rem; font-weight: 700; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
+  .btn-accent { background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%); color: white; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25); }
+  .btn-accent:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(5,150,105,0.35); }
+  .btn-outline { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); }
+  .btn-outline:hover { background: #f8fafc; border-color: var(--brand-light); }
+  .form-actions { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 24px; }
+  .field-error { color: var(--error); background: var(--error-bg); border: 1px solid #fecaca; padding: 10px 12px; border-radius: var(--radius-sm); font-size: 0.9rem; }
+  @media (min-width: 640px) { .form-actions { grid-template-columns: 1fr 1fr; } }
 </style>
 {% endblock %}
 
@@ -255,36 +63,76 @@
   <div class="card">
     <h2 class="section-title">➕ إضافة تقرير جديد</h2>
 
+    {% if messages %}
+      {% for message in messages %}
+        <div class="field-error" style="margin-bottom:12px;">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    {% if form.non_field_errors %}
+      <div class="field-error" style="margin-bottom:12px;">
+        {% for e in form.non_field_errors %}• {{ e }}<br>{% endfor %}
+      </div>
+    {% endif %}
+
     <form method="POST" enctype="multipart/form-data" class="form-grid">
       {% csrf_token %}
 
-      <!-- اختيار التاريخ -->
+      <!-- العنوان / البرنامج -->
       <div class="form-group">
-        <label for="id_report_date">📅 اختر التاريخ</label>
-        <input type="date" id="id_report_date" name="report_date" required>
+        <label for="{{ form.title.id_for_label }}">العنوان</label>
+        {{ form.title }}
+        {% if form.title.errors %}
+          <div class="field-error">{% for e in form.title.errors %}• {{ e }}<br>{% endfor %}</div>
+        {% endif %}
       </div>
 
-      <!-- اليوم يظهر تلقائياً -->
+      <!-- التاريخ -->
       <div class="form-group">
-        <label for="id_day_name">📌 اليوم</label>
-        <input type="text" id="id_day_name" name="day_name" readonly placeholder="سيظهر اليوم هنا">
+        <label for="{{ form.report_date.id_for_label }}">📅 اختر التاريخ</label>
+        {{ form.report_date }}
+        {% if form.report_date.errors %}
+          <div class="field-error">{% for e in form.report_date.errors %}• {{ e }}<br>{% endfor %}</div>
+        {% endif %}
       </div>
 
+      <!-- اليوم (يُولّد تلقائياً) -->
       <div class="form-group">
-        <label for="id_program_name">اسم البرنامج</label>
-        {{ form.program_name }}
+        <label for="{{ form.day_name.id_for_label }}">📌 اليوم</label>
+        {{ form.day_name }}
+        {% if form.day_name.errors %}
+          <div class="field-error">{% for e in form.day_name.errors %}• {{ e }}<br>{% endfor %}</div>
+        {% endif %}
       </div>
 
+      <!-- التصنيف -->
       <div class="form-group">
-        <label for="id_beneficiaries_count">عدد المستفيدين</label>
+        <label for="{{ form.category.id_for_label }}">التصنيف</label>
+        {{ form.category }}
+        {% if form.category.errors %}
+          <div class="field-error">{% for e in form.category.errors %}• {{ e }}<br>{% endfor %}</div>
+        {% endif %}
+      </div>
+
+      <!-- عدد المستفيدين -->
+      <div class="form-group">
+        <label for="{{ form.beneficiaries_count.id_for_label }}">عدد المستفيدين</label>
         {{ form.beneficiaries_count }}
+        {% if form.beneficiaries_count.errors %}
+          <div class="field-error">{% for e in form.beneficiaries_count.errors %}• {{ e }}<br>{% endfor %}</div>
+        {% endif %}
       </div>
 
+      <!-- الوصف / الفكرة -->
       <div class="form-group">
-        <label for="id_idea">فكرة البرنامج</label>
+        <label for="{{ form.idea.id_for_label }}"> الوصف</label>
         {{ form.idea }}
+        {% if form.idea.errors %}
+          <div class="field-error">{% for e in form.idea.errors %}• {{ e }}<br>{% endfor %}</div>
+        {% endif %}
       </div>
 
+      <!-- الصور -->
       <div class="form-group">
         <label>الصور (اختياري)</label>
         <div class="images-grid">
@@ -310,9 +158,17 @@
           </div>
         </div>
         <div class="preview-container" id="preview-container"></div>
-        <div class="form-note">
-          الامتدادات المسموحة: JPG, PNG - الحجم الأقصى لكل صورة: 2MB
-        </div>
+        <div class="form-note">الامتدادات المسموحة: JPG, PNG — الحجم الأقصى لكل صورة: 2MB</div>
+
+        {% if form.image1.errors or form.image2.errors or form.image3.errors or form.image4.errors %}
+          <div class="field-error" style="margin-top:8px;">
+            {% for f in form %}
+              {% if f.name in 'image1 image2 image3 image4' and f.errors %}
+                {% for e in f.errors %}• {{ f.label }}: {{ e }}<br>{% endfor %}
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
       </div>
 
       <div class="form-actions">
@@ -324,57 +180,54 @@
 </div>
 
 <script>
-  // ✅ عرض اليوم عند اختيار التاريخ
-  document.getElementById("id_report_date").addEventListener("change", function() {
-    const dateInput = this.value;
-    if (dateInput) {
-      const dateObj = new Date(dateInput);
-      const days = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
-      document.getElementById("id_day_name").value = days[dateObj.getDay()];
-    } else {
-      document.getElementById("id_day_name").value = "";
+  // ✅ توليد اليوم تلقائيًا عند اختيار التاريخ
+  (function () {
+    const dateInput = document.getElementById("id_report_date");
+    const dayInput  = document.getElementById("id_day_name");
+    if (dateInput && dayInput) {
+      dateInput.addEventListener("change", function() {
+        const v = this.value;
+        if (!v) { dayInput.value = ""; return; }
+        const d = new Date(v);
+        const days = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+        dayInput.value = days[d.getDay()];
+      });
     }
-  });
+  })();
 
   // ✅ معاينة الصور قبل الحفظ
   document.addEventListener('DOMContentLoaded', function() {
-    const inputs = [
-      document.getElementById('id_image1'),
-      document.getElementById('id_image2'),
-      document.getElementById('id_image3'),
-      document.getElementById('id_image4')
-    ];
+    const ids = ['id_image1','id_image2','id_image3','id_image4'];
+    const inputs = ids.map(id => document.getElementById(id)).filter(Boolean);
     const previewContainer = document.getElementById("preview-container");
 
     inputs.forEach((input) => {
-      if (input) {
-        input.addEventListener('change', function(e) {
-          const file = e.target.files[0];
-          if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-              const previewDiv = document.createElement('div');
-              previewDiv.className = 'image-preview';
+      input.addEventListener('change', function(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
 
-              const img = document.createElement('img');
-              img.src = e.target.result;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          const previewDiv = document.createElement('div');
+          previewDiv.className = 'image-preview';
 
-              const removeBtn = document.createElement('span');
-              removeBtn.className = 'remove-image';
-              removeBtn.innerHTML = '×';
-              removeBtn.onclick = function() {
-                input.value = '';
-                previewDiv.remove();
-              };
+          const img = document.createElement('img');
+          img.src = ev.target.result;
 
-              previewDiv.appendChild(img);
-              previewDiv.appendChild(removeBtn);
-              previewContainer.appendChild(previewDiv);
-            };
-            reader.readAsDataURL(file);
-          }
-        });
-      }
+          const removeBtn = document.createElement('span');
+          removeBtn.className = 'remove-image';
+          removeBtn.innerHTML = '×';
+          removeBtn.onclick = function() {
+            input.value = '';
+            previewDiv.remove();
+          };
+
+          previewDiv.appendChild(img);
+          previewDiv.appendChild(removeBtn);
+          previewContainer.appendChild(previewDiv);
+        };
+        reader.readAsDataURL(file);
+      });
     });
   });
 </script>
