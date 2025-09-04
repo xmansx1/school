@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}أعضاء القسم{% endblock %}
+
+{% block head %}
+<style>
+  /* تخطيط عام */
+  .wrap{max-width:1100px;margin-inline:auto;padding:16px}
+  .header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .breadcrumbs{font-size:.9rem;color:var(--muted-foreground,#6b7280)}
+  .breadcrumbs a{color:inherit;text-decoration:none}
+  .title{font-size:1.4rem;font-weight:700;margin:.25rem 0}
+  .sub{font-size:.95rem;color:var(--muted-foreground,#6b7280)}
+
+  /* لوحة علوية */
+  .bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;background:var(--card,#fff);
+       border:1px solid var(--line,#e5e7eb);border-radius:14px;padding:12px}
+  .stat{display:flex;gap:10px;align-items:center}
+  .badge{background:var(--accent,#eef2ff);color:var(--accent-foreground,#3730a3);border-radius:999px;padding:4px 10px;font-size:.85rem}
+
+  /* النموذج */
+  .hform{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .hform select,.hform button{height:40px}
+  .hform select{min-width:220px;border:1px solid var(--line,#e5e7eb);border-radius:10px;padding:0 10px;background:var(--card,#fff)}
+  .btn{border:1px solid var(--line,#e5e7eb);background:var(--btn,#111827);color:#fff;border-radius:10px;padding:0 14px;cursor:pointer}
+  .btn-secondary{background:var(--muted,#f3f4f6);color:#111827}
+  .btn-danger{background:#b91c1c}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+
+  /* أدوات */
+  .tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .search{position:relative}
+  .search input{height:40px;border:1px solid var(--line,#e5e7eb);border-radius:10px;padding:0 36px 0 12px;min-width:240px;background:var(--card,#fff)}
+  .search svg{position:absolute;inset-inline-end:10px;top:50%;transform:translateY(-50%);width:18px;height:18px;opacity:.6}
+
+  /* شبكة الأعضاء */
+  .grid{display:grid;gap:12px;margin-top:14px}
+  @media (min-width:640px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media (min-width:980px){.grid{grid-template-columns:repeat(3,1fr)}}
+  .card{display:flex;align-items:center;gap:12px;background:var(--card,#fff);border:1px solid var(--line,#e5e7eb);
+        border-radius:14px;padding:12px}
+  .avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--muted,#eef2ff)}
+  .name{font-weight:700}
+  .meta{font-size:.85rem;color:var(--muted-foreground,#6b7280)}
+  .card .actions{margin-inline-start:auto;display:flex;gap:6px}
+  .empty{border:1px dashed var(--line,#e5e7eb);border-radius:14px;padding:20px;text-align:center;color:var(--muted-foreground,#6b7280)}
+</style>
+{% endblock head %}
+
+{% block content %}
+<div class="wrap" dir="rtl">
+  <div class="header">
+    <div>
+      <div class="breadcrumbs">
+        <a href="{% url 'reports:admin_dashboard' %}">لوحة المدير</a> ·
+        <a href="{% url 'reports:departments_list' %}">الأقسام</a> ·
+        <span>الأعضاء</span>
+      </div>
+      <h1 class="title">👥 أعضاء القسم: {% firstof department.name dept_label dept_code "-" %}</h1>
+      <div class="sub">
+        {% if has_dept_model %}وضع الأقسام المُهيكل (Department/Member){% else %}وضع الأدوار التراثي (Teacher.role){% endif %}
+      </div>
+    </div>
+
+    <div class="stat">
+      <span class="badge">الأعضاء الحاليون: {{ members|length }}</span>
+      <span class="badge">إجمالي المعلّمين: {{ all_teachers|length }}</span>
+    </div>
+  </div>
+
+  <div class="bar">
+    <form class="hform" method="post" action="">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add">
+      <label for="teacher_id" class="sr-only">إسناد لمعلّم</label>
+      <select id="teacher_id" name="teacher_id" required>
+        <option value="" disabled selected>اختر المعلّم</option>
+        {% for t in all_teachers %}
+          <option value="{{ t.id }}">{{ t.name }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn">إسناد</button>
+      <a href="{% url 'reports:departments_list' %}" class="btn btn-secondary" style="display:inline-grid;place-items:center">رجوع</a>
+    </form>
+
+    <div class="tools">
+      <div class="search">
+        <input id="q" type="search" placeholder="ابحث داخل الأعضاء…" autocomplete="off">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 21l-4.2-4.2M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+  </div>
+
+  {% if members %}
+    <div id="membersGrid" class="grid" aria-live="polite">
+      {% for m in members %}
+        <div class="card" data-name="{{ m.name|default_if_none:'' }}">
+          <div class="avatar" aria-hidden="true">
+            {{ m.name|default:"؟"|slice:":2" }}
+          </div>
+          <div>
+            <div class="name">{{ m.name }}</div>
+            <div class="meta">
+              {% if m.role %}الدور: {{ m.role }}{% else %}&nbsp;{% endif %}
+            </div>
+          </div>
+          <div class="actions">
+            <form method="post" onsubmit="return confirm('إلغاء تكليف {{ m.name }} من هذا القسم؟');">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="remove">
+              <input type="hidden" name="teacher_id" value="{{ m.id }}">
+              <button type="submit" class="btn btn-danger">إلغاء</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">
+      لا توجد عضويات بعد. استخدم النموذج أعلاه لإسناد أول معلّم.
+    </div>
+  {% endif %}
+</div>
+
+<script>
+  // فلترة فورية على الاسم
+  (function(){
+    const input = document.getElementById('q');
+    const grid  = document.getElementById('membersGrid');
+    if(!input || !grid) return;
+    input.addEventListener('input', function(){
+      const q = this.value.trim().toLowerCase();
+      const cards = grid.querySelectorAll('.card');
+      let shown = 0;
+      cards.forEach(c=>{
+        const name = (c.dataset.name || '').toLowerCase();
+        const ok = !q || name.includes(q);
+        c.style.display = ok ? '' : 'none';
+        if(ok) shown++;
+      });
+      grid.setAttribute('aria-busy','false');
+      grid.setAttribute('aria-label', 'عدد النتائج: ' + shown);
+    });
+  })();
+</script>
+{% endblock content %}

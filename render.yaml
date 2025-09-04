@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: school-app
+    env: python
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+    startCommand: "gunicorn config.wsgi:application --log-file -"
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: "postgresql://school_db_hp0k_user:c6JNeWO8Urlhy7pgK46AHAelXTcr47FJ@dpg-d2m48pbuibrs73fr1530-a/school_db_hp0k"
+      - key: CLOUDINARY_CLOUD_NAME
+        value: "dvptglfs2"
+      - key: CLOUDINARY_API_KEY
+        value: "469557475625854"
+      - key: CLOUDINARY_API_SECRET
+        value: "aJXnXwL_PeGjRXxsQKBYAGj6F7o"

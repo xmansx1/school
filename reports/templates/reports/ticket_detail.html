@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}تفاصيل الطلب #{{ t.id }}{% endblock %}
+
+{% block head %}
+<style>
+  :root{
+    --ink:#0f172a; --ink-soft:#1f2937; --muted:#6b7280; --line:#e5e7eb;
+    --card:#ffffff; --bg:#f8fafc; --brand:#2563eb; --accent:#10b981; --danger:#ef4444;
+    --chip:#eef2ff; --chip-ink:#1e40af;
+    --shadow:0 12px 30px rgba(2,6,23,.10); --shadow2:0 20px 50px rgba(2,6,23,.14);
+    --radius:18px; --rsm:12px; --t:all .22s ease;
+  }
+
+  .wrap{max-width:1100px;margin-inline:auto;padding:18px}
+
+  /* ===== Header bar ===== */
+  .bar{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    box-shadow:var(--shadow); padding:12px 14px; display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+  }
+  .bar h1{margin:0; font-size:1.15rem; font-weight:900; color:var(--ink-soft)}
+  .bar .minor{color:var(--muted); font-weight:700}
+  .bar .btns{display:flex; gap:8px; flex-wrap:wrap}
+  .btn{height:42px; padding:0 14px; border-radius:12px; border:1px solid var(--line);
+       background:var(--card); color:var(--ink-soft); font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:8px; transition:var(--t)}
+  .btn:hover{background:#f6f9ff; border-color:#dbeafe}
+  .btn-primary{background:var(--brand); color:#fff; border-color:var(--brand)}
+  .btn-danger{background:#fee2e2; color:#991b1b; border-color:#fecaca}
+
+  /* ===== Layout ===== */
+  .grid{display:grid; gap:18px; margin-top:14px}
+  @media(min-width:980px){ .grid{ grid-template-columns:1.1fr .9fr } }
+
+  /* ===== Card ===== */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);}
+  .hd{padding:16px 18px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .title{margin:0; font-weight:900; color:var(--ink-soft)}
+  .body{padding:16px 18px}
+
+  /* ===== Summary table ===== */
+  .summary{display:grid; gap:12px}
+  .row{display:grid; grid-template-columns:180px 1fr; gap:12px}
+  .row .k{color:var(--muted); font-weight:800}
+  .row .v{color:var(--ink-soft); font-weight:900}
+  .content-pre{white-space:pre-wrap}
+  @media(max-width:600px){ .row{grid-template-columns:1fr} .row .k{order:-1} }
+
+  /* ===== Status ===== */
+  .status{padding:6px 12px; border-radius:999px; font-weight:900; font-size:.85rem; display:inline-flex; align-items:center; gap:8px}
+  .dot{width:8px; height:8px; border-radius:50%}
+  .s-new,.s-open{background:#dcfce7; color:#166534}        .s-new .dot,.s-open .dot{background:#16a34a}
+  .s-in_progress,.s-pending{background:#ede9fe; color:#5b21b6} .s-in_progress .dot,.s-pending .dot{background:#7c3aed}
+  .s-done{background:#e0f2fe; color:#075985}                .s-done .dot{background:#0ea5e9}
+  .s-rejected,.s-cancelled{background:#fee2e2; color:#991b1b} .s-rejected .dot,.s-cancelled .dot{background:#ef4444}
+
+  /* ===== Notes timeline ===== */
+  .notes{display:grid; gap:12px; position:relative}
+  .note{
+    border:1px solid var(--line); border-radius:14px; padding:12px 14px; background:var(--card);
+    box-shadow:0 6px 18px rgba(2,6,23,.06);
+  }
+  .note .meta{color:var(--muted); font-size:.9rem; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .note .txt{margin-top:6px; white-space:pre-wrap}
+  .empty{color:var(--muted)}
+
+  /* ===== Forms ===== */
+  .form{display:grid; gap:12px}
+  .input, .select, .textarea{
+    width:100%; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--card); font:inherit;
+  }
+  .textarea{min-height:120px; white-space:pre-wrap}
+  .help{color:var(--muted); font-size:.9rem}
+
+  /* Sticky hint on mobile */
+  @media(max-width:720px){
+    .sticky-hint{position:sticky; bottom:0; background:linear-gradient(0deg,rgba(248,250,252,.98),rgba(248,250,252,.75));
+      border-top:1px solid var(--line); padding:10px; border-bottom-left-radius:16px; border-bottom-right-radius:16px}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+
+  <!-- Top bar -->
+  <section class="bar" aria-label="شريط الصفحة">
+    <div>
+      <h1>تفاصيل الطلب #{{ t.id }}</h1>
+      <div class="minor">
+        أُنشئ بتاريخ {{ t.created_at|date:"Y-m-d H:i" }} •
+        الحالة:
+        <span class="status s-{{ t.status|default:'open' }}"><span class="dot"></span>{{ t.get_status_display|default:t.status }}</span>
+      </div>
+    </div>
+    <div class="btns">
+      <a class="btn" href="{% url 'reports:my_requests' %}">← العودة لطلباتي</a>
+      {% if request.user.is_staff %}
+        <a class="btn" href="{% url 'reports:tickets_inbox' %}">صندوق الطلبات</a>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="grid" aria-label="تفاصيل وملاحظات">
+
+    <!-- Details -->
+    <article class="card" aria-labelledby="details-h">
+      <div class="hd"><h2 id="details-h" class="title">تفاصيل الطلب</h2></div>
+      <div class="body summary">
+        <div class="row"><div class="k">العنوان</div><div class="v">{{ t.title|default:"—" }}</div></div>
+        <div class="row"><div class="k">القسم</div><div class="v">{{ t.get_department_display|default:t.department|default:"—" }}</div></div>
+        <div class="row"><div class="k">المستلم</div><div class="v">{% firstof t.assignee.name t.assignee "—" %}</div></div>
+        <div class="row"><div class="k">المرسل</div><div class="v">{{ t.creator.name|default:"—" }}</div></div>
+        <div class="row"><div class="k">المرفق</div>
+          <div class="v">
+            {% if t.attachment %}
+              <a class="btn" href="{{ t.attachment.url }}" target="_blank" rel="noopener">تنزيل المرفق</a>
+            {% else %} — {% endif %}
+          </div>
+        </div>
+        <div class="row"><div class="k">المحتوى</div><div class="content-pre">{{ t.body|default_if_none:"—"|linebreaksbr }}</div></div>
+      </div>
+      {% if is_owner and not can_act %}
+        <div class="sticky-hint"><span class="help">أضِف ملاحظة للتواصل — ستتحوّل الحالة تلقائيًا إلى <b>قيد المعالجة</b>.</span></div>
+      {% endif %}
+    </article>
+
+    <!-- Notes -->
+    <article class="card" aria-labelledby="notes-h">
+      <div class="hd"><h2 id="notes-h" class="title">سجلّ الملاحظات</h2></div>
+      <div class="body">
+        {% if notes %}
+          <div class="notes">
+            {% for n in notes %}
+              <div class="note">
+                <div class="meta">{{ n.author.name|default:"—" }} • {{ n.created_at|date:"Y-m-d H:i" }}</div>
+                <div class="txt">{{ n.body|default_if_none:""|linebreaksbr }}</div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty">لا توجد ملاحظات بعد.</div>
+        {% endif %}
+      </div>
+    </article>
+
+    {% if can_act and form %}
+    <!-- Assignee action form -->
+    <article class="card" id="act" aria-labelledby="act-h">
+      <div class="hd"><h2 id="act-h" class="title">إجراء على الطلب</h2></div>
+      <div class="body">
+        <form method="post" class="form" novalidate>
+          {% csrf_token %}
+          <div>
+            <label class="help">الحالة</label>
+            <select name="status" class="select">
+              {% for value,label in form.fields.status.choices %}
+                <option value="{{ value }}" {% if value == t.status %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="help">ملاحظة (تظهر للمرسل)</label>
+            <textarea name="note" class="textarea" rows="3" placeholder="اكتب ملاحظة (اختياري)"></textarea>
+          </div>
+          <div class="btns">
+            <button type="submit" class="btn btn-primary">حفظ</button>
+            <a class="btn" href="{% url 'reports:ticket_detail' t.id %}">إلغاء</a>
+          </div>
+        </form>
+      </div>
+    </article>
+
+    {% elif is_owner and not can_act %}
+    <!-- Creator note-only form -->
+    <article class="card" id="note-only" aria-labelledby="note-h">
+      <div class="hd"><h2 id="note-h" class="title">إضافة ملاحظة</h2></div>
+      <div class="body">
+        <form method="post" class="form" novalidate>
+          {% csrf_token %}
+          <div>
+            <label class="help">ستظهر ملاحظتك في السجل، وتتحوّل الحالة تلقائياً إلى <b>قيد المعالجة</b>.</label>
+            <textarea name="note" class="textarea" rows="3" placeholder="اكتب ملاحظتك هنا…"></textarea>
+          </div>
+          <div class="btns">
+            <button type="submit" class="btn btn-primary">إضافة الملاحظة</button>
+            <a class="btn" href="{% url 'reports:ticket_detail' t.id %}">إلغاء</a>
+          </div>
+        </form>
+      </div>
+    </article>
+    {% endif %}
+
+  </section>
+</div>
+{% endblock %}

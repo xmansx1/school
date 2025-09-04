@@ -1,0 +1,240 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل الدخول</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      min-height: 100vh;
+      margin: 0;
+      font-family: 'Tajawal', sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* الهيدر */
+    .login-header {
+      text-align: center;
+      padding: 20px;
+      color: white;
+    }
+    .login-system-title {
+      font-size: 1.5rem;
+      margin: 0;
+      font-weight: 800;
+    }
+
+    /* الكارت */
+    .login-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex: 1;
+      padding: 20px;
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+      padding: 35px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      animation: fadeInUp 0.7s ease;
+    }
+    @keyframes fadeInUp {
+      from {opacity: 0; transform: translateY(40px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+
+    /* الشعار */
+    .login-logo img {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+      margin-bottom: 20px;
+    }
+
+    .login-title {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #1f2937;
+    }
+    .login-subtitle {
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+
+    /* الرسائل */
+    .messages {
+      margin-bottom: 15px;
+    }
+    .alert {
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      font-weight: 500;
+      transition: opacity 0.5s ease;
+    }
+    .alert-error {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    .alert-success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    /* الفورم */
+    .form-group {
+      margin-top: 15px;
+      text-align: right;
+    }
+    .form-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 15px;
+      transition: 0.2s;
+    }
+    .form-input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+      outline: none;
+    }
+
+    /* زر الدخول */
+    .btn-login {
+      margin-top: 25px;
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(37, 99, 235, 0.4);
+    }
+
+    /* ملاحظة */
+    .login-footer-text {
+      margin-top: 15px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    /* الفوتر */
+    .login-footer {
+      text-align: center;
+      padding: 15px;
+      font-size: 13px;
+      color: white;
+      background: rgba(0,0,0,0.3);
+    }
+
+    @media (max-width: 480px) {
+      .login-card { padding: 25px 20px; }
+      .login-title { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- الهيدر -->
+  <header class="login-header">
+     <h1 class="login-system-title">📘 نظام التقارير</h1>
+  </header>
+
+  <!-- الكارت -->
+  <main class="login-container">
+    <div class="login-card">
+      <div class="login-logo">
+        <img src="{% static 'img/logo.png' %}" alt="{{ SCHOOL_NAME|default:'شعار المدرسة' }}">
+      </div>
+      <h2 class="login-title">تسجيل الدخول</h2>
+      <p class="login-subtitle">مرحباً بك، يرجى إدخال بيانات الدخول الخاصة بك</p>
+
+      {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if form.errors %}
+      <div class="alert alert-error">
+        <i class="fas fa-exclamation-circle"></i>
+        رقم الجوال أو كلمة المرور غير صحيحة
+      </div>
+      {% endif %}
+
+      <form method="POST" class="login-form">
+        {% csrf_token %}
+        
+        <!-- رقم الجوال -->
+        <div class="form-group">
+          <label class="form-label"><i class="fas fa-phone"></i> رقم الجوال</label>
+          <input class="form-input" type="text" name="phone" pattern="0\d{9}" maxlength="10" minlength="10"
+                 inputmode="numeric" autocomplete="username"
+                 placeholder="05" required>
+        </div>
+
+        <!-- كلمة المرور -->
+        <div class="form-group">
+          <label class="form-label"><i class="fas fa-key"></i> كلمة المرور</label>
+          <input class="form-input" type="password" name="password"
+                 autocomplete="current-password" placeholder="أدخل كلمة المرور" required>
+        </div>
+
+        <button class="btn-login">
+          <i class="fas fa-sign-in-alt"></i> دخول إلى النظام
+        </button>
+
+        <div class="login-footer-text">
+          🔑 لتغيير كلمة المرور يرجى التواصل مع مدير النظام في ثانوية عبدالعزيز بن باز
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- الفوتر -->
+  <footer class="login-footer">
+    <p>© تصميم <strong>MANS</strong> | جميع الحقوق محفوظة</p>
+  </footer>
+
+  <!-- 🔔 إخفاء الرسائل بعد 3 ثواني -->
+  <script>
+    setTimeout(() => {
+      document.querySelectorAll('.alert').forEach(el => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 500); // يختفي تدريجياً ثم يحذف
+      });
+    }, 3000);
+  </script>
+
+</body>
+</html>

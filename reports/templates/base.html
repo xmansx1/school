@@ -1,0 +1,350 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}نظام التقارير{% endblock %}</title>
+
+  <!-- Performance -->
+  <link rel="preload" href="{% static 'css/app.css' %}" as="style">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}" />
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --brand:#2563eb; --brand-ink:#1e3a8a; --brand-ghost:#e8efff;
+      --accent:#10b981;
+      --ink:#0f172a; --ink-soft:#1f2937; --muted:#64748b;
+      --bg:#f8fafc; --card:#ffffff; --line:#e5e7eb; --line-2:#f1f5f9;
+      --radius:14px; --t:all .22s ease; --shadow:0 4px 16px rgba(2,6,23,.08);
+      --ring:0 0 0 3px rgba(37,99,235,.25);
+    }
+
+    *{box-sizing:border-box} html,body{height:100%}
+    body{
+      margin:0; font-family:'Tajawal',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      color:var(--ink); background:var(--bg); line-height:1.7; display:flex; flex-direction:column;
+      -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    }
+    img{max-width:100%; display:block}
+    .container{width:100%;max-width:1200px;margin-inline:auto;padding:0 16px}
+    .page-main{flex:1; padding:24px 0; animation:fadeUp .5s ease both}
+
+    /* Progress */
+    .progress-bar{
+      position:fixed; inset:0 0 auto 0; height:3px; background:linear-gradient(90deg,#60a5fa,var(--brand));
+      transform-origin:0 50%; transform:scaleX(0); z-index:120; box-shadow:0 2px 8px rgba(37,99,235,.25);
+    }
+
+    /* Header */
+    .site-header{
+      position:sticky; top:0; z-index:110;
+      background:rgba(255,255,255,.88);
+      border-bottom:1px solid var(--line);
+      backdrop-filter:saturate(140%) blur(8px);
+      transition:box-shadow .22s ease, background .22s ease, border-color .22s ease;
+    }
+    .site-header.scrolled{
+      box-shadow:0 10px 30px rgba(2,6,23,.10); background:rgba(255,255,255,.92); border-color:#dfe7ff;
+    }
+    .site-header .bar{display:flex; align-items:center; gap:16px; padding:10px 0; min-height:64px;}
+    .brand{
+      display:flex; align-items:center; gap:10px; text-decoration:none;
+      color:var(--ink-soft); font-weight:900; font-size:1.15rem; white-space:nowrap;
+    }
+    .brand img{width:40px;height:40px;object-fit:contain}
+
+    /* Nav */
+    .nav{margin-inline-start:auto; display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+    .nav a{
+      --h:40px; position:relative; display:inline-flex; align-items:center; justify-content:center;
+      height:var(--h); padding:0 14px; border-radius:10px; color:var(--muted);
+      text-decoration:none; font-weight:800; transition:var(--t); white-space:nowrap; overflow:hidden;
+    }
+    .nav a:hover{color:var(--brand)}
+    .nav a::after{
+      content:""; position:absolute; inset:auto 12px 6px 12px; height:3px; background:var(--brand);
+      border-radius:2px; transform:scaleX(0); transform-origin:50% 50%; transition:transform .25s ease;
+    }
+    .nav a:hover::after{ transform:scaleX(1); }
+    .nav a.active{color:var(--brand); background:var(--brand-ghost)}
+    .nav a.active::after{ transform:scaleX(1); }
+
+    /* Badges */
+    .nav .with-badge{display:inline-flex; align-items:center; gap:8px}
+    .badge{
+      min-width:20px; height:20px; padding:0 6px; border-radius:999px;
+      display:inline-grid; place-items:center; font-size:12px; font-weight:900; color:#fff; background:#ef4444;
+      transform:translateY(0); transition:transform .2s ease;
+    }
+    .nav .with-badge:hover .badge{ transform:translateY(-2px) }
+
+    /* User menu */
+    .userbox{position:relative}
+    .avatar{
+      width:36px;height:36px;border-radius:50%; display:grid; place-items:center;
+      background:linear-gradient(135deg,var(--brand),var(--accent)); color:#fff; font-weight:900; box-shadow:var(--shadow);
+      cursor:pointer; border:0; transition:transform .18s ease;
+    }
+    .avatar:hover{ transform:translateY(-2px) }
+    .menu{
+      position:absolute; inset:calc(100% + 10px) 0 auto auto; min-width:220px; background:var(--card);
+      border:1px solid var(--line); border-radius:12px; box-shadow:0 20px 40px rgba(2,6,23,.12);
+      padding:8px; opacity:0; transform:translateY(-6px) scale(.98); pointer-events:none; transition:var(--t);
+    }
+    .menu.open{opacity:1; transform:translateY(0) scale(1); pointer-events:auto}
+    .menu .mi{display:flex; gap:10px; align-items:center; padding:10px 12px; border-radius:10px; color:var(--ink); text-decoration:none; font-weight:700}
+    .menu .mi:hover{background:var(--line-2)}
+    .menu .meta{color:var(--muted); font-size:.9rem}
+
+    /* Hamburger (mobile) */
+    .hamburger{display:none; width:34px; height:24px; margin-inline-start:auto; cursor:pointer; position:relative}
+    .hamburger span{position:absolute; inset:auto 0 auto 0; height:3px; background:var(--ink); border-radius:3px; transition:var(--t)}
+    .hamburger span:nth-child(1){top:0}
+    .hamburger span:nth-child(2){top:50%; transform:translateY(-50%)}
+    .hamburger span:nth-child(3){bottom:0}
+    .hamburger.active span:nth-child(1){top:50%; transform:translateY(-50%) rotate(45deg)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){bottom:auto; top:50%; transform:translateY(-50%) rotate(-45deg)}
+
+    /* Messages */
+    .messages{margin:16px 0}
+    .msg{
+      padding:12px 14px; border-radius:10px; border:1px solid var(--line);
+      background:#f8fbff; color:#0b1b3a; box-shadow:var(--shadow); margin-bottom:10px;
+      animation:fadeIn .3s ease both;
+    }
+    .msg.success{background:#f0fff6; border-color:#c8f3d6; color:#064e3b}
+    .msg.error{background:#fff0f0; border-color:#ffd4d4; color:#7f1d1d}
+    .msg.warning{background:#fffbeb; border-color:#fed7aa; color:#7c2d12}
+
+    /* Footer */
+    .site-footer{
+      background:linear-gradient(135deg,#0f1b30 0%, #0c1830 40%, #0b1630 100%); color:#dbe6ff; margin-top:16px
+    }
+    .site-footer .wrap{padding:26px 16px}
+    .foot-grid{display:grid; gap:18px}
+    @media(min-width:900px){.foot-grid{grid-template-columns:1.1fr .9fr .9fr}}
+    .foot-title{font-weight:900; font-size:1.15rem; color:#eef3ff}
+    .foot-links ul{list-style:none; display:grid; gap:8px; padding:0; margin:0}
+    .foot-links a{color:#cfe0ff; text-decoration:none; font-weight:700}
+    .foot-links a:hover{color:#fff; text-decoration:underline}
+    .foot-bottom{
+      border-top:1px solid rgba(255,255,255,.1); padding:12px 0;
+      display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; font-size:.9rem;
+    }
+
+    /* Mobile */
+    @media(max-width:768px){
+      .container{padding:0 12px}
+      .page-main{padding:16px 0}
+      .brand img{width:32px;height:32px}
+      .hamburger{display:block}
+      .nav{display:none; width:100%; flex-direction:column; align-items:flex-start; gap:6px; margin-top:10px}
+      .nav.active{display:flex}
+      .nav a{width:100%}
+      .nav a::after{inset:auto 12px 4px 12px}
+    }
+
+    /* A11y & motion */
+    a:focus-visible,button:focus-visible{outline:2px solid var(--brand); outline-offset:2px; box-shadow:var(--ring)}
+    @media(prefers-reduced-motion:reduce){
+      *{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important}
+    }
+
+    /* Animations */
+    @keyframes fadeIn{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+    @keyframes fadeUp{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+  </style>
+
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <!-- Progress -->
+  <div class="progress-bar" id="scrollProgress"></div>
+
+  <!-- Header -->
+  <header class="site-header" id="siteHeader">
+    <div class="container bar">
+      <a href="{% url 'reports:home' %}" class="brand">
+        <img src="{% if SCHOOL_LOGO_URL %}{{ SCHOOL_LOGO_URL }}{% else %}{% static 'img/logo.png' %}{% endif %}" alt="الشعار" loading="eager" decoding="async">
+        <span>{% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}نظام التقارير{% endif %}</span>
+      </a>
+
+      <div class="sep" aria-hidden="true"></div>
+
+      <!-- Mobile -->
+      <div class="hamburger" id="hamburger-menu" aria-label="فتح القائمة" aria-controls="main-nav" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </div>
+
+      {% with active=request.resolver_match.url_name %}
+      {% url 'reports:assigned_to_me' as assigned_url %}
+      <nav class="nav" id="main-nav" role="navigation" aria-label="روابط أساسية">
+        {% if request.user.is_authenticated %}
+          <a class="{% if active == 'home' %}active{% endif %}" href="{% url 'reports:home' %}">الرئيسية</a>
+          <a class="{% if active == 'add_report' %}active{% endif %}" href="{% url 'reports:add_report' %}">إضافة تقرير</a>
+
+          <a class="{% if active == 'request_create' %}active{% endif %}" href="{% url 'reports:request_create' %}">
+            إرسال طلب
+          </a>
+
+          <a class="with-badge {% if active == 'my_requests' %}active{% endif %}" href="{% url 'reports:my_requests' %}">
+            طلباتي
+            {% if NAV_MY_OPEN_TICKETS|default:0 > 0 %}
+              <span class="badge" aria-label="طلبات مفتوحة">{{ NAV_MY_OPEN_TICKETS }}</span>
+            {% endif %}
+          </a>
+
+          {% if assigned_url %}
+          <a class="with-badge {% if active == 'assigned_to_me' %}active{% endif %}" href="{{ assigned_url }}">
+            معيّنة لي
+            {% if NAV_ASSIGNED_TO_ME|default:0 > 0 %}
+              <span class="badge" aria-label="طلبات معيّنة">{{ NAV_ASSIGNED_TO_ME }}</span>
+            {% endif %}
+          </a>
+          {% endif %}
+
+          <!-- User dropdown -->
+          <div class="userbox">
+            {% firstof request.user.name request.user.phone request.user.national_id "حسابي" as display_name %}
+            <button class="avatar" id="userAvatar" type="button"
+                    aria-haspopup="menu" aria-expanded="false"
+                    title="{{ display_name }}">
+              {{ display_name|slice:":1" }}
+            </button>
+            <div class="menu" id="userMenu" role="menu" aria-label="قائمة المستخدم">
+              <div class="mi" tabindex="0" style="cursor:default">
+                <div>
+                  <div style="font-weight:900">{{ display_name }}</div>
+                  <div class="meta">مرحباً 👋</div>
+                </div>
+              </div>
+              <!-- أزلنا: تقاريري / صندوق التذاكر / تقارير الإدارة / إدارة المعلّمين -->
+              <a href="{% url 'reports:my_requests' %}" class="mi" role="menuitem">📦 طلباتي</a>
+              <a href="{% url 'reports:logout' %}" class="mi" role="menuitem">🚪 تسجيل الخروج</a>
+            </div>
+          </div>
+        {% else %}
+          <a class="{% if active == 'login' %}active{% endif %}" href="{% url 'reports:login' %}">تسجيل الدخول</a>
+        {% endif %}
+      </nav>
+      {% endwith %}
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="container page-main">
+    {% if messages %}
+      <div class="messages" id="messages-container">
+        {% for message in messages %}
+          <div class="msg {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container wrap">
+      <div class="foot-grid">
+        <div>
+          <div class="foot-title">{% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}ثانوية عبدالعزيز بن باز{% endif %}</div>
+          <p>نظام توثيق أعمال المعلمين والطلبات — إضافة، استعراض، طباعة.</p>
+        </div>
+        <nav class="foot-links" aria-label="روابط">
+          <!-- مساحة لروابط مستقبلية -->
+        </nav>
+        <div>
+          <div class="foot-title" style="font-size:1rem;">تواصل</div>
+          <p>{% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}ثانوية عبدالعزيز بن باز{% endif %}</p>
+          <p>لتغيير كلمة السر تواصل مع مدير النظام.</p>
+        </div>
+      </div>
+      <div class="foot-bottom">
+        <span>© {% now "Y" %} تصميم <b>MANS</b> — جميع الحقوق محفوظة</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Back to Top -->
+  <button id="toTop" title="العودة للأعلى" aria-label="العودة للأعلى" style="display:none;
+          position:fixed; inset:auto 18px 24px auto; width:46px; height:46px; border:0; border-radius:50%;
+          background:linear-gradient(135deg,var(--brand),#10b981); color:#fff; cursor:pointer; box-shadow:0 10px 28px rgba(37,99,235,.35);">
+    ↑
+  </button>
+
+  <script>
+    // CSRF helper
+    (function(){
+      function getCookie(name){
+        const v = `; ${document.cookie}`.split(`; ${name}=`); 
+        if(v.length === 2) return decodeURIComponent(v.pop().split(';').shift());
+      }
+      window.csrfToken = getCookie('csrftoken');
+    })();
+
+    document.addEventListener('DOMContentLoaded', function(){
+      // Header shadow + progress
+      const header = document.getElementById('siteHeader');
+      const progress = document.getElementById('scrollProgress');
+      const onScroll = () => {
+        const y = window.scrollY || document.documentElement.scrollTop;
+        header.classList.toggle('scrolled', y > 6);
+        const h = document.documentElement.scrollHeight - window.innerHeight;
+        const p = h > 0 ? (y / h) : 0;
+        progress.style.transform = `scaleX(${p})`;
+      };
+      window.addEventListener('scroll', onScroll, {passive:true}); onScroll();
+
+      // Auto-hide messages
+      document.querySelectorAll('.msg').forEach(el=>{
+        setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(-6px)'; setTimeout(()=>el.remove(), 300); }, 3000);
+      });
+
+      // Mobile nav
+      const burger = document.getElementById('hamburger-menu');
+      const nav = document.getElementById('main-nav');
+      if(burger && nav){
+        burger.addEventListener('click', ()=>{
+          const on = nav.classList.toggle('active');
+          burger.classList.toggle('active', on);
+          burger.setAttribute('aria-expanded', on ? 'true' : 'false');
+        });
+        document.addEventListener('click', (e)=>{
+          if(!e.target.closest('#main-nav') && !e.target.closest('#hamburger-menu') && nav.classList.contains('active')){
+            nav.classList.remove('active'); burger.classList.remove('active'); burger.setAttribute('aria-expanded','false');
+          }
+        });
+      }
+
+      // User menu
+      const avatar = document.getElementById('userAvatar');
+      const menu = document.getElementById('userMenu');
+      if(avatar && menu){
+        const close = ()=>{ menu.classList.remove('open'); avatar.setAttribute('aria-expanded','false'); };
+        avatar.addEventListener('click', ()=>{
+          const open = menu.classList.toggle('open');
+          avatar.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        document.addEventListener('click', (e)=>{ if(!e.target.closest('#userMenu') && !e.target.closest('#userAvatar')) close(); });
+        document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+      }
+
+      // To top
+      const toTop = document.getElementById('toTop');
+      if(toTop){
+        const toggle = ()=>{ window.scrollY > 260 ? (toTop.style.display='grid') : (toTop.style.display='none'); };
+        window.addEventListener('scroll', toggle, {passive:true}); toggle();
+        toTop.addEventListener('click', ()=>window.scrollTo({top:0, behavior:'smooth'}));
+      }
+    });
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

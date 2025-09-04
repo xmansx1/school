@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+{% block title %}التذاكر المعيّنة لي{% endblock %}
+
+{% block head %}
+<style>
+  :root{
+    --ink:#0f172a;--ink-soft:#1f2937;--muted:#6b7280;
+    --line:#e5e7eb;--card:#ffffff;--bg:#f8fafc;
+    --brand:#2563eb;--brand2:#0ea5e9;--accent:#059669;--danger:#ef4444;
+    --shadow:0 16px 40px rgba(2,6,23,.08);
+    --radius:18px; --rsm:12px;
+  }
+
+  /* ===== نطاق الصفحة حتى لا تتأثر مكوّنات الهيدر ===== */
+  .assigned-scope{ background:var(--bg); }
+  .assigned-scope .container{ max-width:1200px; margin:0 auto; padding:16px 12px; }
+
+  /* Hero */
+  .assigned-scope .hero{
+    background:linear-gradient(135deg,#1d4ed8,#0ea5e9);
+    border-radius:22px;color:#fff;box-shadow:var(--shadow);
+    padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px
+  }
+  .assigned-scope .hero .title{margin:0;font-weight:900;font-size:1.5rem}
+  .assigned-scope .user{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);
+        border-radius:20px;padding:10px 14px}
+  .assigned-scope .user .ava{width:36px;height:36px;border-radius:50%;background:#1e3a8a;display:grid;place-items:center}
+  .assigned-scope .user .ava svg{width:18px;height:18px;color:#c7d2fe}
+  .assigned-scope .user .name{font-weight:800}
+  .assigned-scope .user .role{font-size:.78rem;opacity:.9}
+
+  /* Toolbar */
+  .assigned-scope .toolbar{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+           padding:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .assigned-scope .tb-group{display:flex;gap:10px;align-items:center}
+  .assigned-scope .input,.assigned-scope .select,.assigned-scope .btn{
+    border:1px solid var(--line);border-radius:12px;background:#fff;color:#0f172a;padding:10px 12px;font-size:.95rem
+  }
+  .assigned-scope .input{min-width:320px}
+  .assigned-scope .btn{background:#eef2ff;color:#1e3a8a;font-weight:800;border-color:#c7d2fe}
+  .assigned-scope .btn:hover{background:#e0e7ff}
+  .assigned-scope .view-switch a{padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:800;color:#1e3a8a;text-decoration:none}
+  .assigned-scope .view-switch .active{background:#2563eb;color:#fff;border-color:#2563eb}
+
+  /* Stats */
+  .assigned-scope .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px}
+  .assigned-scope .stat{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
+        padding:16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .assigned-scope .stat .num{font-weight:900;font-size:1.4rem}
+  .assigned-scope .stat .lbl{color:var(--muted);font-weight:700}
+  .assigned-scope .ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center}
+  .assigned-scope .o{background:#ecfdf5;color:#065f46}
+  .assigned-scope .i{background:#f5f3ff;color:#5b21b6}
+  .assigned-scope .d{background:#e0f2fe;color:#075985}
+  .assigned-scope .r{background:#fee2e2;color:#991b1b}
+
+  /* List */
+  .assigned-scope .list{margin-top:10px;display:grid;gap:12px}
+  .assigned-scope .ticket{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
+          padding:14px;display:grid;grid-template-columns:1fr 260px;gap:16px;position:relative;overflow:hidden}
+  .assigned-scope .ticket::after{content:"";position:absolute;top:0;bottom:0;left:0;width:6px;background:#e5e7eb}
+  .assigned-scope .t-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .assigned-scope .tid{background:#eef2ff;color:#1e40af;border:1px solid #c7d2fe;border-radius:11px;padding:4px 10px;font-weight:800;font-size:.85rem}
+  .assigned-scope .t-title{margin:0;font-weight:900;color:#1f2937;font-size:1.08rem}
+  .assigned-scope .t-title a{color:inherit;text-decoration:none}
+  .assigned-scope .t-title a:hover{color:#2563eb}
+
+  .assigned-scope .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .assigned-scope .pill{border:1px solid var(--line);border-radius:999px;background:#f8fafc;padding:8px 12px;display:inline-flex;align-items:center;gap:8px;font-size:.9rem}
+  .assigned-scope .dot{width:8px;height:8px;border-radius:50%}
+  .assigned-scope .ds{background:#0ea5e9}.assigned-scope .dd{background:linear-gradient(135deg,#2563eb,#10b981)}.assigned-scope .da{background:#06b6d4}.assigned-scope .dt{background:#94a3b8}
+
+  .assigned-scope .aside{display:flex;flex-direction:column;gap:10px;align-items:flex-start;justify-content:center}
+  .assigned-scope .badge{--bg:#f1f5f9;--fg:#0f172a;--bd:#e2e8f0;background:var(--bg);color:var(--fg);border:1px solid var(--bd);
+         padding:10px 14px;border-radius:14px;font-weight:900;display:inline-flex;align-items:center;gap:8px}
+  .assigned-scope .b-open{--bg:#ecfdf5;--fg:#065f46;--bd:#a7f3d0}
+  .assigned-scope .b-in{--bg:#f5f3ff;--fg:#5b21b6;--bd:#ddd6fe}
+  .assigned-scope .b-done{--bg:#e0f2fe;--fg:#075985;--bd:#bae6fd}
+  .assigned-scope .b-rej{--bg:#fee2e2;--fg:#991b1b;--bd:#fecaca}
+
+  .assigned-scope .meter{height:6px;width:100%;border-radius:999px;background:#eef2f7;border:1px solid #e6ebf2;overflow:hidden}
+  .assigned-scope .fill{height:100%;display:block;width:100%}
+  .assigned-scope .m-open .fill{width:34%;background:linear-gradient(90deg,#34d399,#10b981)}
+  .assigned-scope .m-in .fill{width:67%;background:linear-gradient(90deg,#a78bfa,#7c3aed)}
+  .assigned-scope .m-done .fill{width:100%;background:linear-gradient(90deg,#60a5fa,#2563eb)}
+  .assigned-scope .m-rej .fill{width:100%;background:linear-gradient(90deg,#fda4af,#ef4444)}
+
+  .assigned-scope .ticket.state-open::after{background:#10b981}
+  .assigned-scope .ticket.state-in::after{background:#7c3aed}
+  .assigned-scope .ticket.state-done::after{background:#2563eb}
+  .assigned-scope .ticket.state-rej::after{background:#ef4444}
+
+  .assigned-scope .btn{background:#eef2ff;color:#1e3a8a;border:1px solid #c7d2fe;border-radius:12px;font-weight:800;padding:11px 16px;text-decoration:none}
+  .assigned-scope .btn:hover{background:#e0e7ff;border-color:#b6c3ff}
+
+  /* Table */
+  .assigned-scope .table-wrap{margin-top:12px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:auto}
+  .assigned-scope table{width:100%;border-collapse:collapse}
+  .assigned-scope thead th{background:#f8fafc;border-bottom:1px solid var(--line);padding:12px 10px;text-align:right;color:#0f172a;font-weight:900;white-space:nowrap}
+  .assigned-scope td{border-bottom:1px solid var(--line);padding:11px 10px;white-space:nowrap}
+  .assigned-scope .tbl-id{font-weight:800;color:#1e40af}
+  .assigned-scope .tbl-title a{text-decoration:none;color:#1f2937}
+  .assigned-scope .tbl-title a:hover{color:#2563eb}
+
+  /* Responsive */
+  @media (max-width: 980px){
+    .assigned-scope .ticket{grid-template-columns:1fr;gap:12px}
+    .assigned-scope .input{min-width:unset;width:100%}
+    .assigned-scope .stats{grid-template-columns:repeat(2,1fr)}
+  }
+  @media (max-width: 560px){
+    .assigned-scope .stats{grid-template-columns:1fr}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+<div class="assigned-scope">
+  <div class="container">
+
+    <!-- Hero -->
+    <section class="hero" aria-label="مقدمة الصفحة">
+      <h1 class="title">🎟️ التذاكر المعيّنة لي</h1>
+      <div class="user">
+        <div class="ava">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5Z"/></svg>
+        </div>
+        <div>
+          <div class="name">{{ request.user.name|default:"المستخدم" }}</div>
+          <div class="role">{{ request.user.get_role_display|default:request.user.role|default:"" }}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toolbar -->
+    <form class="toolbar" method="get" aria-label="شريط أدوات">
+      <div class="tb-group">
+        <input class="input" type="search" name="q" placeholder="ابحث في التذاكر…" value="{{ request.GET.q }}">
+        <button class="btn" type="submit">بحث</button>
+      </div>
+      <div class="tb-group">
+        <label>الحالة:</label>
+        <select class="select" name="status">
+          <option value="">جميع الحالات</option>
+          <option value="open" {% if request.GET.status == "open" %}selected{% endif %}>مفتوحة</option>
+          <option value="in_progress" {% if request.GET.status == "in_progress" %}selected{% endif %}>قيد المعالجة</option>
+          <option value="done" {% if request.GET.status == "done" %}selected{% endif %}>مكتملة</option>
+          <option value="rejected" {% if request.GET.status == "rejected" %}selected{% endif %}>مرفوضة</option>
+        </select>
+
+        <label>فرز حسب:</label>
+        <select class="select" name="order">
+          <option value="-created_at" {% if request.GET.order|default:"-created_at" == "-created_at" %}selected{% endif %}>الأحدث</option>
+          <option value="created_at" {% if request.GET.order == "created_at" %}selected{% endif %}>الأقدم</option>
+          <option value="-id" {% if request.GET.order == "-id" %}selected{% endif %}>رقم التذكرة (تنازلي)</option>
+          <option value="id" {% if request.GET.order == "id" %}selected{% endif %}>رقم التذكرة (تصاعدي)</option>
+        </select>
+      </div>
+
+      <div class="tb-group view-switch" style="margin-inline-start:auto">
+        {% with bq=request.GET.q|urlencode bs=request.GET.status bo=request.GET.order %}
+          <a href="?{% if bq %}q={{ bq }}&{% endif %}{% if bs %}status={{ bs }}&{% endif %}{% if bo %}order={{ bo }}&{% endif %}view=list"
+             class="{% if view_mode != 'table' %}active{% endif %}">قائمة ▤</a>
+          <a href="?{% if bq %}q={{ bq }}&{% endif %}{% if bs %}status={{ bs }}&{% endif %}{% if bo %}order={{ bo }}&{% endif %}view=table"
+             class="{% if view_mode == 'table' %}active{% endif %}">جدول ▦</a>
+        {% endwith %}
+      </div>
+    </form>
+
+    <!-- Stats -->
+    <section class="stats" aria-label="إحصاءات الحالات">
+      <div class="stat"><div><div class="num">{{ stats.open }}</div><div class="lbl">تذكرة مفتوحة</div></div><div class="ico o">✔</div></div>
+      <div class="stat"><div><div class="num">{{ stats.in_progress }}</div><div class="lbl">قيد المعالجة</div></div><div class="ico i">≡</div></div>
+      <div class="stat"><div><div class="num">{{ stats.done }}</div><div class="lbl">مكتملة</div></div><div class="ico d">✓</div></div>
+      <div class="stat"><div><div class="num">{{ stats.rejected }}</div><div class="lbl">مرفوضة</div></div><div class="ico r">!</div></div>
+    </section>
+
+    {% if view_mode == "table" %}
+      <!-- Table View -->
+      <section class="table-wrap" aria-label="جدول التذاكر">
+        <table>
+          <thead>
+            <tr><th>#</th><th>العنوان</th><th>المرسل</th><th>القسم</th><th>المستلم</th><th>التاريخ</th><th>الحالة</th></tr>
+          </thead>
+          <tbody>
+          {% for t in page_obj.object_list %}
+            <tr>
+              <td class="tbl-id">#{{ t.id }}</td>
+              <td class="tbl-title"><a href="{% url 'reports:ticket_detail' t.id %}">{{ t.title|default:"—" }}</a></td>
+              <td>{% firstof t.creator.name t.creator "—" %}</td>
+              <td>{{ t.get_department_display|default:t.department|default:"—" }}</td>
+              <td>{% firstof t.assignee.name t.assignee "—" %}</td>
+              <td>{{ t.created_at|date:"Y-m-d H:i" }}</td>
+              <td>
+                <span class="badge
+                  {% if t.status == 'open' or t.status == 'new' %}b-open
+                  {% elif t.status == 'in_progress' or t.status == 'pending' %}b-in
+                  {% elif t.status == 'done' %}b-done
+                  {% else %}b-rej{% endif %}">
+                  {{ t.get_status_display|default:t.status }}
+                </span>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" style="text-align:center;color:var(--muted)">لا توجد تذاكر</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    {% else %}
+      <!-- List View -->
+      <section class="list" aria-label="قائمة التذاكر">
+        {% for t in page_obj.object_list %}
+        <article class="ticket
+          {% if t.status == 'open' or t.status == 'new' %}state-open
+          {% elif t.status == 'in_progress' or t.status == 'pending' %}state-in
+          {% elif t.status == 'done' %}state-done
+          {% else %}state-rej{% endif %}">
+          <div>
+            <div class="t-head">
+              <span class="tid">#{{ t.id }}</span>
+              <h3 class="t-title"><a href="{% url 'reports:ticket_detail' t.id %}">{{ t.title|default:"طلب بدون عنوان" }}</a></h3>
+            </div>
+            <div class="meta">
+              <span class="pill"><span class="dot ds"></span> المرسِل: {% if t.creator and t.creator.name %}{{ t.creator.name }}{% else %}—{% endif %}</span>
+              <span class="pill"><span class="dot dd"></span> القسم: {{ t.get_department_display|default:t.department|default:"—" }}</span>
+              <span class="pill"><span class="dot da"></span> المستلم: {% if t.assignee and t.assignee.name %}{{ t.assignee.name }}{% else %}—{% endif %}</span>
+              <span class="pill"><span class="dot dt"></span> {{ t.created_at|default_if_none:"—"|date:"Y-m-d H:i" }}</span>
+            </div>
+          </div>
+          <aside class="aside">
+            <span class="badge
+              {% if t.status == 'open' or t.status == 'new' %}b-open
+              {% elif t.status == 'in_progress' or t.status == 'pending' %}b-in
+              {% elif t.status == 'done' %}b-done
+              {% else %}b-rej{% endif %}">{{ t.get_status_display|default:t.status }}</span>
+            <div class="meter
+              {% if t.status == 'open' or t.status == 'new' %}m-open
+              {% elif t.status == 'in_progress' or t.status == 'pending' %}m-in
+              {% elif t.status == 'done' %}m-done
+              {% else %}m-rej{% endif %}">
+              <span class="fill"></span>
+            </div>
+            <a class="btn" href="{% url 'reports:ticket_detail' t.id %}">فتح التفاصيل ←</a>
+          </aside>
+        </article>
+        {% empty %}
+          <div class="btn" style="background:#fff;color:var(--muted);border:1px dashed var(--line)">لا توجد تذاكر حالياً</div>
+        {% endfor %}
+      </section>
+    {% endif %}
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="pager" aria-label="ترقيم الصفحات" style="margin-top:14px">
+      {% if page_obj.has_previous %}<a class="btn" href="?page={{ page_obj.previous_page_number }}&view={{ view_mode }}">السابق</a>{% endif %}
+      <span class="btn" style="background:#fff;color:var(--muted)">صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a class="btn" href="?page={{ page_obj.next_page_number }}&view={{ view_mode }}">التالي</a>{% endif %}
+    </nav>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

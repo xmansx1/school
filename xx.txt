@@ -1,0 +1,85 @@
+venv\Scripts\Activate.ps1
+
+
+------------------------
+
+
+python manage.py runserver
+
+
+-----------------------------
+
+
+git add . 
+git commit -m "الرفع16ريندر"
+git push origin main
+
+
+---------------------------------
+
+
+تحديث قاعدة البيانات على ريندر 
+python manage.py migrate
+
+--------------------------------
+
+git add .
+git commit -m "🚀 إصلاح: إضافة psycopg لدعم PostgreSQL"
+git push origin main
+
+-------------------------------
+
+
+python manage.py makemigrations
+python manage.py migrate
+
+
+
+----------------------------------
+
+ENV=production
+DEBUG=False
+SECRET_KEY=$!$0hwnsd^@52b)4n%*k=iu%+9gs@w3qqco7g9#h_gm%-2yruz
+
+DATABASE_URL=postgresql://school_db_hp0k_user:c6JNeWO8Urlhy7pgK46AHAelXTcr47FJ@dpg-d2m48pbuibrs73fr1530-a/school_db_hp0k
+
+CLOUDINARY_CLOUD_NAME=dvptglfs2
+CLOUDINARY_API_KEY=469557475625854
+CLOUDINARY_API_SECRET=aJXnXwL_PeGjRXxsQKBYAGj6F7o
+
+ALLOWED_HOSTS=school-7lgm.onrender.com
+
+----------------------------------------------------
+
+
+ENV=development
+DEBUG=True
+SECRET_KEY=$!$0hwnsd^@52b)4n%*k=iu%+9gs@w3qqco7g9#h_gm%-2yruz
+
+# SQLite محلي (التطوير)
+# DATABASE_URL=sqlite:///db.sqlite3
+
+# إذا حاب تجرب PostgreSQL محليًا
+# DATABASE_URL=postgres://postgres:password@localhost:5432/school_db
+
+CLOUDINARY_CLOUD_NAME=dvptglfs2
+CLOUDINARY_API_KEY=469557475625854
+CLOUDINARY_API_SECRET=aJXnXwL_PeGjRXxsQKBYAGj6F7o
+
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+-----------------------------------------------
+
+الفحص
+
+python manage.py check
+
+
+
+# تصميم و تطوير عقاب الشهري 
+
+--------------------------------------------------
+
+pip install Pillow
+python manage.py makemigrations
+python manage.py migrate

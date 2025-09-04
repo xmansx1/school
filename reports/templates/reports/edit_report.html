@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}✏️ تعديل التقرير #{{ report.id }}{% endblock %}
+
+{% block head %}
+<style>
+  .edit-report{
+    --ink:#0f172a; --ink-soft:#1f2937; --muted:#64748b; --line:#e5e7eb;
+    --brand:#2563eb; --brand2:#3b82f6;
+    --accent:#059669; --accent2:#10b981;
+    --danger:#ef4444; --danger2:#dc2626;
+    --card:#ffffff; --bg:#f8fafc;
+    --radius:16px; --rsm:12px;
+    --shadow:0 6px 22px rgba(2,6,23,.08);
+    --shadow2:0 12px 28px rgba(2,6,23,.12);
+    --tr:.2s ease;
+  }
+  body{background:var(--bg)}
+  .edit-report .wrap{max-width:980px;margin:0 auto;padding:20px 14px}
+  .edit-report .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .edit-report .hd{padding:18px 20px;border-bottom:1px solid var(--line)}
+  .edit-report .title{margin:0;font-weight:900;color:var(--ink-soft)}
+  .edit-report .body{padding:20px}
+
+  /* حقول عامة */
+  .grid{display:grid;gap:18px}
+  .row{display:flex;flex-direction:column;gap:8px}
+  label{font-weight:800;color:var(--ink-soft)}
+  input[type="text"],input[type="number"],input[type="date"],input[type="email"],input[type="tel"],select,textarea{
+    width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:var(--rsm);background:#fff;font-size:1rem
+  }
+  textarea{min-height:120px;resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand2);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+
+  /* صور */
+  .images{display:grid;gap:16px}
+  @media(min-width:720px){.images{grid-template-columns:repeat(4,1fr)}}
+  .img-card{
+    border:1px dashed #cbd5e1;border-radius:14px;background:#f9fafb;padding:12px;display:flex;flex-direction:column;gap:10px;transition:transform var(--tr), box-shadow var(--tr)
+  }
+  .img-card:hover{transform:translateY(-2px);box-shadow:var(--shadow2)}
+  .thumb{
+    width:100%;height:130px;border-radius:12px;background:#f1f5f9;object-fit:cover;display:block
+  }
+  .thumb--empty{display:grid;place-items:center;color:#94a3b8;font-weight:800;font-size:.9rem}
+  .img-meta{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .img-meta a{font-size:.85rem;color:var(--brand);text-decoration:none}
+  .img-actions{display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .btn-file{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:9px 12px;border-radius:10px;border:1px solid #c7d2fe;background:#eef2ff;color:#1e3a8a;font-weight:800;cursor:pointer}
+  .btn-file input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .clearbox{display:flex;align-items:center;gap:6px}
+  .clearbox input{width:18px;height:18px}
+  .clearbox span{font-size:.9rem;color:#ef4444;font-weight:800}
+
+  .note{font-size:.85rem;color:var(--muted);background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+
+  /* أزرار */
+  .actions{display:grid;grid-template-columns:1fr;gap:12px;margin-top:8px}
+  @media(min-width:560px){.actions{grid-template-columns:1fr 1fr}}
+  .btn{padding:12px 16px;border-radius:12px;border:1px solid var(--line);background:#fff;font-weight:900;cursor:pointer;text-decoration:none;text-align:center}
+  .btn-save{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:transparent}
+  .btn-save:hover{filter:brightness(1.02)}
+  .btn-ghost{color:#1e3a8a;background:#eef2ff;border-color:#c7d2fe}
+  .err{color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;padding:10px 12px;border-radius:10px;font-weight:700}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edit-report">
+  <div class="wrap">
+    <div class="card">
+      <div class="hd"><h2 class="title">✏️ تعديل التقرير #{{ report.id }}</h2></div>
+      <div class="body">
+        {% if messages %}
+          {% for message in messages %}<div class="err" style="margin-bottom:10px">{{ message }}</div>{% endfor %}
+        {% endif %}
+        {% if form.non_field_errors %}
+          <div class="err" style="margin-bottom:10px">
+            {% for e in form.non_field_errors %}• {{ e }}<br>{% endfor %}
+          </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" autocomplete="off" novalidate>
+          {% csrf_token %}
+
+          <div class="grid">
+            <div class="row">
+              <label for="{{ form.category.id_for_label }}">نوع التقرير</label>
+              {{ form.category }}
+              {% if form.category.errors %}<div class="err">{% for e in form.category.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+            </div>
+
+            {% if form.fields.teacher_name %}
+            <div class="row">
+              <label for="id_teacher_name">اسم المعلم</label>
+              <input type="text" id="id_teacher_name" name="teacher_name" maxlength="120"
+                     value="{{ form.data.teacher_name|default:report.teacher_name|default:request.user.name }}">
+            </div>
+            {% endif %}
+
+            <div class="row">
+              <label for="{{ form.title.id_for_label }}">العنوان / البرنامج</label>
+              {{ form.title }}
+              {% if form.title.errors %}<div class="err">{% for e in form.title.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+            </div>
+
+            <div class="row">
+              <label for="{{ form.report_date.id_for_label }}">📅 التاريخ</label>
+              {{ form.report_date }}
+              {% if form.report_date.errors %}<div class="err">{% for e in form.report_date.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+            </div>
+
+            <div class="row">
+              <label for="{{ form.day_name.id_for_label }}">📌 اليوم</label>
+              {{ form.day_name }}
+              {% if form.day_name.errors %}<div class="err">{% for e in form.day_name.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+            </div>
+
+            <div class="row">
+              <label for="{{ form.beneficiaries_count.id_for_label }}">عدد المستفيدين</label>
+              {{ form.beneficiaries_count }}
+              {% if form.beneficiaries_count.errors %}<div class="err">{% for e in form.beneficiaries_count.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+            </div>
+
+            <div class="row">
+              <label for="{{ form.idea.id_for_label }}">الوصف / فكرة التقرير</label>
+              {{ form.idea }}
+              {% if form.idea.errors %}<div class="err">{% for e in form.idea.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+            </div>
+
+            <!-- الصور: تصميم احترافي ومتجاوب -->
+            <div class="row">
+              <label>الصور</label>
+              <div class="images">
+
+                {# === صورة 1 === #}
+                <div class="img-card" data-slot="1">
+                  {% if report.image1 %}
+                    <img class="thumb" id="thumb-1" src="{{ report.image1.url }}" alt="image1">
+                    <div class="img-meta">
+                      <small>الصورة الحالية</small>
+                      <a href="{{ report.image1.url }}" target="_blank" rel="noopener">فتح</a>
+                    </div>
+                  {% else %}
+                    <div class="thumb thumb--empty" id="thumb-1">no image</div>
+                    <div class="img-meta"><small>لا توجد صورة</small><span></span></div>
+                  {% endif %}
+                  <div class="img-actions">
+                    <label class="btn-file">
+                      📷 اختر ملفًا
+                      <input type="file" id="id_image1" name="image1" accept="image/*">
+                    </label>
+                    <label class="clearbox">
+                      <input type="checkbox" id="id_image1_clear" name="image1-clear">
+                      <span>إزالة</span>
+                    </label>
+                  </div>
+                  {% if form.image1.errors %}<div class="err">{% for e in form.image1.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+                </div>
+
+                {# === صورة 2 === #}
+                <div class="img-card" data-slot="2">
+                  {% if report.image2 %}
+                    <img class="thumb" id="thumb-2" src="{{ report.image2.url }}" alt="image2">
+                    <div class="img-meta">
+                      <small>الصورة الحالية</small>
+                      <a href="{{ report.image2.url }}" target="_blank" rel="noopener">فتح</a>
+                    </div>
+                  {% else %}
+                    <div class="thumb thumb--empty" id="thumb-2">no image</div>
+                    <div class="img-meta"><small>لا توجد صورة</small><span></span></div>
+                  {% endif %}
+                  <div class="img-actions">
+                    <label class="btn-file">
+                      📷 اختر ملفًا
+                      <input type="file" id="id_image2" name="image2" accept="image/*">
+                    </label>
+                    <label class="clearbox">
+                      <input type="checkbox" id="id_image2_clear" name="image2-clear">
+                      <span>إزالة</span>
+                    </label>
+                  </div>
+                  {% if form.image2.errors %}<div class="err">{% for e in form.image2.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+                </div>
+
+                {# === صورة 3 === #}
+                <div class="img-card" data-slot="3">
+                  {% if report.image3 %}
+                    <img class="thumb" id="thumb-3" src="{{ report.image3.url }}" alt="image3">
+                    <div class="img-meta">
+                      <small>الصورة الحالية</small>
+                      <a href="{{ report.image3.url }}" target="_blank" rel="noopener">فتح</a>
+                    </div>
+                  {% else %}
+                    <div class="thumb thumb--empty" id="thumb-3">no image</div>
+                    <div class="img-meta"><small>لا توجد صورة</small><span></span></div>
+                  {% endif %}
+                  <div class="img-actions">
+                    <label class="btn-file">
+                      📷 اختر ملفًا
+                      <input type="file" id="id_image3" name="image3" accept="image/*">
+                    </label>
+                    <label class="clearbox">
+                      <input type="checkbox" id="id_image3_clear" name="image3-clear">
+                      <span>إزالة</span>
+                    </label>
+                  </div>
+                  {% if form.image3.errors %}<div class="err">{% for e in form.image3.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+                </div>
+
+                {# === صورة 4 === #}
+                <div class="img-card" data-slot="4">
+                  {% if report.image4 %}
+                    <img class="thumb" id="thumb-4" src="{{ report.image4.url }}" alt="image4">
+                    <div class="img-meta">
+                      <small>الصورة الحالية</small>
+                      <a href="{{ report.image4.url }}" target="_blank" rel="noopener">فتح</a>
+                    </div>
+                  {% else %}
+                    <div class="thumb thumb--empty" id="thumb-4">no image</div>
+                    <div class="img-meta"><small>لا توجد صورة</small><span></span></div>
+                  {% endif %}
+                  <div class="img-actions">
+                    <label class="btn-file">
+                      📷 اختر ملفًا
+                      <input type="file" id="id_image4" name="image4" accept="image/*">
+                    </label>
+                    <label class="clearbox">
+                      <input type="checkbox" id="id_image4_clear" name="image4-clear">
+                      <span>إزالة</span>
+                    </label>
+                  </div>
+                  {% if form.image4.errors %}<div class="err">{% for e in form.image4.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+                </div>
+
+              </div>
+
+              <div class="note" style="margin-top:10px">
+                لإزالة صورة حالية فعِّل مربع <b>إزالة</b>؛ أو اختر صورة جديدة لاستبدالها. الامتدادات المسموحة: JPG/PNG.
+              </div>
+            </div>
+
+            {% if request.GET.next %}
+              <input type="hidden" name="next" value="{{ request.GET.next }}">
+            {% endif %}
+
+            <div class="actions">
+              <button type="submit" class="btn btn-save">💾 حفظ التعديلات</button>
+              {% if request.GET.next %}
+                <a class="btn btn-ghost" href="{{ request.GET.next }}">↩ الرجوع</a>
+              {% else %}
+                <a class="btn btn-ghost" href="{% url 'reports:my_reports' %}">↩ الرجوع</a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // تعيين اليوم تلقائيًا
+  (function(){
+    const dateInput = document.getElementById("id_report_date");
+    const dayInput  = document.getElementById("id_day_name");
+    if(dateInput && dayInput){
+      function setDay(v){
+        if(!v){ dayInput.value=""; return; }
+        const d = new Date(v);
+        const days = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+        dayInput.value = days[d.getDay()];
+      }
+      setDay(dateInput.value);
+      dateInput.addEventListener("change", e => setDay(e.target.value));
+    }
+  })();
+
+  // معاينة فورية لكل خانة صورة + إلغاء الإزالة عند اختيار ملف
+  (function(){
+    const slots = [1,2,3,4];
+    slots.forEach(n=>{
+      const input = document.getElementById(`id_image${n}`);
+      const clear = document.getElementById(`id_image${n}_clear`);
+      const thumb = document.getElementById(`thumb-${n}`);
+      if(!input || !thumb) return;
+      input.addEventListener('change', function(e){
+        const file = e.target.files && e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = ev=>{
+          if(thumb.classList.contains("thumb--empty")){
+            thumb.classList.remove("thumb--empty");
+            thumb.innerHTML = "";
+            thumb.style.background = "#f1f5f9";
+          }
+          if(thumb.tagName.toLowerCase() !== "img"){
+            // استبدل div المصغّر بصورة حقيقية
+            const img = document.createElement("img");
+            img.className = "thumb";
+            img.id = `thumb-${n}`;
+            img.src = ev.target.result;
+            thumb.replaceWith(img);
+          }else{
+            thumb.src = ev.target.result;
+          }
+        };
+        reader.readAsDataURL(file);
+        if(clear) clear.checked = false;
+      });
+    });
+  })();
+</script>
+{% endblock %}

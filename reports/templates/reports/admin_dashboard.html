@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}لوحة المدير{% endblock %}
+
+{% block head %}
+<style>
+  .wrap{max-width:1100px;margin:auto;padding:18px}
+  .kpis{display:grid;gap:12px;margin-top:8px}
+  @media(min-width:700px){.kpis{grid-template-columns:repeat(5,1fr)}}
+  .kpi{background:var(--card,#fff);border:1px solid var(--line,#e5e7eb);border-radius:14px;padding:16px;box-shadow:0 10px 26px rgba(2,6,23,.08)}
+  .kpi .num{font-weight:900;font-size:1.6rem;color:var(--brand,#2563eb)}
+  .kpi .lbl{color:var(--muted,#6b7280);font-weight:800}
+  .grid{display:grid;gap:14px;margin-top:16px}
+  @media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
+  .tile{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--line,#e5e7eb);border-radius:14px;padding:16px;text-decoration:none;color:inherit;box-shadow:0 10px 26px rgba(2,6,23,.08)}
+  .tile:hover{border-color:#dbeafe;background:#f8fbff}
+  .tile.disabled{opacity:.6;pointer-events:none}
+  .ico{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:900}
+  .b1{background:linear-gradient(135deg,#2563eb,#60a5fa)}
+  .b2{background:linear-gradient(135deg,#10b981,#34d399)}
+  .b3{background:linear-gradient(135deg,#7c3aed,#a78bfa)}
+  .b4{background:linear-gradient(135deg,#f59e0b,#fbbf24)}
+  .b5{background:linear-gradient(135deg,#0ea5e9,#22d3ee)}
+  .title{font-weight:900;margin:0;color:var(--ink-soft,#1f2937)}
+  .muted{color:var(--muted,#6b7280);font-weight:700}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wrap" dir="rtl">
+  <h1 class="title">لوحة المدير</h1>
+
+  <section class="kpis" aria-label="مؤشرات سريعة">
+    <div class="kpi"><div class="num">{{ reports_count }}</div><div class="lbl">إجمالي التقارير</div></div>
+    <div class="kpi"><div class="num">{{ teachers_count }}</div><div class="lbl">المعلّمون</div></div>
+    <div class="kpi"><div class="num">{{ tickets_total }}</div><div class="lbl">إجمالي الطلبات</div></div>
+    <div class="kpi"><div class="num">{{ tickets_open }}</div><div class="lbl">طلبات مفتوحة/قيد</div></div>
+    {# تظهر فقط إذا وفرتها في الكونتكست (مثلاً count للأنواع الفعالة) #}
+    {% if reporttypes_count %}
+      <div class="kpi"><div class="num">{{ reporttypes_count }}</div><div class="lbl">أنواع التقارير</div></div>
+    {% endif %}
+  </section>
+
+  <section class="grid" aria-label="إجراءات">
+    <a class="tile" href="{% url 'reports:admin_reports' %}">
+      <div class="ico b1">📄</div>
+      <div><div class="title">جميع التقارير</div><div class="muted">عرض/تصفية وحذف التقارير</div></div>
+    </a>
+
+    <a class="tile" href="{% url 'reports:tickets_inbox' %}">
+      <div class="ico b2">📬</div>
+      <div><div class="title">صندوق الطلبات</div><div class="muted">كل الطلبات وحالاتها</div></div>
+    </a>
+
+    <a class="tile" href="{% url 'reports:manage_teachers' %}">
+      <div class="ico b4">👩‍🏫</div>
+      <div><div class="title">إدارة المعلّمين</div><div class="muted">إضافة/تعديل/حذف</div></div>
+    </a>
+
+    <a class="tile" href="{% url 'reports:departments_list' %}">
+      <div class="ico b3">🏷️</div>
+      <div>
+        <div class="title">الأقسام</div>
+        <div class="muted">
+          {% if has_dept_model %}إضافة/تعديل/حذف/أعضاء{% else %}إسناد الأعضاء فقط (من ROLE_CHOICES){% endif %}
+        </div>
+      </div>
+    </a>
+
+    {# ======= الجديد: إدارة أنواع التقارير ======= #}
+    {% if has_reporttype %}
+      <a class="tile" href="{% url 'reports:reporttypes_list' %}">
+        <div class="ico b5">🧩</div>
+        <div>
+          <div class="title">أنواع التقارير</div>
+          <div class="muted">إضافة/تعديل/حذف الأنواع (تظهر في “نوع التقرير”)</div>
+        </div>
+      </a>
+    {% else %}
+      <div class="tile disabled">
+        <div class="ico b5">🧩</div>
+        <div>
+          <div class="title">أنواع التقارير</div>
+          <div class="muted">فعّل ReportType والروابط الخاصة به لبدء الإدارة</div>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

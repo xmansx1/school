@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}إضافة معلم جديد{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="teacher-card">
+    <div class="card-header">
+      <h2 class="title"><i class="fas fa-user-plus"></i> إضافة معلم جديد</h2>
+      <p class="subtitle">املأ البيانات التالية لإضافة معلم جديد للنظام</p>
+    </div>
+
+    <form method="POST" class="teacher-form" novalidate>
+      {% csrf_token %}
+
+      {% if messages %}
+        <div id="flash">
+          {% for m in messages %}
+            <div class="alert {{ m.tags }}">{{ m }}</div>
+          {% endfor %}
+        </div>
+        <script>
+          setTimeout(()=>{ const f=document.getElementById('flash'); if(f) f.remove(); }, 3000);
+        </script>
+      {% endif %}
+
+      {% if form.non_field_errors %}
+        <div class="alert error">
+          {% for e in form.non_field_errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label><i class="fas fa-user icon"></i> اسم المعلم</label>
+          {{ form.name }}
+          {% for e in form.name.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          <div class="form-hint">الاسم الكامل للمعلم</div>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fas fa-id-card icon"></i> رقم الهوية</label>
+          {{ form.national_id }}
+          {% for e in form.national_id.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          <div class="form-hint">رقم الهوية الوطنية مكون من 10 أرقام</div>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fas fa-phone icon"></i> رقم الجوال</label>
+          {{ form.phone }}
+          {% for e in form.phone.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          <div class="form-hint">يبدأ بـ 05 ويحتوي على 10 أرقام</div>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fas fa-key icon"></i> كلمة المرور</label>
+          <div class="password-container">
+            {{ form.password }}
+            <button type="button" class="toggle-password" id="togglePassword">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          {% for e in form.password.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          <div class="form-hint">كلمة مرور قوية تحتوي على أحرف وأرقام (اتركها فارغة عند التعديل إذا لا تريد تغييرها)</div>
+        </div>
+
+        <div class="form-group switch-container">
+          <label class="switch">
+            {{ form.is_active }}
+            <span class="slider round"></span>
+          </label>
+          {% for e in form.is_active.errors %}<div class="field-error" style="margin-top:6px">{{ e }}</div>{% endfor %}
+          <div class="switch-label">
+            <i class="fas fa-toggle-on icon"></i> نشط
+            <div class="form-hint">تفعيل حساب المعلم للنظام</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fas fa-user-shield icon"></i> الدور</label>
+          <div class="select-wrapper">
+            {{ form.role }}
+            <div class="select-arrow"><i class="fas fa-chevron-down"></i></div>
+          </div>
+          {% for e in form.role.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          <div class="form-hint">اختر: معلم، مدير، مسؤول النشاط، مسؤول التطوع ، مسؤول الشؤون المدرسية ، مسؤول الشؤون الإدارية</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i> حفظ المعلم
+        </button>
+        <a href="{% url 'reports:manage_teachers' %}" class="btn btn-outline">
+          <i class="fas fa-arrow-right"></i> رجوع للقائمة
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+  :root {
+    --primary: #4361ee;
+    --primary-dark: #3a56d4;
+    --secondary: #6c757d;
+    --light: #f8f9fa;
+    --dark: #343a40;
+    --border: #dee2e6;
+    --shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    --gradient: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+  }
+
+  * { box-sizing: border-box; }
+  .container { max-width: 800px; margin: 30px auto; padding: 0 15px; }
+
+  .teacher-card {
+    background: #fff; border-radius: 16px; overflow: hidden;
+    box-shadow: var(--shadow); transition: transform .3s ease, box-shadow .3s ease;
+    animation: fadeIn .5s ease-out;
+  }
+  .teacher-card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.1); }
+
+  .card-header { background: var(--gradient); color: #fff; padding: 25px 30px; text-align: center; }
+  .title { margin:0 0 10px; font-weight:800; font-size:1.8rem; display:flex; align-items:center; justify-content:center; gap:10px; }
+  .subtitle { margin:0; opacity:.9; font-size:1rem; }
+
+  .teacher-form { padding:30px; }
+  .form-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:20px; margin-bottom:20px; }
+
+  .form-group { margin-bottom:15px; }
+  .form-group label { display:flex; align-items:center; margin-bottom:8px; font-weight:600; color:var(--dark); }
+  .icon { margin-left:8px; color:var(--primary); width:16px; }
+
+  input, select {
+    width:100%; padding:12px 16px; border:1px solid var(--border); border-radius:10px;
+    font-size:1rem; transition:all .3s ease; background-color:var(--light);
+  }
+  input:focus, select:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(67,97,238,.15); outline:none; }
+
+  .form-hint { font-size:.8rem; color:var(--secondary); margin-top:5px; }
+  .field-error { color:#b91c1c; font-size:.85rem; margin-top:6px; }
+
+  /* كلمة المرور */
+  .password-container { position: relative; display: flex; align-items: center; }
+  .password-container input { width: 100%; padding-right: 40px; }
+  .password-container .toggle-password {
+    position:absolute; top:50%; right:12px; transform:translateY(-50%);
+    background:none; border:none; color:var(--secondary);
+    cursor:pointer; padding:0; font-size:1.1rem; line-height:1;
+  }
+
+  /* التبديل (نشط) */
+  .switch-container { display:flex; align-items:center; margin-top:10px; }
+  .switch { position:relative; display:inline-block; width:50px; height:26px; margin-left:10px; }
+  .switch input { opacity:0; width:0; height:0; }
+  .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; }
+  .slider:before { position:absolute; content:""; height:18px; width:18px; left:4px; bottom:4px; background-color:#fff; transition:.4s; }
+  input:checked + .slider { background-color:var(--primary); }
+  input:checked + .slider:before { transform:translateX(24px); }
+  .slider.round { border-radius:34px; }
+  .slider.round:before { border-radius:50%; }
+  .switch-label { flex:1; }
+
+  /* حقل الدور (Select) */
+  .select-wrapper { position:relative; }
+  .select-wrapper select { appearance:none; padding-left:40px; }
+  .select-arrow { position:absolute; top:50%; left:15px; transform:translateY(-50%); pointer-events:none; color:var(--secondary); }
+
+  .form-actions {
+    display:flex; gap:15px; justify-content:center; margin-top:30px;
+    padding-top:20px; border-top:1px solid var(--border);
+  }
+
+  .btn {
+    padding:12px 24px; border-radius:10px; font-weight:700; cursor:pointer; border:none;
+    text-decoration:none; transition:all .3s ease; display:inline-flex; align-items:center; gap:8px; font-size:1rem;
+  }
+  .btn-primary { background:var(--primary); color:#fff; }
+  .btn-primary:hover { background:var(--primary-dark); transform:translateY(-2px); box-shadow:0 5px 15px rgba(67,97,238,.3); }
+  .btn-outline { background:#fff; border:1px solid var(--border); color:var(--dark); }
+  .btn-outline:hover { background:var(--light); transform:translateY(-2px); box-shadow:0 5px 15px rgba(0,0,0,.08); }
+
+  .alert { padding:12px 16px; border-radius:10px; margin-bottom:12px; }
+  .alert.success { background:#ecfdf5; color:#065f46; }
+  .alert.error { background:#fef2f2; color:#991b1b; }
+  .alert.warning { background:#fffbeb; color:#92400e; }
+  .alert.info { background:#eff6ff; color:#1e40af; }
+
+  @keyframes fadeIn { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+  @media (max-width:768px) {
+    .form-grid { grid-template-columns:1fr; }
+    .form-actions { flex-direction:column; }
+    .teacher-form { padding:20px; }
+    .card-header { padding:20px; }
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // إظهار وإخفاء كلمة المرور
+    const togglePassword = document.querySelector("#togglePassword");
+    const passwordInput = document.querySelector('input[type="password"]') || document.getElementById('id_password');
+    if (togglePassword && passwordInput) {
+      togglePassword.addEventListener("click", function () {
+        const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+        passwordInput.setAttribute("type", type);
+        this.querySelector("i").classList.toggle("fa-eye");
+        this.querySelector("i").classList.toggle("fa-eye-slash");
+      });
+    }
+
+    // تأثيرات عند التركيز على الحقول
+    const inputs = document.querySelectorAll("input, select, textarea");
+    inputs.forEach((input) => {
+      input.addEventListener("focus", function () {
+        this.parentElement.classList.add("focused");
+      });
+      input.addEventListener("blur", function () {
+        this.parentElement.classList.remove("focused");
+      });
+    });
+  });
+</script>
+{% endblock content %}

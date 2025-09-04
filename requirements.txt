@@ -1,0 +1,30 @@
+asgiref==3.9.1
+Brotli==1.1.0
+cffi==1.17.1
+cssselect2==0.8.0
+fonttools==4.59.1
+pdfkit==1.0.0
+Pillow==11.3.0
+psycopg2-binary==2.9.10
+pycparser==2.22
+pydyf==0.11.0
+pyphen==0.17.2
+python-dotenv==1.1.1
+sqlparse==0.5.3
+tinycss2==1.4.0
+tinyhtml5==2.0.0
+tzdata==2025.2
+weasyprint==66.0
+webencodings==0.5.1
+zopfli==0.2.3.post1
+
+# Django and related
+Django>=4.2,<5.0
+gunicorn
+whitenoise
+dj-database-url==3.0.1
+
+# Cloudinary
+cloudinary
+django-cloudinary-storage
+dj-database-url

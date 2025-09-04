@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == "edit" %}تعديل نوع تقرير{% else %}إضافة نوع تقرير{% endif %}{% endblock %}
+{% block head %}
+<style>
+  .wrap{max-width:760px;margin:24px auto;padding:0 16px}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 6px 20px rgba(2,6,23,.06);padding:22px}
+  .grid{display:grid;gap:14px}
+  .row{display:grid;gap:14px}
+  @media(min-width:720px){.row{grid-template-columns:1fr 1fr}}
+  label{font-weight:800;margin-bottom:6px;display:block}
+  .control{width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:10px}
+  .control:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.2)}
+  textarea.control{min-height:110px;resize:vertical}
+  .err{color:#991b1b;background:#fee2e2;border:1px solid #fecaca;padding:8px 10px;border-radius:10px}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .btn{padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;font-weight:800}
+  .btn-primary{background:linear-gradient(135deg,#2563eb,#3b82f6);border-color:transparent;color:#fff}
+</style>
+{% endblock head %}
+
+{% block content %}
+<div class="wrap" dir="rtl">
+  <div class="card">
+    <h2>{% if mode == "edit" %}✏️ تعديل نوع تقرير{% else %}➕ إضافة نوع تقرير{% endif %}</h2>
+
+    {% if form.non_field_errors %}
+      <div class="err">{% for e in form.non_field_errors %}• {{ e }}<br>{% endfor %}</div>
+    {% endif %}
+
+    <form method="post" class="grid" novalidate>
+      {% csrf_token %}
+
+      <div class="row">
+        <div>
+          <label for="{{ form.name.id_for_label }}">الاسم</label>
+          {{ form.name }}
+          {% for e in form.name.errors %}<div class="err">• {{ e }}</div>{% endfor %}
+        </div>
+        <div>
+          <label for="{{ form.code.id_for_label }}">الرمز (code)</label>
+          {{ form.code }}
+          <div class="help">يُخزَّن داخل <code>Report.category</code> ويُستخدم في الفلاتر.</div>
+          {% for e in form.code.errors %}<div class="err">• {{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      {% if form.description %}
+      <div>
+        <label for="{{ form.description.id_for_label }}">الوصف</label>
+        {{ form.description }}
+        {% for e in form.description.errors %}<div class="err">• {{ e }}</div>{% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="row">
+        <div>
+          <label for="{{ form.order.id_for_label }}">الترتيب</label>
+          {{ form.order }}
+          {% for e in form.order.errors %}<div class="err">• {{ e }}</div>{% endfor %}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:28px">
+          {{ form.is_active }} <label for="{{ form.is_active.id_for_label }}">نشط (يظهر في النماذج)</label>
+        </div>
+      </div>
+
+      {% for h in form.hidden_fields %}{{ h }}{% endfor %}
+
+      <div class="actions">
+        <button class="btn btn-primary" type="submit">💾 حفظ</button>
+        <a class="btn" href="{% url 'reports:reporttypes_list' %}">↩️ رجوع</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // تجميل سريع لعناصر النموذج بدون فلاتر
+  (function(){
+    const sel='input[type=text],input[type=number],textarea,select';
+    document.querySelectorAll(sel).forEach(el=>el.classList.add('control'));
+  })();
+</script>
+{% endblock content %}

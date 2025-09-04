@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}📋 تقاريري{% endblock %}
+
+{% block head %}
+<style>
+  :root{
+    --brand:#2563eb;--brand2:#3b82f6;
+    --accent:#059669;--danger:#ef4444;--danger-2:#dc2626;
+    --ink:#0f172a;--ink-soft:#334155;--muted:#64748b;
+    --bg:#f8fafc;--card:#ffffff;--line:#e5e7eb;
+    --radius:16px;--rsm:12px;
+    --shadow:0 8px 28px rgba(2,6,23,.08);
+    --shadow2:0 14px 40px rgba(2,6,23,.12);
+  }
+  body{background:var(--bg)}
+  .container{max-width:1200px;margin:0 auto;padding:20px 14px}
+
+  /* ===== Card ===== */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 18px 22px;margin-bottom:18px;transition:.2s}
+  .card:hover{box-shadow:var(--shadow2)}
+  .title{font-size:1.65rem;margin:0 0 12px;font-weight:900;color:var(--ink)}
+
+  /* ===== Filters ===== */
+  .filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin:8px 0 12px}
+  .fg{display:flex;flex-direction:column;gap:6px}
+  .input{border:1px solid var(--line);border-radius:var(--rsm);padding:11px 12px;background:#fff;min-width:200px}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;font-weight:800;text-decoration:none;border:1px solid var(--line);cursor:pointer;transition:.15s}
+  .btn:hover{transform:translateY(-1px)}
+  .btn-primary{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border-color:transparent}
+  .btn-ghost{background:#fff;color:var(--brand);border-color:#c7d2fe}
+  .btn-danger{background:#fee2e2;color:#b91c1c;border-color:#fecaca}
+
+  /* ===== Mobile cards ===== */
+  .report-card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px;display:grid;gap:12px}
+  .row{display:grid;grid-template-columns:130px 1fr;gap:10px}
+  .lbl{color:var(--muted);font-weight:700}
+  .val{color:var(--ink-soft);font-weight:800}
+  .idea{background:#f1f5f9;border:1px solid #e5e7eb;border-radius:12px;padding:10px;white-space:pre-wrap}
+
+  /* Gallery (cards & table) */
+  .gallery{--size:110px;display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--size),1fr));gap:10px}
+  .thumb{position:relative;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;background:#f8fafc}
+  .media{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;filter:saturate(105%);transition:transform .15s ease}
+  .thumb:hover .media{transform:scale(1.04)}
+  .zoom-cur{cursor:zoom-in}
+  .badge-more{position:absolute;inset:auto 8px 8px auto;background:rgba(0,0,0,.65);color:#fff;border-radius:999px;padding:4px 10px;font-size:.85rem;font-weight:800}
+
+  .actions{display:flex;gap:8px;flex-wrap:wrap}
+  .act{padding:10px 13px;border-radius:12px;border:1px solid var(--line);background:#fff;font-weight:800;text-decoration:none}
+  .act-edit{color:#1e40af;border-color:#c7d2fe;background:#eef2ff}
+  .act-print{color:#065f46;border-color:#a7f3d0;background:#ecfdf5}
+  .act-del{color:#991b1b;border-color:#fecaca;background:#fee2e2}
+
+  /* ===== Table (desktop) ===== */
+  .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:var(--shadow);margin-top:12px}
+  table{width:100%;border-collapse:collapse}
+  thead th{background:#f8fafc;border-bottom:1px solid var(--line);padding:12px 10px;text-align:right;color:var(--ink);font-weight:900;white-space:nowrap}
+  tbody td{border-top:1px solid var(--line);padding:12px 10px;vertical-align:top}
+  td .idea-preview{max-width:480px;color:var(--muted)}
+  td .idea-preview span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;max-width:100%}
+  .thumb-row{display:flex;gap:10px;flex-wrap:wrap}
+  .thumb-row .thumb{width:94px;flex:0 0 auto}
+  .thumb-row .media{aspect-ratio:4/3}
+  .td-actions{white-space:nowrap}
+  .mini{padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:800}
+  .mini-edit{background:#eef2ff;border-color:#c7d2fe;color:#1e40af}
+  .mini-print{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
+  .mini-del{background:#fee2e2;border-color:#fecaca;color:#991b1b}
+
+  /* Pager */
+  .pager{display:flex;gap:8px;justify-content:center;margin-top:14px}
+  .pager a,.pager span{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;text-decoration:none;color:#111827}
+  .pager .current{background:#eef2ff;border-color:#c7d2fe;color:#1e3a8a;font-weight:800}
+
+  /* responsive */
+  @media(max-width:960px){ .table-wrap{display:none} .gallery{--size:100px} .row{grid-template-columns:120px 1fr} }
+  @media(min-width:961px){ .report-card{display:none} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card">
+    <h2 class="title">📋 تقاريري</h2>
+
+    <!-- Filters -->
+    <form method="get" class="filters" role="search">
+      <div class="fg">
+        <label class="lbl">من تاريخ</label>
+        <input class="input" type="date" name="start_date" value="{{ start_date }}">
+      </div>
+      <div class="fg">
+        <label class="lbl">إلى تاريخ</label>
+        <input class="input" type="date" name="end_date" value="{{ end_date }}">
+      </div>
+      <div class="fg" style="gap:10px;flex-direction:row;margin-inline-start:auto">
+        <button type="submit" class="btn btn-primary">🔍 تصفية</button>
+        {% if start_date or end_date %}
+          <a class="btn btn-ghost" href="{% url 'reports:my_reports' %}">🧹 مسح</a>
+        {% endif %}
+      </div>
+    </form>
+
+    {# ===== Mobile cards ===== #}
+    {% for report in reports %}
+      <article class="report-card">
+        <div class="row"><div class="lbl">📅 التاريخ</div><div class="val">{{ report.report_date|date:"Y-m-d" }}{% if report.day_name %} • {{ report.day_name }}{% endif %}</div></div>
+        <div class="row"><div class="lbl">📘 العنوان</div><div class="val">{{ report.title|default:"—" }}</div></div>
+        <div class="row"><div class="lbl">🏷️ التصنيف</div><div class="val">{{ report.get_category_display|default:report.category|default:"—" }}</div></div>
+        <div class="row"><div class="lbl">👥 المستفيدون</div><div class="val">{{ report.beneficiaries_count|default_if_none:"—" }}</div></div>
+        <div class="row"><div class="lbl">💡 الفكرة</div><div class="idea">{{ report.idea|default_if_none:""|linebreaksbr }}</div></div>
+
+        {% if report.image1 or report.image2 or report.image3 or report.image4 %}
+        <div class="row">
+          <div class="lbl">🖼️ الصور</div>
+          <div class="gallery js-gallery" data-report="{{ report.pk }}">
+            {% if report.image1 %}
+              <figure class="thumb"><img class="media zoom-cur" loading="lazy" src="{{ report.image1.url }}" data-full="{{ report.image1.url }}" alt="image1"></figure>
+            {% endif %}
+            {% if report.image2 %}
+              <figure class="thumb"><img class="media zoom-cur" loading="lazy" src="{{ report.image2.url }}" data-full="{{ report.image2.url }}" alt="image2"></figure>
+            {% endif %}
+            {% if report.image3 %}
+              <figure class="thumb"><img class="media zoom-cur" loading="lazy" src="{{ report.image3.url }}" data-full="{{ report.image3.url }}" alt="image3"></figure>
+            {% endif %}
+            {% if report.image4 %}
+              <figure class="thumb"><img class="media zoom-cur" loading="lazy" src="{{ report.image4.url }}" data-full="{{ report.image4.url }}" alt="image4"></figure>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="actions">
+          <a class="act act-edit" href="{% url 'reports:edit_my_report' report.pk %}?next={{ request.get_full_path|urlencode }}">تعديل</a>
+          <a class="act act-print" href="{% url 'reports:report_print' report.pk %}" target="_blank" rel="noopener">طباعة</a>
+          <form action="{% url 'reports:delete_my_report' report.pk %}" method="post" onsubmit="return confirm('هل تريد حذف هذا التقرير نهائيًا؟');">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="act act-del">حذف</button>
+          </form>
+        </div>
+      </article>
+    {% empty %}
+      <div style="text-align:center;color:var(--muted);padding:30px 6px">لا توجد تقارير.</div>
+    {% endfor %}
+
+    {# ===== Desktop table ===== #}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>📅 التاريخ</th>
+            <th>📘 العنوان</th>
+            <th>🏷️ التصنيف</th>
+            <th>👥 المستفيدون</th>
+            <th>💡 الفكرة</th>
+            <th>🖼️ الصور</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in reports %}
+          <tr>
+            <td>
+              {{ report.report_date|date:"Y-m-d" }}<br>
+              <small style="color:var(--muted)">{{ report.day_name|default_if_none:"" }}</small>
+            </td>
+            <td>{{ report.title|default:"—" }}</td>
+            <td>{{ report.get_category_display|default:report.category|default:"—" }}</td>
+            <td>{{ report.beneficiaries_count|default_if_none:"—" }}</td>
+            <td class="idea-preview" title="{{ report.idea|default_if_none:'' }}">
+              <span>{{ report.idea|default_if_none:""|truncatechars:120 }}</span>
+            </td>
+            <td>
+              <div class="thumb-row js-gallery" data-report="{{ report.pk }}">
+                {% if report.image1 %}
+                  <figure class="thumb"><img class="media zoom-cur" loading="lazy" src="{{ report.image1.url }}" data-full="{{ report.image1.url }}" alt="img1"></figure>
+                {% endif %}
+                {% if report.image2 %}
+                  <figure class="thumb"><img class="media zoom-cur" loading="lazy" src="{{ report.image2.url }}" data-full="{{ report.image2.url }}" alt="img2"></figure>
+                {% endif %}
+                {% if report.image3 %}
+                  <figure class="thumb"><img class="media zoom-cur" loading="lazy" src="{{ report.image3.url }}" data-full="{{ report.image3.url }}" alt="img3"></figure>
+                {% endif %}
+                {% if report.image4 %}
+                  <figure class="thumb"><img class="media zoom-cur" loading="lazy" src="{{ report.image4.url }}" data-full="{{ report.image4.url }}" alt="img4"></figure>
+                {% endif %}
+              </div>
+            </td>
+            <td class="td-actions">
+              <a class="mini mini-edit" href="{% url 'reports:edit_my_report' report.pk %}?next={{ request.get_full_path|urlencode }}">تعديل</a>
+              <a class="mini mini-print" href="{% url 'reports:report_print' report.pk %}" target="_blank" rel="noopener">طباعة</a>
+              <form action="{% url 'reports:delete_my_report' report.pk %}" method="post" style="display:inline" onsubmit="return confirm('حذف هذا التقرير؟');">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="mini mini-del">حذف</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+            <tr><td colspan="7" style="text-align:center;color:var(--muted)">لا توجد تقارير.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if reports.paginator and reports.paginator.num_pages > 1 %}
+    <nav class="pager" aria-label="ترقيم الصفحات">
+      {% with qs="&start_date="|add:start_date|default_if_none:""|add:"&end_date="|add:end_date|default_if_none:"" %}
+        {% if reports.has_previous %}
+          <a href="?page={{ reports.previous_page_number }}{{ qs }}">السابق</a>
+        {% endif %}
+        <span class="current">صفحة {{ reports.number }} من {{ reports.paginator.num_pages }}</span>
+        {% if reports.has_next %}
+          <a href="?page={{ reports.next_page_number }}{{ qs }}">التالي</a>
+        {% endif %}
+      {% endwith %}
+    </nav>
+    {% endif %}
+
+    <a href="{% url 'reports:home' %}" class="btn btn-ghost" style="margin-top:16px">↩ العودة</a>
+  </div>
+</div>
+
+<!-- Modal (Carousel) -->
+<div id="imageModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.92);place-items:center">
+  <button type="button" aria-label="إغلاق"
+          style="position:absolute;top:18px;right:24px;font-size:38px;color:#fff;background:transparent;border:0;cursor:pointer"
+          onclick="closeModal()">&times;</button>
+
+  <button id="prevBtn" type="button" aria-label="السابق"
+          style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:28px;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;cursor:pointer">‹</button>
+
+  <img id="modalImage" alt="preview" style="max-width:92vw;max-height:82vh;object-fit:contain;border-radius:12px" />
+
+  <button id="nextBtn" type="button" aria-label="التالي"
+          style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:28px;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;cursor:pointer">›</button>
+</div>
+
+<script>
+  // جمع الصور في كل جاليري وتشغيل العارض كسلايدر
+  (function(){
+    const modal   = document.getElementById('imageModal');
+    const imgEl   = document.getElementById('modalImage');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    let currentList = []; // urls
+    let index = 0;
+
+    function show(i){
+      if (!currentList.length) return;
+      index = (i + currentList.length) % currentList.length;
+      imgEl.src = currentList[index];
+    }
+
+    function open(list, startIndex){
+      currentList = list.slice();
+      index = startIndex || 0;
+      show(index);
+      modal.style.display = 'grid';
+      document.body.style.overflow = 'hidden';
+    }
+
+    window.closeModal = function(){
+      modal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+      currentList = [];
+    }
+
+    prevBtn.addEventListener('click', () => show(index-1));
+    nextBtn.addEventListener('click', () => show(index+1));
+    window.addEventListener('keydown', (e)=>{
+      if (modal.style.display === 'grid'){
+        if (e.key === 'Escape') closeModal();
+        if (e.key === 'ArrowLeft')  show(index-1);
+        if (e.key === 'ArrowRight') show(index+1);
+      }
+    });
+
+    // سحب باللمس
+    let sx=null;
+    modal.addEventListener('touchstart', e=>{ if(e.touches[0]) sx=e.touches[0].clientX; }, {passive:true});
+    modal.addEventListener('touchend', e=>{
+      if(sx==null) return;
+      const dx = (e.changedTouches[0]?.clientX||0) - sx;
+      if(Math.abs(dx) > 40) (dx>0?prevBtn:nextBtn).click();
+      sx=null;
+    }, {passive:true});
+
+    // اربط كل المعارض
+    document.querySelectorAll('.js-gallery').forEach(gal=>{
+      const images = Array.from(gal.querySelectorAll('img[data-full]'));
+      const urls   = images.map(im=>im.getAttribute('data-full'));
+      images.forEach((im, i)=>{
+        im.addEventListener('click', ()=> open(urls, i));
+      });
+    });
+  })();
+
+  // فتح قديم (احتياطي)
+  function openModal(src){ 
+    const modal=document.getElementById('imageModal');
+    const img=document.getElementById('modalImage');
+    img.src=src; modal.style.display='grid'; document.body.style.overflow='hidden';
+  }
+  function closeModal(){
+    document.getElementById('imageModal').style.display='none';
+    document.body.style.overflow='auto';
+  }
+</script>
+{% endblock %}

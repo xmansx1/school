@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}طلب جديد{% endblock %}
+
+{% block head %}
+<style>
+  /* ✳️ كل الأنماط محصورة داخل .ticket-page لتفادي كسر الهيدر */
+  .ticket-page{
+    --ink:#0f172a;--ink-soft:#1f2937;--muted:#64748b;--line:#e5e7eb;
+    --brand:#2563eb;--brand-light:#3b82f6;--accent:#059669;--accent-light:#10b981;
+    --card:#fff;--bg:#f8fafc;--error:#ef4444;--error-bg:#fef2f2;
+    --radius:16px;--rsm:10px;--shadow:0 6px 20px rgba(2,6,23,.08);--t:all .2s ease;
+  }
+  .ticket-page .ticket-container{max-width:900px;margin:0 auto;padding:18px}
+  .ticket-page .ticket-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px}
+  .ticket-page .section-title{font-size:1.35rem;font-weight:900;color:var(--ink-soft);display:flex;gap:10px;align-items:center;margin:0 0 16px}
+
+  .ticket-page .form-grid{display:grid;gap:18px}
+  .ticket-page .form-row{display:grid;gap:16px}
+  @media(min-width:720px){ .ticket-page .form-row{grid-template-columns:1fr 1fr} }
+
+  .ticket-page .form-group{display:flex;flex-direction:column;gap:8px}
+  .ticket-page label{font-weight:800;color:var(--ink-soft)}
+  .ticket-page input[type="text"],
+  .ticket-page input[type="file"],
+  .ticket-page select,
+  .ticket-page textarea{
+    width:100%;padding:14px 16px;border:1px solid var(--line);border-radius:var(--rsm);font:inherit;background:#fff;transition:var(--t)
+  }
+  .ticket-page select:disabled{background:#f3f4f6;color:#9ca3af;cursor:not-allowed}
+  .ticket-page input:focus,.ticket-page select:focus,.ticket-page textarea:focus{outline:none;border-color:var(--brand-light);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+  .ticket-page textarea{min-height:140px;resize:vertical}
+  .ticket-page .help{font-size:.9rem;color:var(--muted)}
+  .ticket-page .field-error{color:var(--error);background:var(--error-bg);border:1px solid #fecaca;padding:10px 12px;border-radius:var(--rsm);font-size:.92rem}
+
+  .ticket-page .form-actions{display:grid;gap:12px}
+  @media(min-width:560px){ .ticket-page .form-actions{grid-template-columns:1fr 1fr} }
+  .ticket-page .btn{padding:14px 18px;border:0;border-radius:12px;font-weight:800;cursor:pointer;transition:var(--t);display:inline-flex;justify-content:center;align-items:center;gap:8px;text-decoration:none}
+  .ticket-page .btn-accent{background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff}
+  .ticket-page .btn-accent:hover{transform:translateY(-2px)}
+  .ticket-page .btn-outline{background:#fff;border:1px solid var(--line);color:var(--ink-soft)}
+  .ticket-page .btn-outline:hover{background:#f8fafc}
+
+  /* Placeholder مطلوبة للقوائم */
+  .ticket-page select:required:invalid{color:#9aa4b2}
+  .ticket-page option[value=""]{color:#9aa4b2}
+
+  /* رسائل ديناميكية */
+  .ticket-page #dynamic-msg{min-height:22px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ticket-page">
+  <div class="ticket-container">
+    <div class="ticket-card">
+      <h2 class="section-title">📝 إنشاء طلب جديد</h2>
+
+      {% if form.non_field_errors %}
+        <div class="field-error" style="margin-bottom:12px">
+          {% for e in form.non_field_errors %}• {{ e }}<br>{% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="POST" enctype="multipart/form-data" class="form-grid" id="ticket-form" novalidate>
+        {% csrf_token %}
+
+        <div class="form-row">
+          <!-- القسم -->
+          <div class="form-group">
+            <label for="{{ form.department.id_for_label }}">القسم <span aria-hidden="true" style="color:#ef4444">*</span></label>
+            <select id="{{ form.department.id_for_label }}" name="{{ form.department.html_name }}" required>
+              <option value="" selected hidden>— اختر القسم —</option>
+              {% for value, label in form.fields.department.choices %}
+                {% if value %}
+                  <option value="{{ value }}"
+                    {% if form.is_bound %}
+                      {% if form.data.department == value %}selected{% endif %}
+                    {% else %}
+                      {% if form.initial.department == value %}selected{% endif %}
+                    {% endif %}
+                  >{{ label }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+            {% for e in form.department.errors %}<div class="field-error">• {{ e }}</div>{% endfor %}
+          </div>
+
+          <!-- المستلم -->
+          <div class="form-group">
+            <label for="{{ form.assignee.id_for_label }}">المستلم <span aria-hidden="true" style="color:#ef4444">*</span></label>
+            <select id="{{ form.assignee.id_for_label }}" name="{{ form.assignee.html_name }}" required disabled>
+              <option value="" selected>— اختر الموظف —</option>
+              {% if form.is_bound and form.fields.assignee.queryset %}
+                {% for u in form.fields.assignee.queryset %}
+                  <option value="{{ u.pk }}"
+                    {% if form.data.assignee|stringformat:"s" == u.pk|stringformat:"s" %}selected{% endif %}
+                  >{{ u.name }}</option>
+                {% endfor %}
+              {% endif %}
+            </select>
+            <div class="help">سيظهر الموظفون بعد اختيار القسم. إن وُجد موظف واحد سيتم اختياره تلقائيًا.</div>
+            {% for e in form.assignee.errors %}<div class="field-error">• {{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <!-- عنوان الطلب -->
+        <div class="form-group">
+          <label for="{{ form.title.id_for_label }}">عنوان الطلب <span aria-hidden="true" style="color:#ef4444">*</span></label>
+          {{ form.title }}
+          {% for e in form.title.errors %}<div class="field-error">• {{ e }}</div>{% endfor %}
+        </div>
+
+        <!-- تفاصيل -->
+        <div class="form-group">
+          <label for="{{ form.body.id_for_label }}">تفاصيل الطلب</label>
+          {{ form.body }}
+          {% for e in form.body.errors %}<div class="field-error">• {{ e }}</div>{% endfor %}
+        </div>
+
+        <!-- مرفق -->
+        <div class="form-group">
+          <label for="{{ form.attachment.id_for_label }}">مرفق (اختياري)</label>
+          {{ form.attachment }}
+          <div class="help">الحد الأقصى المقترح 5MB. الصيغ الشائعة: PDF/PNG/JPG.</div>
+          {% for e in form.attachment.errors %}<div class="field-error">• {{ e }}</div>{% endfor %}
+        </div>
+
+        <div id="dynamic-msg" class="help" aria-live="polite"></div>
+
+        <div class="form-actions">
+          <button class="btn btn-accent" type="submit">إرسال الطلب</button>
+          <a class="btn btn-outline" href="{% url 'reports:my_requests' %}">عرض طلباتي</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const form = document.getElementById('ticket-form');
+  const dept = document.getElementById('id_department');
+  const assignee = document.getElementById('id_assignee');
+  const msg = document.getElementById('dynamic-msg');
+  const attach = document.getElementById('{{ form.attachment.id_for_label }}');
+
+  function getCookie(name){
+    const v = `; ${document.cookie}`.split(`; ${name}=`); 
+    if(v.length===2) return decodeURIComponent(v.pop().split(';').shift());
+  }
+  const CSRF = (window.csrfToken || getCookie('csrftoken') || '');
+
+  function setMsg(text, type='info'){
+    if(!msg) return;
+    msg.textContent = text || '';
+    msg.style.color = (type==='error') ? '#b91c1c' : (type==='ok'? '#065f46' : '#64748b');
+  }
+
+  function setAssigneeDisabled(disabled){
+    assignee.disabled = !!disabled;
+    if(disabled){
+      assignee.innerHTML = '<option value="" selected>— اختر الموظف —</option>';
+    }
+  }
+
+  async function loadMembers(role){
+    if(!assignee) return;
+    setAssigneeDisabled(true);
+    setMsg('...جاري تحميل الموظفين');
+
+    try{
+      const url = "{% url 'reports:api_department_members' %}" + "?department=" + encodeURIComponent(role);
+      const res = await fetch(url, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF },
+        credentials: 'same-origin'
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+
+      assignee.innerHTML = '';
+      const opt0 = document.createElement('option');
+      opt0.value = ''; opt0.textContent = '— اختر الموظف —';
+      assignee.appendChild(opt0);
+
+      const list = Array.isArray(data.results) ? data.results : [];
+      list.forEach(u=>{
+        const opt = document.createElement('option');
+        opt.value = u.id; opt.textContent = u.name;
+        assignee.appendChild(opt);
+      });
+
+      if(list.length === 1){ assignee.value = String(list[0].id); }
+      setAssigneeDisabled(false);
+      setMsg(list.length ? `تم تحميل ${list.length} موظف` : 'لا يوجد موظفون لهذا القسم', list.length ? 'ok' : 'info');
+    }catch(err){
+      console.error(err);
+      setMsg('تعذر تحميل الموظفين. حاول مجددًا.', 'error');
+      setAssigneeDisabled(true);
+    }
+  }
+
+  if(dept && assignee){
+    dept.addEventListener('change', (e)=>{
+      const v = e.target.value;
+      if(!v){ setAssigneeDisabled(true); setMsg('اختر قسمًا أولاً'); return; }
+      loadMembers(v);
+    });
+
+    {% if form.is_bound and form.fields.assignee.queryset %}
+      setAssigneeDisabled(false);
+      setMsg('تم استعادة القائمة من المحاولة السابقة', 'ok');
+    {% else %}
+      if(dept && dept.value){ loadMembers(dept.value); } else { setAssigneeDisabled(true); }
+    {% endif %}
+  }
+
+  if(attach){
+    attach.addEventListener('change', function(){
+      const f = this.files && this.files[0];
+      if(!f) return;
+      const MAX = 5 * 1024 * 1024;
+      if(f.size > MAX){
+        setMsg('حجم المرفق أكبر من 5MB. الرجاء اختيار ملف أصغر.', 'error');
+        this.value = '';
+      }else{
+        setMsg('');
+      }
+    });
+  }
+
+  form && form.addEventListener('submit', function(e){
+    if(dept && !dept.value){
+      e.preventDefault(); setMsg('الرجاء اختيار القسم.', 'error'); dept.focus(); return;
+    }
+    if(assignee && assignee.disabled){
+      e.preventDefault(); setMsg('الرجاء الانتظار حتى يتم تحميل الموظفين.', 'error'); return;
+    }
+    if(assignee && !assignee.value){
+      e.preventDefault(); setMsg('الرجاء اختيار الموظف.', 'error'); assignee.focus(); return;
+    }
+  });
+})();
+</script>
+{% endblock %}

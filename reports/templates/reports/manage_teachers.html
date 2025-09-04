@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}إدارة المعلمين{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+  <div class="admin-header">
+    <div class="header-content">
+      <h1 class="admin-title">
+        <i class="fas fa-chalkboard-teacher"></i>
+        إدارة المعلمين
+      </h1>
+      <p class="admin-subtitle">عرض وإدارة جميع المعلمين في النظام</p>
+    </div>
+
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+      <form method="get" action="" style="display:flex; gap:8px;">
+        <input type="text" name="q" value="{{ term }}" placeholder="بحث: الاسم/الجوال/الهوية"
+               style="padding:10px 14px; border:1px solid #e2e8f0; border-radius:10px; min-width:240px;">
+        <button class="btn btn-primary">بحث</button>
+      </form>
+      <a class="btn btn-primary btn-add" href="{% url 'reports:add_teacher' %}">
+        <i class="fas fa-plus-circle"></i>
+        إضافة معلم جديد
+      </a>
+    </div>
+  </div>
+
+  <div class="admin-card">
+    {% if teachers_page and teachers_page.object_list %}
+    <div class="table-responsive">
+      <table class="teachers-table">
+        <thead>
+          <tr>
+            <th class="text-right">المعلم</th>
+            <th class="text-right">رقم الهوية</th>
+            <th class="text-right">رقم الجوال</th>
+            <th class="text-center">الدور</th>
+            <th class="text-center">الحالة</th>
+            <th class="text-center">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in teachers_page.object_list %}
+          <tr>
+            <td data-label="المعلم">
+              <div class="teacher-info">
+                <div class="teacher-avatar">
+                  <i class="fas fa-user"></i>
+                </div>
+                <div class="teacher-details">
+                  <div class="teacher-name">{{ t.name }}</div>
+                </div>
+              </div>
+            </td>
+
+            <td data-label="رقم الهوية">{{ t.national_id|default:"-" }}</td>
+            <td data-label="رقم الجوال">{{ t.phone }}</td>
+
+            <td data-label="الدور" class="text-center">
+              {% with label=t.get_role_display|default_if_none:"" %}
+                {% if t.role == "manager" %}
+                  <span class="badge badge-primary">{{ label|default:"مدير" }}</span>
+                {% elif t.role == "teacher" %}
+                  <span class="badge badge-success">{{ label|default:"معلم" }}</span>
+                {% elif t.role == "activity_officer" %}
+                  <span class="badge badge-primary">مسؤول النشاط</span>
+                {% elif t.role == "volunteer_officer" %}
+                  <span class="badge badge-primary">مسؤول التطوع </span>
+                {% elif t.role == "affairs_officer" %}
+                  <span class="badge badge-primary">مسؤول الشؤون المدرسية </span>
+                {% elif t.role == "admin_officer" %}
+                  <span class="badge badge-primary">مسؤول الشؤون الإدارية</span>
+                {% else %}
+                  <span class="badge badge-success">{{ label|default:"-" }}</span>
+                {% endif %}
+              {% endwith %}
+            </td>
+
+            <td data-label="الحالة" class="text-center">
+              {% if t.is_active %}
+              <span class="status-badge status-active">
+                <i class="fas fa-check-circle"></i> نشط
+              </span>
+              {% else %}
+              <span class="status-badge status-inactive">
+                <i class="fas fa-times-circle"></i> معطل
+              </span>
+              {% endif %}
+            </td>
+
+            <td data-label="الإجراءات" class="text-center">
+              {% with nxt=request.get_full_path %}
+              <div class="action-buttons">
+                <a href="{% url 'reports:edit_teacher' pk=t.id %}?next={{ nxt|urlencode }}"
+                   class="btn btn-icon btn-edit" title="تعديل">
+                  <i class="fas fa-edit"></i>
+                </a>
+
+                <form method="post"
+                      action="{% url 'reports:delete_teacher' pk=t.id %}?next={{ nxt|urlencode }}"
+                      style="display:inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-icon btn-delete" title="حذف"
+                          onclick="return confirm('هل أنت متأكد من حذف هذا المعلم؟')">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </form>
+              </div>
+              {% endwith %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- تحكم بالصفحات -->
+    <div style="display:flex; gap:8px; justify-content:center; align-items:center; margin-top:16px; flex-wrap:wrap;">
+      {% if teachers_page.has_previous %}
+        <a class="btn btn-outline" href="?page={{ teachers_page.previous_page_number }}&q={{ term|urlencode }}">السابق</a>
+      {% endif %}
+      <span class="btn btn-outline">صفحة {{ teachers_page.number }} / {{ teachers_page.paginator.num_pages }}</span>
+      {% if teachers_page.has_next %}
+        <a class="btn btn-outline" href="?page={{ teachers_page.next_page_number }}&q={{ term|urlencode }}">التالي</a>
+      {% endif %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">
+        <i class="fas fa-users-slash"></i>
+      </div>
+      <h3>لا يوجد معلمين</h3>
+      <p>لم يتم العثور على نتائج{% if term %} لبحثك عن "<strong>{{ term }}</strong>"{% endif %}</p>
+      <a href="{% url 'reports:add_teacher' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> إضافة معلم جديد
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  /* التنسيقات العامة */
+  .admin-container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+  .admin-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:16px; }
+  .header-content { flex:1; }
+  .admin-title { font-size:28px; font-weight:700; color:#1e293b; margin-bottom:8px; display:flex; align-items:center; gap:12px; }
+  .admin-subtitle { color:#64748b; font-size:16px; margin:0; }
+
+  .admin-card { background:#ffffff; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.08); padding:24px; overflow:hidden; }
+
+  /* الأزرار */
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 18px; border-radius:10px; font-weight:600; font-size:14px; cursor:pointer; transition:all .2s; text-decoration:none; border:none; }
+  .btn-primary { background-color:#3b82f6; color:#fff; }
+  .btn-primary:hover { background-color:#2563eb; transform:translateY(-2px); box-shadow:0 4px 12px rgba(59,130,246,.3); }
+  .btn-add { padding:12px 20px; font-size:15px; }
+  .btn-outline { background:#fff; border:1px solid #e2e8f0; color:#1e293b; }
+  .btn-outline:hover { background:#f8fafc; }
+
+  .btn-icon { padding:8px 12px; border-radius:8px; }
+  .btn-edit { background-color:#f59e0b; color:#fff; }
+  .btn-edit:hover { background-color:#d97706; }
+  .btn-delete { background-color:#ef4444; color:#fff; }
+  .btn-delete:hover { background-color:#dc2626; }
+
+  /* الجدول */
+  .table-responsive { overflow-x:auto; border-radius:12px; border:1px solid #e2e8f0; }
+  .teachers-table { width:100%; border-collapse:collapse; min-width:800px; }
+  .teachers-table th { background-color:#f8fafc; padding:16px; font-weight:600; color:#475569; text-align:right; border-bottom:1px solid #e2e8f0; }
+  .teachers-table td { padding:16px; border-bottom:1px solid #e2e8f0; color:#334155; }
+  .teachers-table tr:last-child td { border-bottom:none; }
+  .teachers-table tr:hover { background-color:#f8fafc; }
+
+  .text-right { text-align:right; }
+  .text-center { text-align:center; }
+
+  /* معلومات المعلم */
+  .teacher-info { display:flex; align-items:center; gap:12px; }
+  .teacher-avatar { width:40px; height:40px; border-radius:50%; background-color:#e0f2fe; color:#0ea5e9; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .teacher-details { display:flex; flex-direction:column; }
+  .teacher-name { font-weight:600; color:#1e293b; }
+
+  /* البادجات */
+  .badge { padding:6px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+  .badge-primary { background-color:#dbeafe; color:#1d4ed8; }
+  .badge-success { background-color:#dcfce7; color:#166534; }
+
+  .status-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; font-size:13px; font-weight:600; }
+  .status-active { background-color:#f0fdf4; color:#166534; }
+  .status-inactive { background-color:#fef2f2; color:#dc2626; }
+
+  /* أزرار الإجراءات */
+  .action-buttons { display:flex; gap:8px; justify-content:center; }
+
+  /* حالة عدم وجود بيانات */
+  .empty-state { padding:60px 20px; text-align:center; color:#94a3b8; }
+  .empty-icon { font-size:64px; margin-bottom:16px; opacity:.5; }
+  .empty-state h3 { margin:0 0 8px 0; color:#64748b; font-weight:600; font-size:20px; }
+  .empty-state p { margin:0 0 24px 0; font-size:15px; }
+
+  /* التجاوب */
+  @media (max-width: 768px) {
+    .admin-container { padding:16px; }
+    .admin-header { flex-direction:column; align-items:flex-start; }
+    .admin-card { padding:20px; }
+    .teachers-table { min-width:100%; }
+    .teachers-table thead { display:none; }
+    .teachers-table tr { display:block; margin-bottom:16px; border:1px solid #e2e8f0; border-radius:12px; }
+    .teachers-table td { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid #e2e8f0; text-align:left; }
+    .teachers-table td:last-child { border-bottom:none; }
+    .teachers-table td::before { content: attr(data-label); font-weight:600; color:#475569; margin-left:12px; }
+    .teacher-info { flex-direction:column; align-items:flex-start; gap:8px; }
+    .action-buttons { justify-content:flex-end; }
+  }
+</style>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% endblock %}

@@ -1,0 +1,198 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تقرير برنامج - {{ r.title }}</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+      --brand:#2563eb; --accent:#059669; --bg:#f8fafc; --card:#ffffff;
+      --chip:#eef2ff; --chip-ink:#1e40af;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'Tajawal',sans-serif;color:var(--ink);background:#fff}
+
+    /* شريط الأدوات (غير مطبوع) */
+    .toolbar{
+      display:flex;gap:8px;justify-content:center;
+      padding:10px;background:#f3f6ff;border-bottom:1px solid var(--line);
+      position:sticky;top:0;z-index:9
+    }
+    .btn{padding:8px 14px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-weight:700;text-decoration:none;color:#1e293b}
+    .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+    .container{max-width:900px;margin:auto;padding:10px}
+    .sheet{
+      border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card);
+      box-shadow:0 6px 18px rgba(0,0,0,.05)
+    }
+
+    /* الهيدر */
+    .hero{
+      display:flex;align-items:center;gap:14px;
+      background:linear-gradient(135deg, var(--brand) 0%, var(--accent) 100%);
+      color:#fff;padding:16px 20px
+    }
+    .hero .logo{width:64px;height:64px;object-fit:contain;background:rgba(255,255,255,.15);border-radius:12px;padding:8px}
+    .hero .title{font-size:1.2rem;font-weight:900;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .hero .sub{opacity:.95;font-size:.9rem}
+    .cat-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:4px 10px;border-radius:999px;
+      background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.35);
+      color:#fff;font-weight:800;line-height:1.2
+    }
+
+    /* المحتوى */
+    .content{padding:18px}
+
+    /* شبكة البيانات */
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    .card-row{
+      display:flex;flex-direction:column;justify-content:center;align-items:center;
+      gap:8px;padding:14px;border:1px dashed var(--line);border-radius:12px;background:#fafafa;text-align:center
+    }
+    .label{color:var(--muted);font-weight:800}
+    .value{font-weight:900;font-size:1rem}
+
+    /* شارة التصنيف في الشبكة */
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:6px 12px;border-radius:999px;background:var(--chip);color:var(--chip-ink);
+      font-weight:800;font-size:.9rem;border:1px solid #dbeafe
+    }
+
+    /* فكرة البرنامج */
+    .section-title{
+      margin:16px 0 8px;font-weight:900;color:var(--ink);
+      display:inline-flex;align-items:center;gap:8px;
+      background:var(--chip);color:var(--chip-ink);padding:6px 12px;border-radius:999px;font-size:.95rem
+    }
+    .idea-box{
+      padding:14px;border:1px solid var(--line);border-radius:12px;background:#fbfdff;
+      white-space:pre-wrap;
+      line-height:1.8;font-weight:600
+    }
+
+    /* الصور */
+    .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:12px}
+    .photos img{width:100%;height:200px;object-fit:cover;border-radius:12px;border:1px solid var(--line);box-shadow:0 4px 10px rgba(0,0,0,.08)}
+
+    /* التواقيع */
+    .sign{display:flex;gap:14px;margin-top:20px;flex-wrap:wrap}
+    .sign .box{flex:1;border:1px dashed var(--line);border-radius:12px;padding:14px;min-height:80px;background:var(--bg);text-align:center}
+    .muted{color:var(--muted)}
+
+    /* الطباعة */
+    @page{size:A4;margin:8mm 8mm}
+    @media print{
+      body{background:#fff}
+      .toolbar{display:none!important}
+      .container{padding:0}
+      .sheet{box-shadow:none;border:none;margin:0}
+    }
+
+    /* استجابة */
+    @media (max-width:640px){
+      .grid{grid-template-columns:1fr}
+      .hero .logo{width:54px;height:54px}
+      .photos{grid-template-columns:1fr 1fr}
+      .photos img{height:160px}
+    }
+  </style>
+</head>
+<body>
+
+<!-- أدوات العرض -->
+<div class="toolbar no-print">
+  <button class="btn btn-primary" onclick="window.print()">🖨️ طباعة</button>
+</div>
+
+<div class="container">
+  <div class="sheet">
+
+    <!-- الهيدر -->
+    {% with cat_label=r.get_category_display|default:'نشاط' %}
+    <div class="hero">
+      <img class="logo"
+           src="{% if SCHOOL_LOGO_URL %}{{ SCHOOL_LOGO_URL }}{% else %}{% static 'img/logo.png' %}{% endif %}"
+           alt="{{ SCHOOL_NAME|default:'شعار المدرسة' }}">
+      <div>
+        <div class="title">
+          تقرير برنامج / <span class="cat-badge">{{ cat_label }}</span>
+        </div>
+        <div class="sub">
+          {% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}نظام توثيق أعمال المعلمين{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endwith %}
+
+    <!-- المحتوى -->
+    <div class="content">
+      <div class="grid">
+        <div class="card-row">
+          <div class="label">العنوان</div>
+          <div class="value">{{ r.title }}</div>
+        </div>
+
+        <div class="card-row">
+          <div class="label">تاريخ التقرير</div>
+          <div class="value">{{ r.report_date|date:"Y-m-d" }}{% if r.day_name %} • {{ r.day_name }}{% endif %}</div>
+        </div>
+
+        <div class="card-row">
+          <div class="label">المعلم</div>
+          <div class="value">{{ r.teacher_display_name }}</div>
+        </div>
+
+        <div class="card-row">
+          <div class="label">عدد المستفيدين</div>
+          <div class="value">{{ r.beneficiaries_count|default_if_none:"-" }}</div>
+        </div>
+      </div>
+
+      <h3 class="section-title">💡 الوصــف</h3>
+      <div class="idea-box">{{ r.idea|default_if_none:"" }}</div>
+
+      {% if r.image1 or r.image2 or r.image3 or r.image4 %}
+        <h3 class="section-title">📷 الصور المرفقة</h3>
+        <div class="photos">
+          {% if r.image1 %}<img src="{{ r.image1.url }}" alt="صورة 1">{% endif %}
+          {% if r.image2 %}<img src="{{ r.image2.url }}" alt="صورة 2">{% endif %}
+          {% if r.image3 %}<img src="{{ r.image3.url }}" alt="صورة 3">{% endif %}
+          {% if r.image4 %}<img src="{{ r.image4.url }}" alt="صورة 4">{% endif %}
+        </div>
+      {% endif %}
+
+      <!-- التواقيع -->
+      <div class="sign">
+        <div class="box">
+          {% if signer_label %}
+            <!-- signer_label آتٍ من ROLE_CHOICES عبر الـ View -->
+            <b>توقيع {{ signer_label }}</b>
+          {% else %}
+            <!-- احتياطي: لو ما انمرّر signer_label -->
+            <b>توقيع مسؤول {{ r.get_category_display }}</b>
+          {% endif %}
+          <div class="muted">.............................</div>
+        </div>
+        <div class="box">
+          <b>اعتماد مدير المدرسة</b>
+          <div class="muted">.............................</div>
+        </div>
+      </div>
+      <!-- /التواقيع -->
+
+    </div> <!-- /content -->
+
+  </div> <!-- /sheet -->
+</div> <!-- /container -->
+
+</body>
+</html>

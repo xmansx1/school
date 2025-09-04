@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}أنواع التقارير{% endblock %}
+{% block head %}
+<style>
+  .wrap{max-width:1000px;margin:24px auto;padding:0 16px}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .btn{padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;font-weight:700}
+  .btn-primary{background:linear-gradient(135deg,#2563eb,#3b82f6);border-color:transparent;color:#fff}
+  table{width:100%;border-collapse:separate;border-spacing:0 10px}
+  th{font-weight:800;text-align:right;color:#6b7280}
+  td,th{padding:10px 12px}
+  .row{background:#fff;border:1px solid #e5e7eb;border-radius:12px}
+  .badge{border-radius:999px;background:#eef2ff;color:#1f2937;padding:4px 10px;font-size:.85rem}
+  .muted{color:#6b7280}
+  .actions a,.actions form{display:inline-block;margin-inline-start:6px}
+  .danger{background:#b91c1c;color:#fff;border-color:transparent}
+</style>
+{% endblock head %}
+
+{% block content %}
+<div class="wrap" dir="rtl">
+  <div class="top">
+    <h1>أنواع التقارير</h1>
+    {% if db_backed %}
+      <a class="btn btn-primary" href="{% url 'reports:reporttype_create' %}">➕ إضافة نوع</a>
+    {% endif %}
+  </div>
+
+  {% if not db_backed %}
+    <p class="muted">تعذّر استخدام الإدارة الكاملة لأن موديل <code>ReportType</code> غير مفعّل. تُعرض القائمة أدناه مرجعية فقط من الحقل الحالي.</p>
+  {% endif %}
+
+  <table>
+    <thead>
+      <tr>
+        <th>الترتيب</th>
+        <th>الرمز (code)</th>
+        <th>الاسم</th>
+        <th>نشط</th>
+        <th>تقارير مرتبطة</th>
+        {% if db_backed %}<th>إجراءات</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+        <tr class="row">
+          <td>{{ it.order|default:"—" }}</td>
+          <td><span class="badge">{{ it.code }}</span></td>
+          <td>{{ it.name }}</td>
+          <td>{% if it.is_active %}✅{% else %}⛔{% endif %}</td>
+          <td>{{ it.count }}</td>
+          {% if db_backed %}
+          <td class="actions">
+            <a class="btn" href="{% url 'reports:reporttype_update' it.obj.pk %}">✏️ تعديل</a>
+            <form method="post" action="{% url 'reports:reporttype_delete' it.obj.pk %}" onsubmit="return confirm('حذف هذا النوع؟ لن يُسمح بالحذف إن كان مستخدمًا.');">
+              {% csrf_token %}
+              <button class="btn danger" type="submit">🗑 حذف</button>
+            </form>
+          </td>
+          {% endif %}
+        </tr>
+      {% empty %}
+        <tr class="row"><td colspan="6">لا توجد أنواع بعد.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock content %}
