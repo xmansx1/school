@@ -1,8 +1,48 @@
 # reports/models.py
+# -*- coding: utf-8 -*-
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.validators import MinValueValidator, FileExtensionValidator
 from django.db import models
+
+
+# =========================
+# مرجع الأدوار الديناميكي
+# =========================
+class Role(models.Model):
+    slug = models.SlugField("المعرّف (slug)", max_length=64, unique=True)
+    name = models.CharField("الاسم", max_length=120)
+
+    # يمنح الوصول للوحة التحكم افتراضيًا للمستخدمين الذين يحملون هذا الدور
+    is_staff_by_default = models.BooleanField("يمتلك لوحة التحكم افتراضيًا؟", default=False)
+
+    # يرى كل أنواع التقارير (يتجاوز القيود التفصيلية)
+    can_view_all_reports = models.BooleanField("يشاهد كل التصنيفات؟", default=False)
+
+    # أنواع التقارير المسموح لهذا الدور برؤيتها (عند تعطيل can_view_all_reports)
+    # (تُعرّف أسفلًا: ReportType — نستخدم مرجعًا نصيًا)
+    allowed_reporttypes = models.ManyToManyField(
+        "ReportType",
+        blank=True,
+        related_name="roles_allowed",
+        verbose_name="الأنواع المسموح بها",
+    )
+
+    is_active = models.BooleanField("نشط", default=True)
+
+    class Meta:
+        ordering = ("slug",)
+        verbose_name = "دور"
+        verbose_name_plural = "الأدوار"
+
+    def __str__(self):
+        return self.name or self.slug
+
+    def save(self, *args, **kwargs):
+        # تطبيع slug إلى lowercase بدون فراغات
+        if self.slug:
+            self.slug = self.slug.strip().lower()
+        super().save(*args, **kwargs)
 
 
 # =========================
@@ -14,7 +54,7 @@ class TeacherManager(BaseUserManager):
             raise ValueError("رقم الجوال مطلوب")
         if not name:
             raise ValueError("اسم المستخدم مطلوب")
-        user = self.model(phone=phone, name=name, **extra_fields)
+        user = self.model(phone=phone.strip(), name=name.strip(), **extra_fields)
         if password:
             user.set_password(password)
         else:
@@ -23,38 +63,36 @@ class TeacherManager(BaseUserManager):
         return user
 
     def create_superuser(self, phone, name, password=None, **extra_fields):
-        extra_fields.setdefault("role", "manager")
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
+        # إن وُجد دور manager نربطه، وإلا نمشي بدون دور
+        try:
+            mgr = Role.objects.filter(slug="manager").first()
+            if mgr:
+                extra_fields.setdefault("role", mgr)
+        except Exception:
+            pass
         return self.create_user(phone, name, password, **extra_fields)
-
-
-ROLE_CHOICES = [
-    ("teacher", "المعلم"),
-    ("manager", "مدير"),
-    ("activity_officer", "مسؤول النشاط"),
-    ("volunteer_officer", "مسؤول التطوع"),
-    ("affairs_officer", "مسؤول الشؤون المدرسية"),
-    ("admin_officer", "مسؤول الشؤون الإدارية"),
-]
-
-ROLE_TO_IS_STAFF = {
-    "teacher": False,
-    "manager": True,
-    "activity_officer": True,
-    "volunteer_officer": True,
-    "affairs_officer": True,
-    "admin_officer": True,
-}
 
 
 class Teacher(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField("رقم الجوال", max_length=20, unique=True)
     national_id = models.CharField("الهوية الوطنية", max_length=20, blank=True, null=True, unique=True)
     name = models.CharField("الاسم", max_length=150, db_index=True)
-    role = models.CharField("الدور", max_length=32, choices=ROLE_CHOICES, default="teacher")
+
+    # دور ديناميكي من المنصّة
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="الدور",
+        related_name="users",
+    )
+
     is_active = models.BooleanField("نشط", default=True)
-    is_staff = models.BooleanField("موظّف لوحة", default=False)  # يُحدَّث تلقائيًا حسب الدور
+    # يُحدَّث تلقائيًا حسب الدور.is_staff_by_default
+    is_staff = models.BooleanField("موظّف لوحة", default=False)
     date_joined = models.DateTimeField("تاريخ الانضمام", auto_now_add=True)
 
     USERNAME_FIELD = "phone"
@@ -67,39 +105,125 @@ class Teacher(AbstractBaseUser, PermissionsMixin):
         verbose_name_plural = "المستخدمون"
 
     def save(self, *args, **kwargs):
-        # مزامنة is_staff مع الدور
-        self.is_staff = ROLE_TO_IS_STAFF.get(self.role, False)
+        # مزامنة is_staff مع الدور إن وُجد
+        try:
+            if self.role is not None:
+                self.is_staff = bool(self.role.is_staff_by_default)
+        except Exception:
+            pass
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.name} ({self.get_role_display()})"
+        return f"{self.name} ({getattr(self.role, 'name', 'بدون دور')})"
+
+
+# =========================
+# مرجع الأقسام الديناميكي
+# =========================
+class Department(models.Model):
+    name = models.CharField("اسم القسم", max_length=120)
+    slug = models.SlugField("المعرّف (slug)", max_length=64, unique=True)
+    role_label = models.CharField(
+        "الاسم الظاهر في قائمة (الدور)",
+        max_length=120,
+        blank=True,
+        help_text="إن تُرك فارغًا سيُستخدم اسم القسم.",
+    )
+    is_active = models.BooleanField("نشط", default=True)
+
+    class Meta:
+        ordering = ("id",)
+        verbose_name = "قسم"
+        verbose_name_plural = "الأقسام"
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.role_label:
+            self.role_label = self.name
+        if self.slug:
+            self.slug = self.slug.strip().lower()
+        super().save(*args, **kwargs)
+
+
+class DepartmentMembership(models.Model):
+    TEACHER = "teacher"
+    OFFICER = "officer"
+    ROLE_TYPE_CHOICES = [(TEACHER, "Teacher"), (OFFICER, "Officer")]
+
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.CASCADE,
+        related_name="memberships",
+        verbose_name="القسم",
+    )
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="dept_memberships",
+        verbose_name="المعلم",
+    )
+    role_type = models.CharField("نوع التكليف", max_length=16, choices=ROLE_TYPE_CHOICES, default=TEACHER)
+
+    class Meta:
+        unique_together = [("department", "teacher")]
+        indexes = [
+            models.Index(fields=["department"]),
+            models.Index(fields=["teacher"]),
+        ]
+        verbose_name = "تكليف قسم"
+        verbose_name_plural = "تكليفات الأقسام"
+
+    def __str__(self):
+        return f"{self.teacher} @ {self.department} ({self.role_type})"
+
+
+# =========================
+# مرجع أنواع التقارير الديناميكي
+# =========================
+class ReportType(models.Model):
+    code = models.SlugField("الكود", max_length=40, unique=True)
+    name = models.CharField("الاسم", max_length=120)
+    description = models.TextField("الوصف", blank=True)
+    order = models.PositiveIntegerField("الترتيب", default=0)
+    is_active = models.BooleanField("نشط", default=True)
+    created_at = models.DateTimeField("أُنشئ", auto_now_add=True)
+    updated_at = models.DateTimeField("تحديث", auto_now=True)
+
+    class Meta:
+        ordering = ("order", "name")
+        verbose_name = "نوع تقرير"
+        verbose_name_plural = "أنواع التقارير"
+
+    def __str__(self) -> str:
+        return self.name or self.code
+
+    def save(self, *args, **kwargs):
+        # تطبيع code إلى lowercase
+        if self.code:
+            self.code = self.code.strip().lower()
+        super().save(*args, **kwargs)
 
 
 # =========================
 # نموذج التقرير العام
 # =========================
 class Report(models.Model):
-    class Category(models.TextChoices):
-        ACTIVITY = "activity", "نشاط"
-        VOLUNTEER = "volunteer", "تطوع"
-        SCHOOL_AFFAIRS = "school_affairs", "شؤون مدرسية"
-        ADMIN = "admin", "إدارية"
-        EVIDENCE = "evidence", "شواهد"
-
     teacher = models.ForeignKey(
-        Teacher,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="reports",
         db_index=True,
         verbose_name="المعلم (حساب)",
     )
 
-    # اسم المعلم المقروء وقت إنشاء التقرير (تجميد للاسم)
+    # اسم المعلم وقت الإنشاء (للتجميد)
     teacher_name = models.CharField(
         max_length=120,
         blank=True,
         verbose_name="اسم المعلم (وقت الإنشاء)",
-        help_text="يُحفظ هنا الاسم الظاهر في التقرير بغض النظر عن تغيّر اسم الحساب لاحقًا.",
+        help_text="يُحفظ هنا الاسم الظاهر بغض النظر عن تغيّر اسم الحساب لاحقًا.",
     )
 
     title = models.CharField("العنوان / البرنامج", max_length=255, db_index=True)
@@ -116,14 +240,14 @@ class Report(models.Model):
 
     idea = models.TextField("الوصف / فكرة التقرير", blank=True, null=True)
 
-    # لا نضع default لتجبر المعلم على الاختيار
-    category = models.CharField(
-        "التصنيف",
-        max_length=32,
-        choices=Category.choices,
+    # التصنيف ديناميكي عبر FK
+    category = models.ForeignKey(
+        ReportType,
+        on_delete=models.PROTECT,     # منع حذف النوع إن كان مستخدمًا
+        null=True, blank=True,        # مؤقتًا لتسهيل الهجرة؛ يمكن جعلها إلزامية لاحقًا
+        verbose_name="التصنيف",
+        related_name="reports",
         db_index=True,
-        blank=False,
-        null=False,
     )
 
     image1 = models.ImageField(upload_to="reports/", blank=True, null=True)
@@ -136,7 +260,7 @@ class Report(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["category", "created_at"]),
+            models.Index(fields=["created_at"]),
             models.Index(fields=["teacher", "category"]),
             models.Index(fields=["report_date"]),
         ]
@@ -144,19 +268,15 @@ class Report(models.Model):
         verbose_name_plural = "التقارير"
 
     def __str__(self):
-        display_name = self.teacher_name.strip() if self.teacher_name else self.teacher.name
-        return f"{self.title} - {self.get_category_display()} - {display_name} ({self.report_date})"
+        display_name = self.teacher_name.strip() if self.teacher_name else getattr(self.teacher, "name", "")
+        cat = getattr(self.category, "name", "بدون تصنيف")
+        return f"{self.title} - {cat} - {display_name} ({self.report_date})"
 
     @property
     def teacher_display_name(self) -> str:
-        """اسم المعلم المعروض للتقارير/الطباعة."""
-        return (self.teacher_name or self.teacher.name or "").strip()
+        return (self.teacher_name or getattr(self.teacher, "name", "") or "").strip()
 
     def save(self, *args, **kwargs):
-        """
-        تعبئة day_name تلقائيًا عند وجود report_date وعدم توفير day_name.
-        نستخدم isoweekday(): الاثنين=1 .. الأحد=7
-        """
         if self.report_date and not self.day_name:
             days = {
                 1: "الاثنين",
@@ -167,7 +287,10 @@ class Report(models.Model):
                 6: "السبت",
                 7: "الأحد",
             }
-            self.day_name = days.get(self.report_date.isoweekday())
+            try:
+                self.day_name = days.get(self.report_date.isoweekday())
+            except Exception:
+                pass
         super().save(*args, **kwargs)
 
 
@@ -175,14 +298,6 @@ class Report(models.Model):
 # منظومة التذاكر الموحّدة
 # =========================
 class Ticket(models.Model):
-    class Department(models.TextChoices):
-        ADMIN = "admin_officer", "الشؤون الإدارية"
-        AFFAIRS = "affairs_officer", "الشؤون المدرسية"
-        ACTIVITY = "activity_officer", "النشاط"
-        VOLUNTEER = "volunteer_officer", "التطوع"
-        MANAGER = "manager", "المدير"
-        TEACHER = "teacher", "المعلمين"
-
     class Status(models.TextChoices):
         OPEN = "open", "جديد"
         IN_PROGRESS = "in_progress", "قيد المعالجة"
@@ -196,12 +311,17 @@ class Ticket(models.Model):
         verbose_name="المرسل",
         db_index=True,
     )
-    department = models.CharField(
-        "القسم",
-        max_length=32,
-        choices=Department.choices,
+
+    # القسم ديناميكي كـ FK
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,          # مؤقتًا لتسهيل الهجرة؛ يمكن جعلها إلزامية لاحقًا
+        related_name="tickets",
+        verbose_name="القسم",
         db_index=True,
     )
+
     assignee = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -211,6 +331,7 @@ class Ticket(models.Model):
         null=True,
         db_index=True,
     )
+
     title = models.CharField("عنوان الطلب", max_length=255)
     body = models.TextField("تفاصيل الطلب", blank=True, null=True)
     attachment = models.FileField(
@@ -260,52 +381,8 @@ class TicketNote(models.Model):
 
 
 # =========================
-# الأقسام والتكليف (للوحة المدير)
-# =========================
-class Department(models.Model):
-    name = models.CharField(max_length=120)
-    slug = models.SlugField(max_length=64, unique=True)  # يُستخدم كقيمة الدور
-    role_label = models.CharField(
-        max_length=120, blank=True,
-        help_text="الاسم الذي سيظهر في قائمة (الدور). إن تُرك فارغًا سيُستخدم اسم القسم."
-    )
-    is_active = models.BooleanField(default=True)
-    # ... أي حقول أخرى لديك
-
-    def __str__(self):
-        return self.name
-
-    def save(self, *args, **kwargs):
-        if not self.role_label:
-            self.role_label = self.name
-        self.slug = (self.slug or "").strip().lower()
-        super().save(*args, **kwargs)
-
-
-class DepartmentMembership(models.Model):
-    TEACHER = "teacher"
-    OFFICER = "officer"
-    ROLE_TYPE_CHOICES = [(TEACHER, "Teacher"), (OFFICER, "Officer")]
-
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="memberships", verbose_name="القسم")
-    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="dept_memberships", verbose_name="المعلم")
-    role_type = models.CharField("نوع التكليف", max_length=16, choices=ROLE_TYPE_CHOICES, default=TEACHER)
-
-    class Meta:
-        unique_together = [("department", "teacher")]
-        indexes = [
-            models.Index(fields=["department"]),
-            models.Index(fields=["teacher"]),
-        ]
-        verbose_name = "تكليف قسم"
-        verbose_name_plural = "تكليفات الأقسام"
-
-    def __str__(self):
-        return f"{self.teacher} @ {self.department} ({self.role_type})"
-
-
-# =========================
-# نماذج تراثية للأرشفة (إن وُجدت بيانات قديمة)
+# نماذج تراثية (تبقى كما هي للاطلاع/أرشفة فقط)
+# ملاحظة: يفضّل عدم استخدامها في الشاشات الجديدة.
 # =========================
 REQUEST_DEPARTMENTS = [
     ("manager", "المدير"),
@@ -380,24 +457,3 @@ class RequestLog(models.Model):
 
     def __str__(self):
         return f"Log for #{self.ticket_id} at {self.created_at:%Y-%m-%d %H:%M}"
-
-
-# reports/models.py (إضافة موديل اختياري)
-from django.db import models
-
-class ReportType(models.Model):
-    code = models.SlugField(max_length=40, unique=True)  # قيمة تُخزن في Report.category
-    name = models.CharField(max_length=120)              # الاسم المعروض
-    description = models.TextField(blank=True)
-    order = models.PositiveIntegerField(default=0)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ("order", "name")
-        verbose_name = "نوع تقرير"
-        verbose_name_plural = "أنواع التقارير"
-
-    def __str__(self) -> str:
-        return self.name or self.code

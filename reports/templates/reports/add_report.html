@@ -201,14 +201,15 @@
     }
   })();
 
-  // تفعيل الكاميرا على الجوال (اختياري)
+  // ✅ إتاحة "الكاميرا أو الاستديو" على الجوال:
+  // نضمن accept="image/*" ونزيل أي capture حتى لا تُفرض الكاميرا فقط.
   (function() {
     const ids = ['id_image1','id_image2','id_image3','id_image4'];
     ids.forEach(id=>{
       const inp = document.getElementById(id);
       if(!inp) return;
       inp.setAttribute('accept','image/*');
-      inp.setAttribute('capture','environment');
+      inp.removeAttribute('capture'); // مهم لظهور الخيارين على iOS/Android
     });
   })();
 

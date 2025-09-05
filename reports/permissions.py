@@ -1,88 +1,59 @@
 # reports/permissions.py
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 from functools import wraps
-from typing import Iterable, Set
+from typing import Iterable, Set, Any
 
 from django.contrib import messages
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.db.models import QuerySet
 
-from .models import Report, Teacher
 
 __all__ = [
-    "STAFF_ROLES",
-    "ROLE_TO_CATEGORIES",
     "role_required",
     "allowed_categories_for",
     "restrict_queryset_for_user",
 ]
 
+
 # ==============================
-# أدوات داخلية لمواءمة الأكواد
+# أدوات داخلية
 # ==============================
-def _all_category_codes() -> Set[str]:
+def _user_role(user):
     """
-    يعيد جميع أكواد التصنيفات المعرفة في Report.Category.
-    لو حدث خطأ (نادرًا) يعيد مجموعة فارغة.
+    يعيد كائن Role المرتبط بالمستخدم إن وجد، وإلا None.
+    نتجنّب الاستيراد العلوي لتفادي الدوّارات بين modules.
     """
     try:
-        return {code for code, _ in Report.Category.choices}
+        return getattr(user, "role", None)
     except Exception:
-        return set()
+        return None
 
 
-def _cat(code_name: str, default_value: str) -> str:
+def _user_role_slug(user) -> str | None:
     """
-    يحاول جلب كود التصنيف من Report.Category.<CONST> وإلا يعيد قيمة افتراضية
-    لضمان عمل النظام حتى لو تغيّر اسم الثابت في الموديل.
+    يعيد slug للدور الحالي للمستخدم (FK إلى Role) أو None إن لم يوجد.
     """
-    return getattr(Report.Category, code_name, default_value)
-
-
-# ضبط الأكواد الافتراضية المتداولة في المشروع
-CAT_ACTIVITY       = _cat("ACTIVITY", "activity")
-CAT_VOLUNTEER      = _cat("VOLUNTEER", "volunteer")
-CAT_SCHOOL_AFFAIRS = _cat("SCHOOL_AFFAIRS", "school_affairs")
-CAT_ADMIN          = _cat("ADMIN", "admin")
-CAT_EVIDENCE       = _cat("EVIDENCE", "evidence")  # مستخدم في الطباعة كـ "teacher" افتراضيًا
-
-# ==============================
-# تعريفات أدوار وصلاحيات
-# ==============================
-# الأدوار التي تُعامل كموظفين داخل النظام (ليست بديلًا عن is_staff)
-STAFF_ROLES: Set[str] = {
-    "manager",
-    "activity_officer",
-    "volunteer_officer",
-    "affairs_officer",
-    "admin_officer",
-}
-
-# خرائط الدور ← التصنيفات المسموحة له داخل لوحة التقارير الإدارية
-ROLE_TO_CATEGORIES: dict[str, Set[str]] = {
-    # المدير يرى كل شيء (سنحسب الكل ديناميكيًا عند الطلب)
-    "manager": _all_category_codes(),
-    # الضباط: تصنيف محدد
-    "activity_officer": {CAT_ACTIVITY},
-    "volunteer_officer": {CAT_VOLUNTEER},
-    "affairs_officer": {CAT_SCHOOL_AFFAIRS},
-    "admin_officer": {CAT_ADMIN},
-    # المعلّم لا يملك صلاحية لوحة المدير
-    "teacher": set(),
-}
+    try:
+        role = _user_role(user)
+        return getattr(role, "slug", None) if role else None
+    except Exception:
+        return None
 
 
 # ==============================
-# ديكوريتور حصر الوصول حسب الدور
+# ديكوريتر حصر الوصول حسب الدور (بالـ slug)
 # ==============================
 def role_required(allowed_roles: Iterable[str]):
     """
-    يستعمل مع views الإدارية. مثال:
+    مثال الاستعمال:
         @login_required(login_url="reports:login")
         @role_required({"manager"})
-    السوبر يمر دائمًا. المستخدمون بدون الأدوار المطلوبة تُعرض لهم رسالة ويرجَعون للـ home.
+        def some_view(...): ...
+    - السوبر يمر دائمًا.
+    - المقارنة بالـ slug للأدوار.
     """
     allowed = set(allowed_roles or [])
 
@@ -91,14 +62,13 @@ def role_required(allowed_roles: Iterable[str]):
         def _wrapped(request: HttpRequest, *args, **kwargs) -> HttpResponse:
             user = request.user
             if not getattr(user, "is_authenticated", False):
-                # غالبًا يوجد login_required قبل هذا الديكوريتور؛ نعيد التوجيه احتياطيًا
                 return redirect("reports:login")
 
             if getattr(user, "is_superuser", False):
                 return view_func(request, *args, **kwargs)
 
-            role = getattr(user, "role", None)
-            if role in allowed:
+            role_slug = _user_role_slug(user)
+            if role_slug in allowed:
                 return view_func(request, *args, **kwargs)
 
             messages.error(request, "لا تملك صلاحية الوصول إلى هذه الصفحة.")
@@ -110,44 +80,67 @@ def role_required(allowed_roles: Iterable[str]):
 
 
 # ==============================
-# صلاحيات عرض التقارير الإدارية
+# صلاحيات عرض التصنيفات ديناميكيًا من قاعدة البيانات
 # ==============================
-def allowed_categories_for(user: Teacher) -> Set[str]:
+def allowed_categories_for(user) -> Set[str]:
     """
-    تعيد مجموعة التصنيفات المسموح عرضها للمستخدم داخل لوحة الإدارة.
-    - السوبر/المدير: جميع التصنيفات.
-    - الضباط: تصنيفهم فقط.
-    - المعلم: مجموعة فارغة.
-    ملاحظة: لا نُرجع {"all"} لنبقى منسجمين مع سياسات الفلترة في views؛
-    إرجاع مجموعة "كل الأكواد" يعادل "all" عمليًا في الفلترة.
+    يعيد مجموعة أكواد ReportType المسموحة للمستخدم في لوحة التقارير.
+    - يرجع {"all"} إن كان السوبر أو إذا كان دور المستخدم يملك can_view_all_reports=True.
+    - خلاف ذلك، يرجع مجموعة الأكواد المرتبطة عبر M2M: Role.allowed_reporttypes.
+    - في حال عدم وجود دور/أخطاء: يرجع set() آمنة.
     """
-    if getattr(user, "is_superuser", False):
-        return _all_category_codes()
+    try:
+        if getattr(user, "is_superuser", False):
+            return {"all"}
 
-    role = getattr(user, "role", None)
-    if role == "manager":
-        return _all_category_codes()
+        role = _user_role(user)
+        if not role:
+            return set()
 
-    return ROLE_TO_CATEGORIES.get(role, set())
+        # import محلي لتجنّب الدوّارات
+        # Role.allowed_reporttypes → ReportType(code)
+        if getattr(role, "can_view_all_reports", False):
+            return {"all"}
+
+        try:
+            # نجلب الأكواد مباشرة من الـ M2M
+            codes = set(role.allowed_reporttypes.values_list("code", flat=True))
+            return {c for c in codes if c}  # تنظيف أي فراغات/None احتياطًا
+        except Exception:
+            return set()
+    except Exception:
+        # أي خطأ غير متوقع → إرجاع مجموعة فارغة كخيار آمن
+        return set()
 
 
-def restrict_queryset_for_user(qs: QuerySet, user: Teacher) -> QuerySet:
+# ==============================
+# تقييد QuerySet بحسب المستخدم
+# ==============================
+def restrict_queryset_for_user(qs: QuerySet[Any], user) -> QuerySet[Any]:
     """
     يقيّد QuerySet للتقارير بحسب دور المستخدم:
-    - السوبر/المدير: بدون قيود.
-    - المعلّم: يرى تقاريره فقط.
-    - الضبّاط: تقارير تصنيفهم فقط.
+    - السوبر/المدير (slug="manager"): بدون قيود.
+    - المعلّم (slug="teacher"): يرى تقاريره فقط.
+    - بقية الأدوار: تقارير ضمن التصنيفات المسموح بها من DB (M2M).
+    ملاحظات:
+      * نفترض أن qs يعود لـ Report أو QuerySet فيه الحقل category (FK→ReportType) و teacher.
+      * لا حاجة لاستيراد Report هنا؛ نعمل على qs المُمرَّر كما هو.
     """
-    if getattr(user, "is_superuser", False) or getattr(user, "role", None) == "manager":
+    # سوبر أو مدير: الكل
+    role_slug = _user_role_slug(user)
+    if getattr(user, "is_superuser", False) or role_slug == "manager":
         return qs
 
-    role = getattr(user, "role", None)
-    if role == "teacher":
+    # معلّم: تقاريره فقط
+    if role_slug == "teacher":
         return qs.filter(teacher=user)
 
-    allowed = ROLE_TO_CATEGORIES.get(role, set())
+    # أدوار أخرى: بحسب الأنواع المسموحة
+    allowed = allowed_categories_for(user)
     if not allowed:
-        # إن لم يكن له تصنيفات مخصصة، لا يرى شيئًا
         return qs.none()
+    if "all" in allowed:
+        return qs
 
-    return qs.filter(category__in=allowed)
+    # التصنيف FK إلى ReportType؛ نفلتر على code
+    return qs.filter(category__code__in=allowed)

@@ -1,4 +1,5 @@
 # reports/admin.py
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 from django import forms
@@ -6,8 +7,15 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
 
-from .models import Teacher, Report, Ticket, TicketNote
-
+from .models import (
+    Teacher,
+    Role,
+    Department,
+    ReportType,
+    Report,
+    Ticket,
+    TicketNote,
+)
 
 # =========================
 # نماذج إدارة المستخدم المخصص (Teacher)
@@ -15,13 +23,14 @@ from .models import Teacher, Report, Ticket, TicketNote
 class TeacherCreationForm(forms.ModelForm):
     """
     نموذج إنشاء مستخدم في لوحة الإدارة مع حقلي كلمة مرور.
+    ملاحظة: is_staff لا يظهر هنا لأنه يُحدَّث تلقائيًا من الدور.
     """
     password1 = forms.CharField(label="كلمة المرور", widget=forms.PasswordInput)
     password2 = forms.CharField(label="تأكيد كلمة المرور", widget=forms.PasswordInput)
 
     class Meta:
         model = Teacher
-        fields = ("phone", "name", "national_id", "role", "is_active", "is_staff")
+        fields = ("phone", "name", "national_id", "role", "is_active")
 
     def clean_password2(self):
         p1 = self.cleaned_data.get("password1")
@@ -32,6 +41,7 @@ class TeacherCreationForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
+        # تعيين كلمة المرور
         user.set_password(self.cleaned_data["password1"])
         if commit:
             user.save()
@@ -41,6 +51,7 @@ class TeacherCreationForm(forms.ModelForm):
 class TeacherChangeForm(forms.ModelForm):
     """
     نموذج تعديل مستخدم في لوحة الإدارة (لا يظهر كلمة المرور الحقيقية).
+    is_staff للعرض فقط (read-only) لأنه يُحدَّث تلقائيًا حسب الدور.
     """
     class Meta:
         model = Teacher
@@ -50,7 +61,6 @@ class TeacherChangeForm(forms.ModelForm):
             "national_id",
             "role",
             "is_active",
-            "is_staff",
             "is_superuser",
             "groups",
             "user_permissions",
@@ -70,6 +80,7 @@ class TeacherAdmin(UserAdmin):
     list_filter = ("role", "is_active", "is_staff", "is_superuser", "groups")
     search_fields = ("name", "phone", "national_id")
     ordering = ("name",)
+    list_select_related = ("role",)
 
     fieldsets = (
         (None, {"fields": ("phone", "password")}),
@@ -79,7 +90,7 @@ class TeacherAdmin(UserAdmin):
             {
                 "fields": (
                     "is_active",
-                    "is_staff",
+                    "is_staff",       # للعرض فقط
                     "is_superuser",
                     "groups",
                     "user_permissions",
@@ -88,7 +99,7 @@ class TeacherAdmin(UserAdmin):
         ),
         ("تواريخ النظام", {"fields": ("last_login",)}),
     )
-    readonly_fields = ("last_login",)
+    readonly_fields = ("last_login", "is_staff")
 
     add_fieldsets = (
         (
@@ -103,11 +114,40 @@ class TeacherAdmin(UserAdmin):
                     "password1",
                     "password2",
                     "is_active",
-                    "is_staff",
                 ),
             },
         ),
     )
+
+
+# =========================
+# إدارة الأدوار/التصنيفات/الأقسام (ديناميكي)
+# =========================
+@admin.register(Role)
+class RoleAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "is_staff_by_default", "can_view_all_reports", "is_active")
+    list_filter = ("is_active", "is_staff_by_default", "can_view_all_reports")
+    search_fields = ("name", "slug")
+    prepopulated_fields = {"slug": ("name",)}
+    filter_horizontal = ("allowed_reporttypes",)
+
+
+@admin.register(ReportType)
+class ReportTypeAdmin(admin.ModelAdmin):
+    list_display = ("name", "code", "order", "is_active", "created_at", "updated_at")
+    list_filter = ("is_active", "created_at", "updated_at")
+    search_fields = ("name", "code", "description")
+    list_editable = ("order", "is_active")
+    ordering = ("order", "name")
+    prepopulated_fields = {"code": ("name",)}
+
+
+@admin.register(Department)
+class DepartmentAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "role_label", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name", "slug", "role_label")
+    prepopulated_fields = {"slug": ("name",)}
 
 
 # =========================
@@ -132,10 +172,12 @@ class ReportAdmin(admin.ModelAdmin):
         "teacher__name",
         "teacher__phone",
         "teacher__national_id",
+        "category__name",
+        "category__code",
     )
     date_hierarchy = "report_date"
-    autocomplete_fields = ("teacher",)
-    list_select_related = ("teacher",)
+    autocomplete_fields = ("teacher", "category")
+    list_select_related = ("teacher", "category")
     readonly_fields = ("created_at",)
 
     def preview_image1(self, obj):
@@ -183,10 +225,12 @@ class TicketAdmin(admin.ModelAdmin):
         "creator__phone",
         "assignee__name",
         "assignee__phone",
+        "department__name",
+        "department__slug",
     )
     date_hierarchy = "created_at"
-    autocomplete_fields = ("creator", "assignee")
-    list_select_related = ("creator", "assignee")
+    autocomplete_fields = ("creator", "assignee", "department")
+    list_select_related = ("creator", "assignee", "department")
     readonly_fields = ("created_at", "updated_at")
     inlines = (TicketNoteInline,)
 
