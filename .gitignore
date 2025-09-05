@@ -1,0 +1,69 @@
+# ---------------------------
+# Python / Django basics
+# ---------------------------
+__pycache__/
+*.py[cod]
+*.so
+*.pyo
+*$py.class
+
+# Virtualenvs
+.venv/
+venv/
+env/
+ENV/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+*.sqlite3-journal
+
+# Test / Coverage / Type-check
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.dmypy.json
+
+# Editors / IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Node (إن وُجد)
+node_modules/
+*.map
+
+# ---------------------------
+# Django specifics
+# ---------------------------
+# قاعدة بيانات التطوير
+db.sqlite3
+
+# ملفات التجميع (collectstatic) محلياً
+staticfiles/
+
+# مرفوعات المستخدمين (لا تُرفع للمستودع)
+media/
+mediafiles/
+
+# ملفات البيئة والأسرار
+.env
+.env.*
+*.env
+
+# ---------------------------
+# Migrations policy
+# ---------------------------
+# نسمح بتتبع ملفات الهجرات .py (ضروري للإنتاج)
+# في حال كانت هناك قاعدة سابقة في .gitignore تمنع مجلد migrations،
+# السطران التاليان يعيدان السماح بملفات الهجرات:
+!*/migrations/*.py
+!*/migrations/__init__.py
+
+# لا نتتبع مخازن الترجمة داخل مجلد الهجرات
+**/migrations/__pycache__/
