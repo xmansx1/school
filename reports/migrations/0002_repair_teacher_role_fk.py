@@ -29,62 +29,76 @@ CREATE INDEX IF NOT EXISTS reports_teacher_role_id_idx
 ON reports_teacher (role_id);
 """
 
-# 4) زرع أدوار قياسية (لن تتكرر بفضل ON CONFLICT)
-SEED_ROLES_SQL = r"""
-INSERT INTO reports_role (slug, name, is_staff_by_default, is_active)
-VALUES
-    ('manager', 'المدير', TRUE, TRUE),
-    ('activity_officer', 'مسؤول النشاط', TRUE, TRUE),
-    ('volunteer_officer', 'مسؤول التطوع', TRUE, TRUE),
-    ('affairs_officer', 'مسؤول الشؤون الطلابية', TRUE, TRUE),
-    ('admin_officer', 'مسؤول الشؤون الإدارية', TRUE, TRUE),
-    ('teacher', 'المعلم', FALSE, TRUE)
-ON CONFLICT (slug) DO UPDATE
-SET name = EXCLUDED.name,
-    is_staff_by_default = EXCLUDED.is_staff_by_default,
-    is_active = EXCLUDED.is_active;
-"""
-
-# 5) تعبئة role_id من العمود القديم النصي t.role **فقط إذا كان العمود موجودًا**
-BACKFILL_FROM_LEGACY_TEXT_SQL = r"""
+# 3.1) تأكيد وجود فهرس/قيّد فريد على code لاستخدام ON CONFLICT
+ENSURE_ROLE_CODE_UNIQUE_SQL = r"""
 DO $$
 BEGIN
-    IF EXISTS (
+    IF NOT EXISTS (
         SELECT 1
-        FROM information_schema.columns
-        WHERE table_name = 'reports_teacher'
-          AND column_name = 'role'
+        FROM pg_constraint
+        WHERE conrelid = 'reports_role'::regclass
+          AND conname = 'reports_role_code_key'
     ) THEN
-        UPDATE reports_teacher t
-        SET role_id = r.id
-        FROM reports_role r
-        WHERE t.role_id IS NULL
-          AND t.role IS NOT NULL
-          AND t.role <> ''
-          AND r.slug = t.role;
+        ALTER TABLE reports_role
+        ADD CONSTRAINT reports_role_code_key UNIQUE (code);
     END IF;
-END
-$$;
+END $$;
 """
 
-# 6) (اختياري) مزامنة is_staff مع الدور الافتراضي — آمنة على القواعد الجديدة
-SYNC_IS_STAFF_SQL = r"""
-UPDATE reports_teacher t
-SET is_staff = r.is_staff_by_default
-FROM reports_role r
-WHERE t.role_id = r.id
-  AND (t.is_staff IS DISTINCT FROM r.is_staff_by_default);
+# 4) ضبط DEFAULT للأعمدة المنطقية (تجنّب NULL مستقبلًا)
+ENSURE_DEFAULTS_SQL = r"""
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_name='reports_role' AND column_name='can_view_all_reports') THEN
+        ALTER TABLE reports_role ALTER COLUMN can_view_all_reports SET DEFAULT FALSE;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_name='reports_role' AND column_name='can_manage_teachers') THEN
+        ALTER TABLE reports_role ALTER COLUMN can_manage_teachers SET DEFAULT FALSE;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_name='reports_role' AND column_name='can_manage_requests') THEN
+        ALTER TABLE reports_role ALTER COLUMN can_manage_requests SET DEFAULT FALSE;
+    END IF;
+END $$;
+"""
+
+# 5) معالجة أي NULLs حالية (لو وُجدت)
+BACKFILL_NULLS_SQL = r"""
+UPDATE reports_role SET can_view_all_reports = FALSE WHERE can_view_all_reports IS NULL;
+UPDATE reports_role SET can_manage_teachers = FALSE WHERE can_manage_teachers IS NULL;
+UPDATE reports_role SET can_manage_requests = FALSE WHERE can_manage_requests IS NULL;
+"""
+
+# 6) زرع/تحديث الأدوار — لاحظ أننا نُمرّر كل الأعمدة بما فيها can_view_all_reports
+SEED_ROLES_SQL = r"""
+INSERT INTO reports_role (code, name, can_manage_teachers, can_view_all_reports, can_manage_requests)
+VALUES
+('manager',           'المدير',        TRUE,  TRUE,  TRUE),
+('admin_officer',     'ضابط إداري',    TRUE,  TRUE,  TRUE),
+('activity_officer',  'ضابط النشاط',   FALSE, FALSE, TRUE),
+('volunteer_officer', 'ضابط التطوع',   FALSE, FALSE, TRUE),
+('affairs_officer',   'ضابط الشؤون',   FALSE, FALSE, TRUE),
+('teacher',           'معلم/معلمة',    FALSE, FALSE, FALSE)
+ON CONFLICT (code) DO UPDATE SET
+    name                 = EXCLUDED.name,
+    can_manage_teachers  = EXCLUDED.can_manage_teachers,
+    can_view_all_reports = EXCLUDED.can_view_all_reports,
+    can_manage_requests  = EXCLUDED.can_manage_requests;
 """
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("reports", "0001_initial"),
+        ('reports', '0001_initial'),
     ]
+
     operations = [
-        migrations.RunSQL(ADD_ROLE_ID_COL_SQL, reverse_sql=""),
-        migrations.RunSQL(ADD_ROLE_FK_SQL, reverse_sql=""),
-        migrations.RunSQL(ADD_ROLE_ID_INDEX_SQL, reverse_sql=""),
-        migrations.RunSQL(SEED_ROLES_SQL, reverse_sql=""),
-        migrations.RunSQL(BACKFILL_FROM_LEGACY_TEXT_SQL, reverse_sql=""),
-        migrations.RunSQL(SYNC_IS_STAFF_SQL, reverse_sql=""),
+        migrations.RunSQL(ADD_ROLE_ID_COL_SQL),
+        migrations.RunSQL(ADD_ROLE_FK_SQL),
+        migrations.RunSQL(ADD_ROLE_ID_INDEX_SQL),
+        migrations.RunSQL(ENSURE_ROLE_CODE_UNIQUE_SQL),
+        migrations.RunSQL(ENSURE_DEFAULTS_SQL),
+        migrations.RunSQL(BACKFILL_NULLS_SQL),
+        migrations.RunSQL(SEED_ROLES_SQL),
     ]
