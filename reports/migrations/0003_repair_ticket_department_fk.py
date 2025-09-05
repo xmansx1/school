@@ -1,7 +1,7 @@
 # reports/migrations/0003_repair_ticket_department_fk.py
 from django.db import migrations
 
-# ننشئ جدول الأقسام إن لم يوجد
+# إنشاء جدول الأقسام إن لم يكن موجودًا (لن يعمل إن كان مُنشأ من 0001)
 CREATE_DEPARTMENT_TABLE_SQL = r"""
 CREATE TABLE IF NOT EXISTS reports_department (
     id SERIAL PRIMARY KEY,
@@ -12,88 +12,113 @@ CREATE TABLE IF NOT EXISTS reports_department (
 );
 """
 
-# بذور قياسية (تراعي NOT NULL للـ role_label)
+# بذور أساسية للأقسام المعروفة
 SEED_KNOWN_DEPARTMENTS_SQL = r"""
-INSERT INTO reports_department (slug, name, role_label, is_active)
+INSERT INTO reports_department (name, slug, role_label, is_active)
 VALUES
-    ('activity_officer', 'قسم النشاط', 'مسؤول النشاط', TRUE),
-    ('volunteer_officer', 'قسم التطوع', 'مسؤول التطوع', TRUE),
-    ('affairs_officer',  'قسم شؤون الطلاب', 'مسؤول الشؤون الطلابية', TRUE),
-    ('admin_officer',    'قسم الشؤون الإدارية', 'مسؤول الشؤون الإدارية', TRUE),
-    ('manager',          'الإدارة', 'المدير', TRUE),
-    ('teacher',          'المعلمين', 'المعلم', TRUE)
-ON CONFLICT (slug) DO NOTHING;
+('الإدارة',            'admin_officer',     'ضابط إداري',            TRUE),
+('النشاط الطلابي',     'activity_officer',  'ضابط النشاط',           TRUE),
+('التطوع',             'volunteer_officer', 'ضابط التطوع',           TRUE),
+('الشؤون المدرسية',    'affairs_officer',   'ضابط الشؤون المدرسية',  TRUE),
+('الإدارة العليا',     'manager',           'المدير',                TRUE)
+ON CONFLICT (slug) DO UPDATE SET
+    name = EXCLUDED.name,
+    role_label = EXCLUDED.role_label,
+    is_active = EXCLUDED.is_active;
 """
 
-# عمود FK للتذاكر
+# إضافة عمود FK إن لم يوجد (سيكون موجودًا أصلًا من 0001، فلا ضرر)
 ADD_TICKET_DEPT_ID_COLUMN_SQL = r"""
 ALTER TABLE reports_ticket
 ADD COLUMN IF NOT EXISTS department_id INTEGER NULL;
 """
 
-# استيراد أقسام ظهرت كنصوص قديمة داخل التذاكر (مع role_label = name ليتوافق مع NOT NULL)
+# استيراد أقسام من عمود نصي قديم إن وُجد 'department'
 SEED_DEPTS_FROM_TICKETS_SQL = r"""
-INSERT INTO reports_department (slug, name, role_label, is_active)
-SELECT DISTINCT t.department, t.department, t.department, TRUE
-FROM reports_ticket t
-LEFT JOIN reports_department d ON d.slug = t.department
-WHERE t.department IS NOT NULL AND t.department <> '' AND d.id IS NULL;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='reports_ticket' AND column_name='department'
+    ) THEN
+        INSERT INTO reports_department (name, slug, role_label, is_active)
+        SELECT DISTINCT
+            INITCAP(REPLACE(TRIM(t.department), '_', ' ')) AS name,
+            LOWER(TRIM(t.department)) AS slug,
+            INITCAP(REPLACE(TRIM(t.department), '_', ' ')) AS role_label,
+            TRUE
+        FROM reports_ticket t
+        WHERE t.department IS NOT NULL AND t.department <> ''
+        ON CONFLICT (slug) DO NOTHING;
+    END IF;
+END $$;
 """
 
-# تعبئة FK
+# تعبئة department_id من العمود النصي القديم إن وُجد
 FILL_TICKET_DEPT_ID_SQL = r"""
-UPDATE reports_ticket t
-SET department_id = d.id
-FROM reports_department d
-WHERE t.department IS NOT NULL AND t.department <> '' AND d.slug = t.department
-  AND (t.department_id IS NULL OR t.department_id <> d.id);
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='reports_ticket' AND column_name='department'
+    ) THEN
+        UPDATE reports_ticket AS t
+        SET department_id = d.id
+        FROM reports_department AS d
+        WHERE LOWER(TRIM(t.department)) = d.slug
+          AND (t.department_id IS NULL OR t.department_id = 0);
+    END IF;
+END $$;
 """
 
-# فهارس
+# فهارس مناسبة
 CREATE_TICKET_DEPT_INDEX_SQL = r"""
 CREATE INDEX IF NOT EXISTS reports_ticket_department_id_idx
-    ON reports_ticket (department_id);
-"""
-CREATE_TICKET_DEPT_STATUS_CREATED_IDX_SQL = r"""
-CREATE INDEX IF NOT EXISTS reports_ticket_dept_status_created_idx
-    ON reports_ticket (department_id, status, created_at);
+ON reports_ticket (department_id);
 """
 
-# FK NOT VALID أولاً… ثم VALIDATE في أمر مستقل لتجنّب مشاكل الـ triggers
+CREATE_TICKET_DEPT_STATUS_CREATED_IDX_SQL = r"""
+CREATE INDEX IF NOT EXISTS reports_ticket_dept_status_created_idx
+ON reports_ticket (department_id, status, created_at);
+"""
+
+# إضافة FK فقط في حالة وجود العمود النصي القديم (سيناريو ترحيل قديم)
 ADD_TICKET_DEPT_FK_NOT_VALID_SQL = r"""
 DO $$
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'reports_ticket_department_id_fk'
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='reports_ticket' AND column_name='department'
     ) THEN
-        ALTER TABLE reports_ticket
-        ADD CONSTRAINT reports_ticket_department_id_fk
-        FOREIGN KEY (department_id) REFERENCES reports_department (id)
-        ON DELETE SET NULL NOT VALID;
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'reports_ticket_department_id_fk'
+        ) THEN
+            ALTER TABLE reports_ticket
+            ADD CONSTRAINT reports_ticket_department_id_fk
+            FOREIGN KEY (department_id) REFERENCES reports_department (id)
+            ON DELETE SET NULL
+            DEFERRABLE INITIALLY DEFERRED
+            NOT VALID;
+        END IF;
     END IF;
-END
-$$;
+END $$;
 """
 
+# تفعيل/التحقق من الـ FK إن كان قد أضيف أعلاه
 VALIDATE_TICKET_DEPT_FK_SQL = r"""
 DO $$
 BEGIN
     IF EXISTS (
-        SELECT 1 FROM pg_constraint
-        WHERE conname = 'reports_ticket_department_id_fk' AND NOT convalidated
+        SELECT 1 FROM pg_constraint WHERE conname = 'reports_ticket_department_id_fk'
     ) THEN
         ALTER TABLE reports_ticket VALIDATE CONSTRAINT reports_ticket_department_id_fk;
     END IF;
-END
-$$;
+END $$;
 """
 
 class Migration(migrations.Migration):
-    # مهم جداً لتفادي "pending trigger events" — نفصل المعاملات
-    atomic = False
-
     dependencies = [
-        ("reports", "0002_repair_teacher_role_fk"),
+        ('reports', '0002_repair_teacher_role_fk'),
     ]
 
     operations = [
