@@ -1306,3 +1306,4 @@ def delete_my_report(request: HttpRequest, pk: int) -> HttpResponse:
     messages.success(request, "🗑️ تم حذف التقرير.")
     nxt = request.POST.get("next") or request.GET.get("next")
     return redirect(nxt or "reports:my_reports")
+     
