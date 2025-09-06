@@ -16,7 +16,15 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Prefetch, Q, ManyToManyField, ForeignKey
+from django.db.models import (
+    Count,
+    Prefetch,
+    Q,
+    ManyToManyField,
+    ForeignKey,
+    OuterRef,
+    Subquery,
+)
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -81,6 +89,7 @@ def _safe_next_url(next_url: str | None) -> str | None:
     if not next_url:
         return None
     parsed = urlparse(next_url)
+    # نسمح فقط بالمسارات النسبية (بدون دومين/بروتوكول)
     if parsed.scheme == "" and parsed.netloc == "":
         return next_url
     return None
@@ -384,11 +393,25 @@ def report_pdf(request: HttpRequest, pk: int) -> HttpResponse:
 @require_http_methods(["GET"])
 def manage_teachers(request: HttpRequest) -> HttpResponse:
     term = (request.GET.get("q") or "").strip()
-    qs = Teacher.objects.all().order_by("-id")
+
+    # جلب اسم القسم المطابق لرمز الدور (slug) عبر Subquery
+    if HAS_DEPT_MODEL and Department is not None:
+        dept_name_sq = Department.objects.filter(
+            slug=OuterRef("role__slug")
+        ).values("name")[:1]
+
+        qs = (Teacher.objects
+              .select_related("role")
+              .annotate(role_dept_name=Subquery(dept_name_sq))
+              .order_by("-id"))
+    else:
+        qs = Teacher.objects.select_related("role").order_by("-id")
+
     if term:
         qs = qs.filter(
             Q(name__icontains=term) | Q(phone__icontains=term) | Q(national_id__icontains=term)
         )
+
     page = Paginator(qs, 20).get_page(request.GET.get("page"))
     return render(request, "reports/manage_teachers.html", {"teachers_page": page, "term": term})
 
@@ -752,10 +775,10 @@ class _DepartmentForm(forms.ModelForm):
         model = Department
         fields: list[str] = []
         if model is not None:
-            if hasattr(model, "name"):
-                fields.append("name")
-            if hasattr(model, "slug"):
-                fields.append("slug")
+            # نعرض الحقول الأساسية عند غياب DepartmentForm المخصّص
+            for fname in ("name", "slug", "role_label", "is_active"):
+                if hasattr(model, fname):
+                    fields.append(fname)
 
     def clean(self):
         cleaned = super().clean()
@@ -1306,4 +1329,3 @@ def delete_my_report(request: HttpRequest, pk: int) -> HttpResponse:
     messages.success(request, "🗑️ تم حذف التقرير.")
     nxt = request.POST.get("next") or request.GET.get("next")
     return redirect(nxt or "reports:my_reports")
-     

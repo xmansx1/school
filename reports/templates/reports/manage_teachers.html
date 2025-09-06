@@ -56,25 +56,22 @@
             <td data-label="رقم الهوية">{{ t.national_id|default:"-" }}</td>
             <td data-label="رقم الجوال">{{ t.phone }}</td>
 
+            {# ===== عمود الدور: اسم الدور فقط ===== #}
             <td data-label="الدور" class="text-center">
-              {% with label=t.get_role_display|default_if_none:"" %}
-                {% if t.role == "manager" %}
-                  <span class="badge badge-primary">{{ label|default:"مدير" }}</span>
-                {% elif t.role == "teacher" %}
-                  <span class="badge badge-success">{{ label|default:"معلم" }}</span>
-                {% elif t.role == "activity_officer" %}
-                  <span class="badge badge-primary">مسؤول النشاط</span>
-                {% elif t.role == "volunteer_officer" %}
-                  <span class="badge badge-primary">مسؤول التطوع </span>
-                {% elif t.role == "affairs_officer" %}
-                  <span class="badge badge-primary">مسؤول الشؤون المدرسية </span>
-                {% elif t.role == "admin_officer" %}
-                  <span class="badge badge-primary">مسؤول الشؤون الإدارية</span>
-                {% else %}
-                  <span class="badge badge-success">{{ label|default:"-" }}</span>
-                {% endif %}
-              {% endwith %}
+              {% if t.role %}
+                {% with slug=t.role.slug label=t.role.name|default:t.role.slug %}
+                  <span class="badge
+                               {% if slug == 'manager' %}badge-primary
+                               {% elif slug == 'teacher' %}badge-success
+                               {% else %}badge-primary{% endif %}">
+                    {{ label }}
+                  </span>
+                {% endwith %}
+              {% else %}
+                <span class="badge badge-muted">-</span>
+              {% endif %}
             </td>
+            {# ===================================== #}
 
             <td data-label="الحالة" class="text-center">
               {% if t.is_active %}
@@ -185,6 +182,7 @@
   .badge { padding:6px 12px; border-radius:20px; font-size:12px; font-weight:600; }
   .badge-primary { background-color:#dbeafe; color:#1d4ed8; }
   .badge-success { background-color:#dcfce7; color:#166534; }
+  .badge-muted   { background-color:#f1f5f9; color:#475569; }
 
   .status-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; font-size:13px; font-weight:600; }
   .status-active { background-color:#f0fdf4; color:#166534; }

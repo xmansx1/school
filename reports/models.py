@@ -1,9 +1,12 @@
 # reports/models.py
 # -*- coding: utf-8 -*-
+from __future__ import annotations
+
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.validators import MinValueValidator, FileExtensionValidator
-from django.db import models
+from django.db import models, transaction
+from django.utils.text import slugify
 
 
 # =========================
@@ -35,7 +38,7 @@ class Role(models.Model):
         verbose_name = "دور"
         verbose_name_plural = "الأدوار"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name or self.slug
 
     def save(self, *args, **kwargs):
@@ -104,6 +107,11 @@ class Teacher(AbstractBaseUser, PermissionsMixin):
         verbose_name = "مستخدم (معلم)"
         verbose_name_plural = "المستخدمون"
 
+    @property
+    def role_display(self) -> str:
+        """اسم الدور للعرض في القوالب."""
+        return getattr(self.role, "name", "-")
+
     def save(self, *args, **kwargs):
         # مزامنة is_staff مع الدور إن وُجد
         try:
@@ -127,7 +135,7 @@ class Department(models.Model):
         "الاسم الظاهر في قائمة (الدور)",
         max_length=120,
         blank=True,
-        help_text="إن تُرك فارغًا سيُستخدم اسم القسم.",
+        help_text="هذا الاسم سيظهر كخيار (دور) عند إضافة المعلّم. إن تُرك فارغًا سيُستخدم اسم القسم.",
     )
     is_active = models.BooleanField("نشط", default=True)
 
@@ -140,11 +148,79 @@ class Department(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
+        """
+        مزامنة جدول Role مع كل قسم:
+        - ينشئ/يحدّث Role بنفس slug.
+        - name للدور يأتي من role_label (أو name إن كان role_label فارغًا).
+        - يحدّث is_active للدور مطابقًا للقسم.
+        - في حال تغيير slug للقسم، نحدّث الدور القديم بدل إنشاء دور جديد.
+        """
+        # تطبيع الحقول
         if not self.role_label:
             self.role_label = self.name
         if self.slug:
             self.slug = self.slug.strip().lower()
-        super().save(*args, **kwargs)
+        else:
+            self.slug = slugify(self.name or "", allow_unicode=True)
+
+        old_slug = None
+        if self.pk:
+            old_slug = Department.objects.filter(pk=self.pk).values_list("slug", flat=True).first()
+
+        role_name = (self.role_label or self.name or "").strip()
+
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+
+            # --- مزامنة الدور المطابق ---
+            # ملاحظة: نستخدم Role مباشرة لأنه مُعرّف أعلى الملف.
+            if old_slug and old_slug != self.slug:
+                # slug تغيّر: حدّث الدور القديم إلى الجديد
+                role = Role.objects.filter(slug=old_slug).first()
+                if role:
+                    updates = []
+                    if role.slug != self.slug:
+                        role.slug = self.slug
+                        updates.append("slug")
+                    if role.name != role_name:
+                        role.name = role_name
+                        updates.append("name")
+                    if role.is_active != self.is_active:
+                        role.is_active = self.is_active
+                        updates.append("is_active")
+                    if updates:
+                        role.save(update_fields=updates)
+                else:
+                    # إن لم يوجد دور بالـ old_slug، أنشئ/حدّث بالـ slug الجديد
+                    role, created = Role.objects.get_or_create(
+                        slug=self.slug,
+                        defaults={"name": role_name, "is_active": self.is_active},
+                    )
+                    if not created:
+                        to_update = []
+                        if role.name != role_name:
+                            role.name = role_name
+                            to_update.append("name")
+                        if role.is_active != self.is_active:
+                            role.is_active = self.is_active
+                            to_update.append("is_active")
+                        if to_update:
+                            role.save(update_fields=to_update)
+            else:
+                role, created = Role.objects.get_or_create(
+                    slug=self.slug,
+                    defaults={"name": role_name, "is_active": self.is_active},
+                )
+                if not created:
+                    to_update = []
+                    if role.name != role_name:
+                        role.name = role_name
+                        to_update.append("name")
+                    if role.is_active != self.is_active:
+                        role.is_active = self.is_active
+                        to_update.append("is_active")
+                    if to_update:
+                        role.save(update_fields=to_update)
 
 
 class DepartmentMembership(models.Model):
@@ -167,7 +243,7 @@ class DepartmentMembership(models.Model):
     role_type = models.CharField("نوع التكليف", max_length=16, choices=ROLE_TYPE_CHOICES, default=TEACHER)
 
     class Meta:
-        unique_together = [("department", "teacher")]
+        unique_together = [("department", "teacher")]  # إبقائها كما هي لتجنّب هجرة جديدة
         indexes = [
             models.Index(fields=["department"]),
             models.Index(fields=["teacher"]),
@@ -242,7 +318,7 @@ class Report(models.Model):
 
     # التصنيف ديناميكي عبر FK
     category = models.ForeignKey(
-        ReportType,
+        "ReportType",
         on_delete=models.PROTECT,     # منع حذف النوع إن كان مستخدمًا
         null=True, blank=True,        # مؤقتًا لتسهيل الهجرة؛ يمكن جعلها إلزامية لاحقًا
         verbose_name="التصنيف",
@@ -277,6 +353,7 @@ class Report(models.Model):
         return (self.teacher_name or getattr(self.teacher, "name", "") or "").strip()
 
     def save(self, *args, **kwargs):
+        # اليوم باللغة العربية
         if self.report_date and not self.day_name:
             days = {
                 1: "الاثنين",
@@ -291,6 +368,14 @@ class Report(models.Model):
                 self.day_name = days.get(self.report_date.isoweekday())
             except Exception:
                 pass
+
+        # تجميد اسم المعلّم وقت الإنشاء إن لم يُملأ
+        if not self.teacher_name and getattr(self, "teacher_id", None):
+            try:
+                self.teacher_name = getattr(self.teacher, "name", "") or ""
+            except Exception:
+                pass
+
         super().save(*args, **kwargs)
 
 
@@ -382,7 +467,6 @@ class TicketNote(models.Model):
 
 # =========================
 # نماذج تراثية (تبقى كما هي للاطلاع/أرشفة فقط)
-# ملاحظة: يفضّل عدم استخدامها في الشاشات الجديدة.
 # =========================
 REQUEST_DEPARTMENTS = [
     ("manager", "المدير"),

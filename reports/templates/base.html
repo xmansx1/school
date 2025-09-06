@@ -6,11 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}نظام التقارير{% endblock %}</title>
 
-  <!-- Performance -->
+  <!-- أداء أعلى -->
   <link rel="preload" href="{% static 'css/app.css' %}" as="style">
   <link rel="stylesheet" href="{% static 'css/app.css' %}" />
 
-  <!-- Font -->
+  <!-- الخط -->
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;800;900&display=swap" rel="stylesheet">
 
   <style>
@@ -33,13 +33,15 @@
     .container{width:100%;max-width:1200px;margin-inline:auto;padding:0 16px}
     .page-main{flex:1; padding:24px 0; animation:fadeUp .5s ease both}
 
-    /* Progress */
+    /* شريط التقدم */
     .progress-bar{
-      position:fixed; inset:0 0 auto 0; height:3px; background:linear-gradient(90deg,#60a5fa,var(--brand));
-      transform-origin:0 50%; transform:scaleX(0); z-index:120; box-shadow:0 2px 8px rgba(37,99,235,.25);
+      position:fixed; inset:0 0 auto 0; height:3px;
+      background:linear-gradient(90deg,#60a5fa,var(--brand));
+      transform-origin:0 50%; transform:scaleX(0); z-index:120;
+      box-shadow:0 2px 8px rgba(37,99,235,.25);
     }
 
-    /* Header */
+    /* الهيدر */
     .site-header{
       position:sticky; top:0; z-index:110;
       background:rgba(255,255,255,.88);
@@ -48,7 +50,8 @@
       transition:box-shadow .22s ease, background .22s ease, border-color .22s ease;
     }
     .site-header.scrolled{
-      box-shadow:0 10px 30px rgba(2,6,23,.10); background:rgba(255,255,255,.92); border-color:#dfe7ff;
+      box-shadow:0 10px 30px rgba(2,6,23,.10);
+      background:rgba(255,255,255,.92); border-color:#dfe7ff;
     }
     .site-header .bar{display:flex; align-items:center; gap:16px; padding:10px 0; min-height:64px;}
     .brand{
@@ -57,7 +60,7 @@
     }
     .brand img{width:40px;height:40px;object-fit:contain}
 
-    /* Nav */
+    /* القائمة العلوية */
     .nav{margin-inline-start:auto; display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
     .nav a{
       --h:40px; position:relative; display:inline-flex; align-items:center; justify-content:center;
@@ -73,7 +76,7 @@
     .nav a.active{color:var(--brand); background:var(--brand-ghost)}
     .nav a.active::after{ transform:scaleX(1); }
 
-    /* Badges */
+    /* بادجات */
     .nav .with-badge{display:inline-flex; align-items:center; gap:8px}
     .badge{
       min-width:20px; height:20px; padding:0 6px; border-radius:999px;
@@ -82,7 +85,7 @@
     }
     .nav .with-badge:hover .badge{ transform:translateY(-2px) }
 
-    /* User menu */
+    /* قائمة المستخدم */
     .userbox{position:relative}
     .avatar{
       width:36px;height:36px;border-radius:50%; display:grid; place-items:center;
@@ -100,7 +103,7 @@
     .menu .mi:hover{background:var(--line-2)}
     .menu .meta{color:var(--muted); font-size:.9rem}
 
-    /* Hamburger (mobile) */
+    /* همبرجر الجوال */
     .hamburger{display:none; width:34px; height:24px; margin-inline-start:auto; cursor:pointer; position:relative}
     .hamburger span{position:absolute; inset:auto 0 auto 0; height:3px; background:var(--ink); border-radius:3px; transition:var(--t)}
     .hamburger span:nth-child(1){top:0}
@@ -110,21 +113,16 @@
     .hamburger.active span:nth-child(2){opacity:0}
     .hamburger.active span:nth-child(3){bottom:auto; top:50%; transform:translateY(-50%) rotate(-45deg)}
 
-    /* Messages */
+    /* الرسائل */
     .messages{margin:16px 0}
-    .msg{
-      padding:12px 14px; border-radius:10px; border:1px solid var(--line);
-      background:#f8fbff; color:#0b1b3a; box-shadow:var(--shadow); margin-bottom:10px;
-      animation:fadeIn .3s ease both;
-    }
+    .msg{ padding:12px 14px; border-radius:10px; border:1px solid var(--line);
+      background:#f8fbff; color:#0b1b3a; box-shadow:var(--shadow); margin-bottom:10px; animation:fadeIn .3s ease both; }
     .msg.success{background:#f0fff6; border-color:#c8f3d6; color:#064e3b}
     .msg.error{background:#fff0f0; border-color:#ffd4d4; color:#7f1d1d}
     .msg.warning{background:#fffbeb; border-color:#fed7aa; color:#7c2d12}
 
-    /* Footer */
-    .site-footer{
-      background:linear-gradient(135deg,#0f1b30 0%, #0c1830 40%, #0b1630 100%); color:#dbe6ff; margin-top:16px
-    }
+    /* الفوتر */
+    .site-footer{ background:linear-gradient(135deg,#0f1b30 0%, #0c1830 40%, #0b1630 100%); color:#dbe6ff; margin-top:16px }
     .site-footer .wrap{padding:26px 16px}
     .foot-grid{display:grid; gap:18px}
     @media(min-width:900px){.foot-grid{grid-template-columns:1.1fr .9fr .9fr}}
@@ -132,12 +130,10 @@
     .foot-links ul{list-style:none; display:grid; gap:8px; padding:0; margin:0}
     .foot-links a{color:#cfe0ff; text-decoration:none; font-weight:700}
     .foot-links a:hover{color:#fff; text-decoration:underline}
-    .foot-bottom{
-      border-top:1px solid rgba(255,255,255,.1); padding:12px 0;
-      display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; font-size:.9rem;
-    }
+    .foot-bottom{ border-top:1px solid rgba(255,255,255,.1); padding:12px 0;
+      display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; font-size:.9rem; }
 
-    /* Mobile */
+    /* موبايل */
     @media(max-width:768px){
       .container{padding:0 12px}
       .page-main{padding:16px 0}
@@ -155,7 +151,7 @@
       *{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important}
     }
 
-    /* Animations */
+    /* حركات */
     @keyframes fadeIn{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
     @keyframes fadeUp{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
   </style>
@@ -174,23 +170,17 @@
         <span>{% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}نظام التقارير{% endif %}</span>
       </a>
 
-      <div class="sep" aria-hidden="true"></div>
-
-      <!-- Mobile -->
+      <!-- همبرجر للجوال -->
       <div class="hamburger" id="hamburger-menu" aria-label="فتح القائمة" aria-controls="main-nav" aria-expanded="false">
         <span></span><span></span><span></span>
       </div>
 
       {% with active=request.resolver_match.url_name %}
-      {% url 'reports:assigned_to_me' as assigned_url %}
       <nav class="nav" id="main-nav" role="navigation" aria-label="روابط أساسية">
         {% if request.user.is_authenticated %}
           <a class="{% if active == 'home' %}active{% endif %}" href="{% url 'reports:home' %}">الرئيسية</a>
           <a class="{% if active == 'add_report' %}active{% endif %}" href="{% url 'reports:add_report' %}">إضافة تقرير</a>
-
-          <a class="{% if active == 'request_create' %}active{% endif %}" href="{% url 'reports:request_create' %}">
-            إرسال طلب
-          </a>
+          <a class="{% if active == 'request_create' %}active{% endif %}" href="{% url 'reports:request_create' %}">إرسال طلب</a>
 
           <a class="with-badge {% if active == 'my_requests' %}active{% endif %}" href="{% url 'reports:my_requests' %}">
             طلباتي
@@ -199,6 +189,7 @@
             {% endif %}
           </a>
 
+          {% url 'reports:assigned_to_me' as assigned_url %}
           {% if assigned_url %}
           <a class="with-badge {% if active == 'assigned_to_me' %}active{% endif %}" href="{{ assigned_url }}">
             معيّنة لي
@@ -208,7 +199,16 @@
           </a>
           {% endif %}
 
-          <!-- User dropdown -->
+          {# ==== رابط لوحة المدير (للسوبر أو manager) — بدون أقواس في الشرط ==== #}
+          {% if request.user.is_superuser %}
+            <a class="{% if active == 'admin_dashboard' or active == 'departments_list' or active == 'reporttypes_list' or active == 'manage_teachers' or active == 'admin_reports' or active == 'tickets_inbox' %}active{% endif %}"
+               href="{% url 'reports:admin_dashboard' %}">لوحة المدير</a>
+          {% elif request.user.role and request.user.role.slug == 'manager' %}
+            <a class="{% if active == 'admin_dashboard' or active == 'departments_list' or active == 'reporttypes_list' or active == 'manage_teachers' or active == 'admin_reports' or active == 'tickets_inbox' %}active{% endif %}"
+               href="{% url 'reports:admin_dashboard' %}">لوحة المدير</a>
+          {% endif %}
+
+          <!-- قائمة المستخدم -->
           <div class="userbox">
             {% firstof request.user.name request.user.phone request.user.national_id "حسابي" as display_name %}
             <button class="avatar" id="userAvatar" type="button"
@@ -223,7 +223,13 @@
                   <div class="meta">مرحباً 👋</div>
                 </div>
               </div>
-              <!-- أزلنا: تقاريري / صندوق التذاكر / تقارير الإدارة / إدارة المعلّمين -->
+
+              {% if request.user.is_superuser %}
+                <a href="{% url 'reports:admin_dashboard' %}" class="mi" role="menuitem">📊 لوحة المدير</a>
+              {% elif request.user.role and request.user.role.slug == 'manager' %}
+                <a href="{% url 'reports:admin_dashboard' %}" class="mi" role="menuitem">📊 لوحة المدير</a>
+              {% endif %}
+
               <a href="{% url 'reports:my_requests' %}" class="mi" role="menuitem">📦 طلباتي</a>
               <a href="{% url 'reports:logout' %}" class="mi" role="menuitem">🚪 تسجيل الخروج</a>
             </div>
@@ -271,7 +277,7 @@
     </div>
   </footer>
 
-  <!-- Back to Top -->
+  <!-- زر لأعلى -->
   <button id="toTop" title="العودة للأعلى" aria-label="العودة للأعلى" style="display:none;
           position:fixed; inset:auto 18px 24px auto; width:46px; height:46px; border:0; border-radius:50%;
           background:linear-gradient(135deg,var(--brand),#10b981); color:#fff; cursor:pointer; box-shadow:0 10px 28px rgba(37,99,235,.35);">
@@ -289,7 +295,7 @@
     })();
 
     document.addEventListener('DOMContentLoaded', function(){
-      // Header shadow + progress
+      // ظل الهيدر + شريط التقدم
       const header = document.getElementById('siteHeader');
       const progress = document.getElementById('scrollProgress');
       const onScroll = () => {
@@ -301,12 +307,12 @@
       };
       window.addEventListener('scroll', onScroll, {passive:true}); onScroll();
 
-      // Auto-hide messages
+      // إخفاء الرسائل تلقائياً
       document.querySelectorAll('.msg').forEach(el=>{
         setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(-6px)'; setTimeout(()=>el.remove(), 300); }, 3000);
       });
 
-      // Mobile nav
+      // قائمة الجوال
       const burger = document.getElementById('hamburger-menu');
       const nav = document.getElementById('main-nav');
       if(burger && nav){
@@ -322,7 +328,7 @@
         });
       }
 
-      // User menu
+      // قائمة المستخدم
       const avatar = document.getElementById('userAvatar');
       const menu = document.getElementById('userMenu');
       if(avatar && menu){
@@ -335,7 +341,7 @@
         document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
       }
 
-      // To top
+      // لأعلى
       const toTop = document.getElementById('toTop');
       if(toTop){
         const toggle = ()=>{ window.scrollY > 260 ? (toTop.style.display='grid') : (toTop.style.display='none'); };
