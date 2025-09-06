@@ -43,46 +43,56 @@ urlpatterns = [
     path("staff/teachers/<int:pk>/delete/", views.delete_teacher, name="delete_teacher"),
 
     # =========================
-    # إدارة الأقسام + التكليف (جديدة)
+    # إدارة الأقسام + التكليف
+    # (اعتمدنا slug:code، ووفّرنا aliases للأسماء/المسارات القديمة)
     # =========================
     path("staff/departments/", views.departments_list, name="departments_list"),
+
+    # إضافة قسم (اسم جديد + اسم قديم)
+    path("staff/departments/add/", views.department_create, name="department_create"),
     path("staff/departments/add/", views.department_create, name="departments_add"),
+
+    # تعديل بالقيمة الدلالية (slug/code)
+    path("staff/departments/<slug:code>/edit/", views.department_edit, name="department_edit"),
+    # توافق قديم (pk)
     path("staff/departments/<int:pk>/edit/", views.department_update, name="departments_edit"),
-    path("staff/departments/<int:pk>/delete/", views.department_delete, name="departments_delete"),
+
+    # الأعضاء بالقيمة الدلالية
+    path("staff/departments/<slug:code>/members/", views.department_members, name="department_members"),
+    # توافق قديم (pk)
     path("staff/departments/<int:pk>/members/", views.department_members, name="departments_members"),
+
+    # حذف بالقيمة الدلالية
+    path("staff/departments/<slug:code>/delete/", views.department_delete, name="department_delete"),
+    # توافق قديم (pk)
+    path("staff/departments/<int:pk>/delete/", views.department_delete, name="departments_delete"),
+
+    # =========================
+    # لوحة المدير
+    # =========================
+    path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
+    path("manager/", views.admin_dashboard, name="manager_dashboard"),
+
+    # =========================
+    # أنواع التقارير
+    # =========================
+    path("staff/report-types/", views.reporttypes_list, name="reporttypes_list"),
+    path("staff/report-types/add/", views.reporttype_create, name="reporttype_create"),
+    path("staff/report-types/<int:pk>/edit/", views.reporttype_update, name="reporttype_update"),
+    path("staff/report-types/<int:pk>/delete/", views.reporttype_delete, name="reporttype_delete"),
 
     # =========================
     # التذاكر (Requests/Tickets)
     # =========================
     path("requests/new/", views.request_create, name="request_create"),
     path("requests/mine/", views.my_requests, name="my_requests"),
-
-    # صندوق الوارد والمهام
     path("requests/inbox/", views.tickets_inbox, name="tickets_inbox"),
     path("requests/assigned/", views.assigned_to_me, name="assigned_to_me"),
-
-    # تفاصيل التذكرة
     path("requests/<int:pk>/", views.ticket_detail, name="ticket_detail"),
     path("requests/admin/<int:pk>/", views.admin_request_update, name="admin_request_update"),
 
     # =========================
-    # API (قائمة الموظفين حسب القسم)
+    # API
     # =========================
     path("api/department-members/", views.api_department_members, name="api_department_members"),
-    
-    path("staff/departments/", views.departments_list, name="departments_list"),
-    path("staff/departments/add/", views.department_create, name="departments_add"),
-    path("staff/departments/<str:code>/", views.department_members, name="department_members"),
-    path("staff/departments/<str:code>/edit/", views.department_edit, name="department_edit"),
-    path("staff/departments/<str:code>/delete/", views.department_delete, name="department_delete"),
-    path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
-    path("manager/", views.admin_dashboard, name="manager_dashboard"),
-    
-    
-    
-    path("staff/report-types/", views.reporttypes_list, name="reporttypes_list"),
-    path("staff/report-types/add/", views.reporttype_create, name="reporttype_create"),
-    path("staff/report-types/<int:pk>/edit/", views.reporttype_update, name="reporttype_update"),
-    path("staff/report-types/<int:pk>/delete/", views.reporttype_delete, name="reporttype_delete"),
-    
 ]

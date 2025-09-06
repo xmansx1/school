@@ -26,8 +26,8 @@
     <h2 class="title">🏷️ إدارة الأقسام</h2>
 
     <div class="toolbar">
-      {% url 'reports:departments_add' as departments_add_url %}
-      <a class="btn btn-primary" href="{{ departments_add_url|default:'#' }}">➕ قسم جديد</a>
+      {# اسم المسار الصحيح لإنشاء قسم جديد #}
+      <a class="btn btn-primary" href="{% url 'reports:department_create' %}">➕ قسم جديد</a>
     </div>
 
     <div class="table-wrap">
@@ -45,17 +45,11 @@
         </thead>
         <tbody>
           {% for d in departments %}
+          {# ملاحظة: دكتشنري _all_departments يوفّر d.code دائماً (slug) #}
           <tr>
             <td>{{ forloop.counter }}</td>
 
-            <td>
-              <code>
-                {% if d.code %}{{ d.code }}
-                {% elif d.slug %}{{ d.slug }}
-                {% else %}—{% endif %}
-              </code>
-            </td>
-
+            <td><code>{{ d.code|default:"—" }}</code></td>
             <td>{{ d.name|default:"—" }}</td>
 
             <td>
@@ -63,10 +57,7 @@
             </td>
 
             <td>
-              {# إن كان عندك members_count جاهز استخدمه، وإلا fallback إلى d.members.count #}
-              {% if d.members_count is not None %}{{ d.members_count }}
-              {% elif d.members %}{{ d.members.count }}
-              {% else %}0{% endif %}
+              {{ d.members_count|default:"0" }}
             </td>
 
             <td class="muted">
@@ -76,14 +67,12 @@
             </td>
 
             <td class="actions">
-              {% url 'reports:department_members' d.pk as dept_members_url %}
-              {% url 'reports:department_edit' d.pk as dept_edit_url %}
-              {% url 'reports:department_delete' d.pk as dept_delete_url %}
+              {# هذه المسارات تستقبل وسيط اسمه code (slug أو pk) #}
+              <a class="btn" href="{% url 'reports:department_members' code=d.code %}">👥 الأعضاء</a>
+              <a class="btn" href="{% url 'reports:department_edit' code=d.code %}">✏️ تعديل</a>
 
-              <a class="btn" href="{{ dept_members_url }}">👥 الأعضاء</a>
-              <a class="btn" href="{{ dept_edit_url }}">✏️ تعديل</a>
-
-              <form action="{{ dept_delete_url }}" method="post" style="display:inline"
+              <form action="{% url 'reports:department_delete' code=d.code %}"
+                    method="post" style="display:inline"
                     onsubmit="return confirm('حذف هذا القسم؟');">
                 {% csrf_token %}
                 <button class="btn btn-danger" type="submit">🗑 حذف</button>

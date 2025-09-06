@@ -671,17 +671,29 @@ def _arabic_label_for(dept_obj_or_code) -> str:
 
 
 def _resolve_department_by_code_or_pk(code_or_pk: str) -> Tuple[Optional[object], str, str]:
+    """
+    يقبل slug أو pk رقمي. يتجنب استخدام lookups نصية على حقول رقمية.
+    """
     dept_obj = None
     dept_code = (code_or_pk or "").strip()
 
     if HAS_DEPT_MODEL and Department is not None:
-        dept_obj = (
-            Department.objects.filter(slug__iexact=dept_code).first()
-            or Department.objects.filter(pk__iexact=dept_code).first()
-        )
-        if dept_obj:
-            dept_code = _dept_code_for(dept_obj)
+        try:
+            # حاول بحسب الـ slug أولاً
+            dept_obj = Department.objects.filter(slug__iexact=dept_code).first()
+            if not dept_obj:
+                # إن كان المدخل رقماً جرّب المطابقة كـ pk
+                try:
+                    dept_obj = Department.objects.filter(pk=int(dept_code)).first()
+                except (ValueError, TypeError):
+                    dept_obj = None
+        except Exception:
+            dept_obj = None
 
+        if dept_obj:
+            dept_code = getattr(dept_obj, "slug", dept_code)
+
+    # عنوان عربي للسرد
     dept_label = _arabic_label_for(dept_obj or dept_code)
     return dept_obj, dept_code, dept_label
 
@@ -921,6 +933,8 @@ def _assign_role_by_slug(teacher: Teacher, slug: str) -> bool:
 
 
 # ---- الأقسام: حذف ----
+from django.db.models import ProtectedError
+
 @login_required(login_url="reports:login")
 @role_required({"manager"})
 @require_http_methods(["POST"])
@@ -937,10 +951,13 @@ def department_delete(request: HttpRequest, code: str) -> HttpResponse:
     try:
         obj.delete()
         messages.success(request, f"🗑️ تم حذف قسم «{label}».")
+    except ProtectedError:
+        messages.error(request, f"لا يمكن حذف «{label}» لوجود سجلات مرتبطة به. عطّل القسم أو احذف السجلات المرتبطة أولاً.")
     except Exception:
         logger.exception("department_delete failed")
         messages.error(request, "تعذّر حذف القسم.")
     return redirect("reports:departments_list")
+
 
 
 # ---- دعم m2m و through detection (احتياطي) ----
