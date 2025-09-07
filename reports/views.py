@@ -24,6 +24,7 @@ from django.db.models import (
     ForeignKey,
     OuterRef,
     Subquery,
+    ProtectedError,
 )
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -70,16 +71,20 @@ except Exception:  # pragma: no cover
     Department = None  # type: ignore
 
 try:
-    from .models import DepartmentMembership as DepartmentMember  # type: ignore
+    from .models import DepartmentMembership  # type: ignore
 except Exception:  # pragma: no cover
-    DepartmentMember = None  # type: ignore
+    DepartmentMembership = None  # type: ignore
 
 try:
     from .forms import DepartmentForm  # type: ignore
 except Exception:  # pragma: no cover
-    DepartmentForm = None  # type: ignore
+    DepartmentForm = None  # pragma: no cover
+
 
 HAS_DEPT_MODEL: bool = Department is not None
+
+DM_TEACHER = getattr(DepartmentMembership, "TEACHER", "teacher") if DepartmentMembership else "teacher"
+DM_OFFICER = getattr(DepartmentMembership, "OFFICER", "officer") if DepartmentMembership else "officer"
 
 
 # =========================
@@ -277,6 +282,7 @@ def my_reports(request: HttpRequest) -> HttpResponse:
 
 
 @user_passes_test(_is_staff, login_url="reports:login")
+@role_required({"manager"})              # المدير فقط (والسوبر يمر داخل الديكوريتر)
 @require_http_methods(["GET"])
 def admin_reports(request: HttpRequest) -> HttpResponse:
     # فلترة ديناميكية حسب صلاحيات الدور (from DB)
@@ -334,6 +340,115 @@ def admin_reports(request: HttpRequest) -> HttpResponse:
     return render(request, "reports/admin_reports.html", context)
 
 
+# =========================
+# لوحة تقارير المسؤول (Officer)
+# =========================
+@login_required(login_url="reports:login")
+@require_http_methods(["GET"])
+def officer_reports(request: HttpRequest) -> HttpResponse:
+    """
+    لوحة تقارير المسؤول:
+    - تعتمد على عضوية DepartmentMembership.role_type = OFFICER.
+    - المدير العام (superuser) يُحوّل للوحة المدير.
+    - الأنواع المسموح بها = reporttypes المرتبطة بالقسم، مع fallback لأنواع الدور إن لزم.
+    """
+    user = request.user
+
+    # المدير العام يستخدم لوحة المدير
+    if user.is_superuser:
+        return redirect("reports:admin_reports")
+
+    if not (HAS_DEPT_MODEL and Department is not None and DepartmentMembership is not None):
+        messages.error(request, "صلاحيات المسؤول تتطلب تفعيل الأقسام وعضوياتها.")
+        return redirect("reports:home")
+
+    # اكتشف عضوية المسؤول
+    membership = (
+        DepartmentMembership.objects.select_related("department")
+        .filter(teacher=user, role_type=DM_OFFICER, department__is_active=True)
+        .first()
+    )
+    if not membership:
+        messages.error(request, "لا تملك صلاحية مسؤول قسم.")
+        return redirect("reports:home")
+
+    dept = membership.department  # القسم المسؤول عنه
+    allowed_cats_qs = getattr(dept, "reporttypes", None)
+    allowed_cats_qs = (allowed_cats_qs.filter(is_active=True) if allowed_cats_qs is not None else None)
+
+    # احتياط: لو لا يوجد ربط أنواع، ارجع لأنواع الدور إن وُجدت
+    role = getattr(user, "role", None)
+    if (allowed_cats_qs is None) or (not allowed_cats_qs.exists()):
+        if role is not None and hasattr(role, "allowed_reporttypes"):
+            allowed_cats_qs = role.allowed_reporttypes.filter(is_active=True)
+        else:
+            allowed_cats_qs = ReportType.objects.none() if HAS_RTYPE and ReportType else None
+
+    if allowed_cats_qs is None or not allowed_cats_qs.exists():
+        messages.info(request, "لم يتم ربط قسمك بأي أنواع تقارير بعد.")
+        return render(
+            request,
+            "reports/officer_reports.html",
+            {
+                "reports": [],
+                "categories": [],
+                "category": "",
+                "teacher_name": "",
+                "start_date": "",
+                "end_date": "",
+                "department": dept,
+            },
+        )
+
+    # فلترة حسب المدخلات
+    start_date = request.GET.get("start_date") or ""
+    end_date = request.GET.get("end_date") or ""
+    teacher_name = request.GET.get("teacher_name", "").strip()
+    category = request.GET.get("category") or ""
+
+    qs = Report.objects.select_related("teacher", "category").filter(category__in=allowed_cats_qs)
+
+    if start_date:
+        qs = qs.filter(report_date__gte=start_date)
+    if end_date:
+        qs = qs.filter(report_date__lte=end_date)
+    if teacher_name:
+        qs = qs.filter(Q(teacher__name__icontains=teacher_name) | Q(teacher_name__icontains=teacher_name))
+    if category:
+        # في officer_reports نستخدم pk للنوع في الفلتر الواجهـي
+        qs = qs.filter(category_id=category)
+
+    qs = qs.order_by("-report_date", "-created_at")
+
+    paginator = Paginator(qs, 25)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    categories_choices = [(str(c.pk), c.name) for c in allowed_cats_qs.order_by("order", "name")]
+
+    return render(
+        request,
+        "reports/officer_reports.html",
+        {
+            "reports": page_obj,
+            "categories": categories_choices,
+            "category": category,
+            "teacher_name": teacher_name,
+            "start_date": start_date,
+            "end_date": end_date,
+            "department": dept,
+        },
+    )
+
+
+
+
+
+
+
+# =========================
+# حذف تقرير (لوحة المدير)
+# =========================
 @user_passes_test(_is_staff, login_url="reports:login")
 @require_http_methods(["POST"])
 def admin_delete_report(request: HttpRequest, pk: int) -> HttpResponse:
@@ -396,21 +511,13 @@ def manage_teachers(request: HttpRequest) -> HttpResponse:
 
     # جلب اسم القسم المطابق لرمز الدور (slug) عبر Subquery
     if HAS_DEPT_MODEL and Department is not None:
-        dept_name_sq = Department.objects.filter(
-            slug=OuterRef("role__slug")
-        ).values("name")[:1]
-
-        qs = (Teacher.objects
-              .select_related("role")
-              .annotate(role_dept_name=Subquery(dept_name_sq))
-              .order_by("-id"))
+        dept_name_sq = Department.objects.filter(slug=OuterRef("role__slug")).values("name")[:1]
+        qs = Teacher.objects.select_related("role").annotate(role_dept_name=Subquery(dept_name_sq)).order_by("-id")
     else:
         qs = Teacher.objects.select_related("role").order_by("-id")
 
     if term:
-        qs = qs.filter(
-            Q(name__icontains=term) | Q(phone__icontains=term) | Q(national_id__icontains=term)
-        )
+        qs = qs.filter(Q(name__icontains=term) | Q(phone__icontains=term) | Q(national_id__icontains=term))
 
     page = Paginator(qs, 20).get_page(request.GET.get("page"))
     return render(request, "reports/manage_teachers.html", {"teachers_page": page, "term": term})
@@ -425,12 +532,7 @@ def add_teacher(request: HttpRequest) -> HttpResponse:
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    teacher = form.save(commit=False)
-                    # كلمة المرور تأتي من الحقل password1 في الفورم
-                    pwd = (form.cleaned_data.get("password1") or "").strip()
-                    if pwd:
-                        teacher.set_password(pwd)
-                    teacher.save()
+                    form.save(commit=True)  # الفورم ينشئ العضوية ويضبط الدور
                 messages.success(request, "✅ تم إضافة المستخدم بنجاح.")
                 next_url = _safe_next_url(request.POST.get("next") or request.GET.get("next"))
                 return redirect(next_url or "reports:manage_teachers")
@@ -456,13 +558,7 @@ def edit_teacher(request: HttpRequest, pk: int) -> HttpResponse:
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    updated = form.save(commit=False)
-                    pwd = (form.cleaned_data.get("password1") or "").strip()
-                    if pwd:
-                        updated.set_password(pwd)
-                    else:
-                        updated.password = teacher.password
-                    updated.save()
+                    form.save(commit=True)  # الفورم يحدّث الدور/العضوية
                 messages.success(request, "✏️ تم تحديث بيانات المستخدم بنجاح.")
                 return redirect("reports:manage_teachers")
             except Exception:
@@ -471,7 +567,20 @@ def edit_teacher(request: HttpRequest, pk: int) -> HttpResponse:
         else:
             messages.error(request, "الرجاء تصحيح الأخطاء الظاهرة.")
     else:
-        form = TeacherForm(instance=teacher)
+        # تهيئة مبدئية للقسم/الدور من العضوية أو الدور الحالي
+        initial = {}
+        memb = None
+        if DepartmentMembership is not None:
+            memb = teacher.dept_memberships.select_related("department").first()  # type: ignore[attr-defined]
+        if memb:
+            initial["department"] = getattr(memb.department, "slug", None)
+            initial["membership_role"] = memb.role_type
+        else:
+            role_slug = getattr(getattr(teacher, "role", None), "slug", None)
+            if role_slug:
+                initial["department"] = role_slug
+                initial["membership_role"] = DM_TEACHER
+        form = TeacherForm(instance=teacher, initial=initial)
 
     return render(request, "reports/edit_teacher.html", {"form": form, "teacher": teacher, "title": "تعديل مستخدم"})
 
@@ -596,7 +705,6 @@ def ticket_detail(request: HttpRequest, pk: int) -> HttpResponse:
             try:
                 TicketNote.objects.create(ticket=t, author=request.user, body=note_txt, is_public=True)
                 changed = True
-                # لو أضاف المرسل ملاحظة، لا نغيّر الحالة تلقائياً هنا (سلوك أبسط)
             except Exception:
                 logger.exception("Failed to create note")
                 messages.error(request, "تعذّر حفظ الملاحظة.")
@@ -700,13 +808,17 @@ def _resolve_department_by_code_or_pk(code_or_pk: str) -> Tuple[Optional[object]
 
 def _members_for_department(dept_code: str):
     """
-    إرجاع أعضاء القسم بدمج:
-    - الدور عبر Teacher.role__slug
-    - العضويات عبر DepartmentMember (DepartmentMembership)
+    إرجاع أعضاء القسم عبر العضويات (DepartmentMembership) + الدور Teacher.role__slug.
     """
+    if not dept_code:
+        return Teacher.objects.none()
+    # أساس: من يمتلك الدور بنفس slug
     role_qs = Teacher.objects.filter(is_active=True, role__slug=dept_code)
-    if HAS_DEPT_MODEL and DepartmentMember is not None and Department is not None:
-        member_ids = DepartmentMember.objects.filter(department__slug=dept_code).values_list("teacher_id", flat=True)
+    # دمج مع العضويات
+    if HAS_DEPT_MODEL and DepartmentMembership is not None:
+        member_ids = DepartmentMembership.objects.filter(
+            department__slug=dept_code
+        ).values_list("teacher_id", flat=True)
         qs = Teacher.objects.filter(is_active=True).filter(Q(role__slug=dept_code) | Q(id__in=member_ids)).distinct()
         return qs.order_by("name")
     return role_qs.order_by("name")
@@ -716,7 +828,7 @@ def _user_department_codes(user) -> list[str]:
     """
     أكواد الأقسام الخاصة بالمستخدم:
     - من role.slug إن وُجد وكان ليس 'teacher'
-    - ومن عضويات DepartmentMember
+    - ومن عضويات DepartmentMembership
     """
     codes = set()
     try:
@@ -726,12 +838,10 @@ def _user_department_codes(user) -> list[str]:
     except Exception:
         pass
 
-    if HAS_DEPT_MODEL and DepartmentMember is not None and Department is not None:
+    if HAS_DEPT_MODEL and DepartmentMembership is not None:
         try:
-            mem_codes = (
-                Department.objects.filter(departmentmember__teacher=user)
-                .values_list("slug", flat=True)
-            )
+            mem_codes = DepartmentMembership.objects.filter(teacher=user)\
+                          .values_list("department__slug", flat=True)
             for c in mem_codes:
                 if c:
                     codes.add(c)
@@ -761,8 +871,8 @@ def _all_departments():
             # احسب عدد الأعضاء عبر العضويات + الدور بدون تكرار
             role_ids = set(Teacher.objects.filter(role__slug=code, is_active=True).values_list("id", flat=True))
             member_ids = set()
-            if DepartmentMember is not None:
-                member_ids = set(DepartmentMember.objects.filter(department=d).values_list("teacher_id", flat=True))
+            if DepartmentMembership is not None:
+                member_ids = set(DepartmentMembership.objects.filter(department=d).values_list("teacher_id", flat=True))
             members_count = len(role_ids | member_ids)
 
             items.append(
@@ -776,7 +886,6 @@ def _all_departments():
                 }
             )
     else:
-        # بدون Department — نعرض قائمة فارغة (لا fallback ثابت)
         items = []
     return items
 
@@ -787,7 +896,6 @@ class _DepartmentForm(forms.ModelForm):
         model = Department
         fields: list[str] = []
         if model is not None:
-            # نعرض الحقول الأساسية عند غياب DepartmentForm المخصّص
             for fname in ("name", "slug", "role_label", "is_active"):
                 if hasattr(model, fname):
                     fields.append(fname)
@@ -933,8 +1041,6 @@ def _assign_role_by_slug(teacher: Teacher, slug: str) -> bool:
 
 
 # ---- الأقسام: حذف ----
-from django.db.models import ProtectedError
-
 @login_required(login_url="reports:login")
 @role_required({"manager"})
 @require_http_methods(["POST"])
@@ -959,7 +1065,6 @@ def department_delete(request: HttpRequest, code: str) -> HttpResponse:
     return redirect("reports:departments_list")
 
 
-
 # ---- دعم m2m و through detection (احتياطي) ----
 def _dept_m2m_field_name_to_teacher(dep_obj) -> str | None:
     try:
@@ -976,10 +1081,10 @@ def _dept_m2m_field_name_to_teacher(dep_obj) -> str | None:
 def _deptmember_field_names() -> tuple[str | None, str | None]:
     dep_field = tea_field = None
     try:
-        if DepartmentMember is None:
+        if DepartmentMembership is None:
             return (None, None)
 
-        for f in DepartmentMember._meta.get_fields():
+        for f in DepartmentMembership._meta.get_fields():
             if isinstance(f, ForeignKey):
                 if getattr(f.remote_field, "model", None) is Department and dep_field is None:
                     dep_field = f.name
@@ -990,16 +1095,16 @@ def _deptmember_field_names() -> tuple[str | None, str | None]:
 
         if dep_field is None:
             for n in ("department", "dept", "dept_fk"):
-                if hasattr(DepartmentMember, n):
+                if hasattr(DepartmentMembership, n):
                     dep_field = n
                     break
         if tea_field is None:
             for n in ("teacher", "member", "user", "teacher_fk"):
-                if hasattr(DepartmentMember, n):
+                if hasattr(DepartmentMembership, n):
                     tea_field = n
                     break
     except Exception:
-        logger.exception("Failed to detect DepartmentMember FKs")
+        logger.exception("Failed to detect DepartmentMembership FKs")
 
     return (dep_field, tea_field)
 
@@ -1014,14 +1119,14 @@ def _dept_add_member(dep, teacher: Teacher) -> bool:
         logger.exception("Add via Department M2M failed")
 
     try:
-        if DepartmentMember is not None and Department is not None:
+        if DepartmentMembership is not None and Department is not None:
             dep_field, tea_field = _deptmember_field_names()
             if dep_field and tea_field:
                 kwargs = {dep_field: dep, tea_field: teacher}
-                DepartmentMember.objects.get_or_create(**kwargs)
+                DepartmentMembership.objects.get_or_create(**kwargs)
                 return True
     except Exception:
-        logger.exception("Add via DepartmentMember failed")
+        logger.exception("Add via DepartmentMembership failed")
 
     return False
 
@@ -1036,14 +1141,14 @@ def _dept_remove_member(dep, teacher: Teacher) -> bool:
         logger.exception("Remove via Department M2M failed")
 
     try:
-        if DepartmentMember is not None and Department is not None:
+        if DepartmentMembership is not None and Department is not None:
             dep_field, tea_field = _deptmember_field_names()
             if dep_field and tea_field:
                 kwargs = {dep_field: dep, tea_field: teacher}
-                deleted, _ = DepartmentMember.objects.filter(**kwargs).delete()
+                deleted, _ = DepartmentMembership.objects.filter(**kwargs).delete()
                 return deleted > 0
     except Exception:
-        logger.exception("Remove via DepartmentMember failed")
+        logger.exception("Remove via DepartmentMembership failed")
 
     return False
 
@@ -1076,9 +1181,9 @@ def department_members(request: HttpRequest, code: str | int) -> HttpResponse:
                         else:
                             # fallback: تعيين الدور حسب slug القسم
                             if not _assign_role_by_slug(teacher, dept_code):
-                                messages.error(request, "تعذّر إسناد المعلّم — تحقّق من بنية DepartmentMember/Role.")
+                                messages.error(request, "تعذّر إسناد المعلّم — تحقّق من بنية DepartmentMembership/Role.")
                             else:
-                                messages.warning(request, f"تم الإسناد عبر الدور (fallback). راجع بنية DepartmentMember لاحقًا.")
+                                messages.warning(request, f"تم الإسناد عبر الدور (fallback). راجع بنية DepartmentMembership لاحقًا.")
                     elif action == "remove":
                         ok = _dept_remove_member(obj, teacher)
                         if ok:
@@ -1098,7 +1203,6 @@ def department_members(request: HttpRequest, code: str | int) -> HttpResponse:
                 logger.exception("department_members mutation failed")
                 messages.error(request, "حدث خطأ أثناء حفظ التغييرات.")
         else:
-            # بدون موديل Department: لا داعي لـ fallback ثابت — نبلّغ بعدم التوفر
             messages.error(request, "إدارة الأعضاء تتطلب تفعيل موديل Department.")
             return redirect("reports:departments_list")
 
@@ -1151,7 +1255,6 @@ def reporttype_create(request: HttpRequest) -> HttpResponse:
         messages.error(request, "إنشاء الأنواع يتطلب تفعيل موديل ReportType.")
         return redirect("reports:reporttypes_list")
 
-    # إن لم يكن لديك ReportTypeForm مخصص، ننشئ ModelForm بسيطًا
     if ReportTypeForm is None:
         class _RTForm(forms.ModelForm):
             class Meta:

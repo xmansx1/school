@@ -12,7 +12,7 @@ python manage.py runserver
 
 
 git add . 
-git commit -m "الرفع31ريندر"
+git commit -m "الرفع32ريندر"
 git push origin main
 
 
@@ -85,3 +85,6 @@ python manage.py check
 pip install Pillow
 python manage.py makemigrations
 python manage.py migrate
+
+
+python manage.py createsuperuser

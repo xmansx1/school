@@ -7,6 +7,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
 
+from .forms import DepartmentForm  # نموذج القسم الذي يحتوي على reporttypes
+
 from .models import (
     Teacher,
     Role,
@@ -144,10 +146,13 @@ class ReportTypeAdmin(admin.ModelAdmin):
 
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
+    # ✅ تسجيل واحد فقط للقسم — لا تكرار!
+    form = DepartmentForm  # يحتوي على حقل reporttypes
     list_display = ("name", "slug", "role_label", "is_active")
     list_filter = ("is_active",)
     search_fields = ("name", "slug", "role_label")
     prepopulated_fields = {"slug": ("name",)}
+    filter_horizontal = ("reporttypes",)  # اختيار متعدد لأنواع التقارير
 
 
 # =========================

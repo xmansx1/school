@@ -1,3 +1,4 @@
+{# templates/reports/department_form.html #}
 {% extends "base.html" %}
 {% block title %}{% if form.instance.pk %}تعديل قسم{% else %}إضافة قسم{% endif %}{% endblock %}
 
@@ -5,13 +6,13 @@
 <style>
   :root{
     --bg:#f8fafc; --card:#ffffff; --line:#e5e7eb; --text:#0f172a; --muted:#6b7280;
-    --brand:#2563eb; --brand-2:#3b82f6; --danger:#b91c1c;
+    --brand:#2563eb; --brand-2:#3b82f6; --danger:#b91c1c; --ok:#16a34a; --warn:#d97706;
   }
   @media (prefers-color-scheme: dark){
     :root{ --bg:#0b1220; --card:#0f172a; --line:#1f2937; --text:#e5e7eb; --muted:#94a3b8; --brand:#3b82f6; --brand-2:#60a5fa; }
   }
   body{background:var(--bg)}
-  .wrap{max-width:860px;margin:24px auto;padding:0 16px}
+  .wrap{max-width:980px;margin:24px auto;padding:0 16px}
   .crumbs{color:var(--muted);font-size:.9rem;margin-bottom:10px}
   .crumbs a{color:inherit;text-decoration:none}
   .card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 10px 30px rgba(2,6,23,.08);padding:22px}
@@ -26,24 +27,34 @@
     width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);
     transition:border .2s, box-shadow .2s; box-shadow:0 1px 0 rgba(2,6,23,.02) inset;
   }
+  .control[readonly]{opacity:.85; background:color-mix(in srgb, var(--card) 92%, var(--bg) 8%)}
   .control:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 25%, transparent)}
   textarea.control{min-height:110px;resize:vertical}
   .switch{display:flex;gap:8px;align-items:center;user-select:none}
   .errors{border:1px solid #fecaca;background:#fee2e2;color:#7f1d1d;border-radius:12px;padding:12px;margin-bottom:12px;font-size:.93rem}
+  .note{border:1px solid color-mix(in srgb,var(--brand) 28%, var(--line));background:color-mix(in srgb,var(--brand) 12%, var(--card));color:var(--text);border-radius:12px;padding:12px;margin-bottom:12px;font-size:.93rem}
+  .warn{border:1px solid color-mix(in srgb,var(--warn) 40%, var(--line));background:color-mix(in srgb,var(--warn) 10%, var(--card))}
+  .ok{border:1px solid color-mix(in srgb,var(--ok) 40%, var(--line));background:color-mix(in srgb,var(--ok) 10%, var(--card))}
   .err{color:#991b1b;background:#fee2e2;border:1px solid #fecaca;border-radius:10px;padding:8px 10px;margin-top:6px;font-size:.9rem}
   .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:var(--card)}
   .preview{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
   .role-pill{background:color-mix(in srgb, var(--brand) 12%, var(--card));border-color:color-mix(in srgb, var(--brand) 30%, var(--line))}
-  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
   .btn{
     padding:12px 16px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);
-    font-weight:800;cursor:pointer;transition:transform .08s, background .2s
+    font-weight:800;cursor:pointer;transition:transform .08s, background .2s; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
   }
   .btn:hover{background:color-mix(in srgb, var(--card) 80%, var(--bg) 20%);transform:translateY(-1px)}
   .btn-primary{background:linear-gradient(135deg,var(--brand),var(--brand-2));border-color:transparent;color:#fff}
   .btn-primary:hover{filter:saturate(1.1)}
   .btn-danger{background:var(--danger);color:#fff;border-color:transparent}
   .kbd{font:600 .82rem ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:2px 6px}
+
+  /* reporttypes widget */
+  .rt-box{display:grid;gap:10px}
+  .rt-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:color-mix(in srgb,var(--brand) 14%, var(--card));border:1px solid color-mix(in srgb,var(--brand) 28%, var(--line));font-size:.85rem}
+  .muted{color:var(--muted)}
 </style>
 {% endblock head %}
 
@@ -71,6 +82,20 @@
       </div>
     {% endif %}
 
+    {# شارة حالة خاصة للأقسام المحجوزة #}
+    {% with current_slug=form.slug.value|default:form.instance.slug %}
+      {% if current_slug == "manager" %}
+        <div class="note ok">
+          <strong>قسم المدير الدائم</strong> — هذا القسم محجوز بـ <code>slug=manager</code>، ويتمتع بصلاحيات المدير.
+          لا يمكن تغيير كوده، ويمكنك فقط إضافة موظفين لهذا القسم من شاشة الأعضاء.
+        </div>
+      {% elif current_slug == "teachers" %}
+        <div class="note warn">
+          <strong>قسم المعلّمين</strong> — هذا القسم مخصص لحسابات "معلم". عند إضافة مستخدم لهذا القسم فإن الدور يكون "معلم" فقط.
+        </div>
+      {% endif %}
+    {% endwith %}
+
     <form method="post" class="grid" novalidate id="deptForm">
       {% csrf_token %}
 
@@ -86,9 +111,9 @@
           <label for="{{ form.slug.id_for_label }}">الكود (slug)</label>
           {{ form.slug }}
           {% for e in form.slug.errors %}<div class="err">• {{ e }}</div>{% endfor %}
-          <div class="help">قصير وفريد (مثال: <b>clinic</b>). يُستخدم أيضًا كقيمة “الدور”.</div>
+          <div class="help">قصير وفريد (مثال: <b>activity</b>). يُستخدم أيضًا كقيمة “الدور”.</div>
           <label class="switch" style="margin-top:8px">
-            <input type="checkbox" id="autoSlug" checked> توليد الكود تلقائيًا من الاسم
+            <input type="checkbox" id="autoSlug" checked> توليد الكود تلقائيًا من الاسم (مع خرائط خاصة للمنصة)
           </label>
         </div>
       </div>
@@ -98,7 +123,9 @@
         <label for="{{ form.role_label.id_for_label }}">اسم الدور المعروض</label>
         {{ form.role_label }}
         {% for e in form.role_label.errors %}<div class="err">• {{ e }}</div>{% endfor %}
-        <div class="help">مثال: المرشد الصحي — سيظهر في قائمة “الدور” ضمن نماذج المعلّمين.</div>
+        <div class="help">
+          مثال: <b>مسؤول النشاط</b> — سيظهر في قائمة “الدور” ضمن نماذج المعلّمين.
+        </div>
       </div>
       {% endif %}
 
@@ -116,6 +143,27 @@
         </label>
         {% for e in form.is_active.errors %}<div class="err">• {{ e }}</div>{% endfor %}
       </div>
+
+      {% if form.reporttypes %}
+      <div>
+        <label for="{{ form.reporttypes.id_for_label }}">أنواع التقارير المرتبطة</label>
+        <div class="rt-box">
+          <!-- أدوات مساعدة -->
+          <div class="rt-actions">
+            <input id="rtSearch" type="search" class="control" placeholder="ابحث في الأنواع..." aria-label="بحث في أنواع التقارير">
+            <button type="button" class="btn" id="rtSelectAll">تحديد الظاهرة</button>
+            <button type="button" class="btn" id="rtClearAll">إلغاء الكل</button>
+            <span class="badge"><span id="rtCount">0</span> مختارة</span>
+            <span class="muted">اختيارات هذا القسم تُزامَن تلقائيًا مع صلاحيات الدور الموازي.</span>
+          </div>
+
+          {{ form.reporttypes }}
+
+          {% if form.reporttypes.help_text %}<div class="help">{{ form.reporttypes.help_text }}</div>{% endif %}
+          {% for e in form.reporttypes.errors %}<div class="err">• {{ e }}</div>{% endfor %}
+        </div>
+      </div>
+      {% endif %}
 
       <div>
         <div class="help">معاينة كيف سيظهر هذا القسم كخيار “دور”:</div>
@@ -136,8 +184,12 @@
       <div class="actions">
         <button class="btn btn-primary" type="submit">💾 حفظ</button>
         <a class="btn" href="{% url 'reports:departments_list' %}">↩️ رجوع</a>
+
         {% if form.instance.pk %}
-          <a class="btn btn-danger" href="#" onclick="confirmDelete(event)">&nbsp;🗑 حذف&nbsp;</a>
+          <form method="post" action="{% url 'reports:department_delete' code=form.instance.slug %}" style="display:inline" onsubmit="return confirm('هل تريد حذف هذا القسم نهائيًا؟');">
+            {% csrf_token %}
+            <button class="btn btn-danger" type="submit">🗑 حذف</button>
+          </form>
         {% endif %}
       </div>
     </form>
@@ -145,22 +197,38 @@
 </div>
 
 <script>
-  // 1) أضف صنف .control لكل مدخلات النموذج (بدون الحاجة لفلاتر قالب)
+  // إضافة صنف .control لكل مدخلات النموذج
   (function(){
     const form = document.getElementById('deptForm');
-    const sel = 'input[type=text], input[type=url], input[type=email], textarea, select';
+    if(!form) return;
+    const sel = 'input[type=text], input[type=url], input[type=email], input[type=search], textarea, select';
     form.querySelectorAll(sel).forEach(el=>{
       if(!el.classList.contains('control')) el.classList.add('control');
     });
   })();
 
-  // 2) توليد slug + المعاينة
-  function normArabicDigits(s){return s.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));}
-  function slugify(s){
+  // خرائط المنصة للأسماء → slug (تطابق ما هو في backend)
+  const ALIASES = {
+    "الإدارة":"manager","الادارة":"manager","مدير":"manager",
+    "المعلمين":"teachers","معلمين":"teachers",
+    "النشاط":"activity",
+    "التطوع":"volunteer",
+    "الشؤون المدرسية":"affairs",
+    "الشؤون الإدارية":"admin","الشؤون الادارية":"admin"
+  };
+
+  // توليد slug + المعاينة + حظر تحرير manager
+  function normArabicDigits(s){return (s||'').replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));}
+  function slugifyAscii(s){
     s = (s||"").trim();
+    // خريطة مسبقة
+    if (ALIASES[s]) return ALIASES[s];
     s = normArabicDigits(s);
+    // إزالة تشكيل
     s = s.normalize("NFKD").replace(/[\u064B-\u065F]/g,"");
+    // مسافات لشرطة
     s = s.replace(/[\s_]+/g,"-");
+    // أحرف لاتينية/أرقام وشرطة فقط
     s = s.replace(/[^a-zA-Z0-9-]/g,"");
     return s.toLowerCase().replace(/-+/g,"-").replace(/^-+|-+$/g,"");
   }
@@ -180,15 +248,42 @@
       pvLabel.textContent = label || "—";
     }
 
-    if (name && slug && auto) {
-      const sync = () => { if (auto.checked && (!slug.dataset.touched || slug.value === "")) { slug.value = slugify(name.value); updatePreview(); } };
-      name.addEventListener("input", sync);
-      auto.addEventListener("change", sync);
-      slug.addEventListener("input", () => { slug.dataset.touched = "1"; updatePreview(); });
-      name.addEventListener("blur", sync);
+    function lockIfManager(){
+      const isManager = (slug.value || "").toLowerCase() === "manager";
+      if (isManager){
+        // اجعل الحقول للقراءة فقط لكن أرسل القيم
+        name.readOnly = true;
+        slug.readOnly = true;
+        if (roleLabel) roleLabel.readOnly = true;
+        if (auto){ auto.checked = false; auto.disabled = true; }
+      } else {
+        name.readOnly = false;
+        slug.readOnly = false;
+        if (roleLabel) roleLabel.readOnly = false;
+        if (auto){ auto.disabled = false; }
+      }
     }
+
+    if (name && slug){
+      // تزامن تلقائي من الاسم
+      const sync = () => {
+        if (!auto || auto.checked){
+          const v = slugifyAscii(name.value);
+          if (!slug.dataset.touched || slug.value === "" || slug.value === "manager" || slug.value === "teachers"){
+            slug.value = v;
+          }
+          updatePreview(); lockIfManager();
+        }
+      };
+      name.addEventListener("input", sync);
+      name.addEventListener("blur", sync);
+      if (auto){ auto.addEventListener("change", sync); }
+      slug.addEventListener("input", () => { slug.dataset.touched = "1"; updatePreview(); lockIfManager(); });
+      // بداية
+      updatePreview(); lockIfManager();
+    }
+
     if (roleLabel){ roleLabel.addEventListener("input", updatePreview); }
-    updatePreview();
 
     // حفظ سريع: Ctrl/Cmd + S
     document.addEventListener("keydown", function(e){
@@ -196,13 +291,52 @@
         e.preventDefault(); formEl.requestSubmit();
       }
     });
+  })();
 
-    // زر الحذف (اربطه لاحقًا بمسار POST لديك)
-    window.confirmDelete = function(ev){
-      ev.preventDefault();
-      if(!confirm("هل تريد حذف هذا القسم نهائيًا؟")) return;
-      alert("اربط زر الحذف بمسار POST لديك (department_delete) للحذف الآمن.");
+  // أدوات reporttypes: بحث + تحديد/إلغاء + عدّاد
+  (function(){
+    const rtSelect = document.getElementById("{% if form.reporttypes %}{{ form.reporttypes.id_for_label }}{% else %}__none{% endif %}");
+    if(!rtSelect) return;
+    const search = document.getElementById('rtSearch');
+    const btnAll = document.getElementById('rtSelectAll');
+    const btnClear = document.getElementById('rtClearAll');
+    const counter = document.getElementById('rtCount');
+
+    function updateCount(){
+      let c = 0;
+      Array.from(rtSelect.options).forEach(o => { if(o.selected) c++; });
+      counter.textContent = c;
     }
+
+    function filterOptions(){
+      const q = (search.value || '').trim().toLowerCase();
+      Array.from(rtSelect.options).forEach(o=>{
+        const txt = (o.text || '').toLowerCase();
+        const show = !q || txt.includes(q);
+        o.hidden = !show;
+      });
+    }
+
+    btnAll?.addEventListener('click', ()=>{
+      const q = (search.value || '').trim().toLowerCase();
+      Array.from(rtSelect.options).forEach(o=>{
+        const txt = (o.text || '').toLowerCase();
+        if(!q || txt.includes(q)) o.selected = true;
+      });
+      updateCount();
+    });
+
+    btnClear?.addEventListener('click', ()=>{
+      Array.from(rtSelect.options).forEach(o=>o.selected=false);
+      updateCount();
+    });
+
+    search?.addEventListener('input', filterOptions);
+    search?.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); } });
+
+    rtSelect.addEventListener('change', updateCount);
+    filterOptions();
+    updateCount();
   })();
 </script>
 {% endblock content %}

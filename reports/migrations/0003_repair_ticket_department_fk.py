@@ -1,134 +1,81 @@
 # reports/migrations/0003_repair_ticket_department_fk.py
 from django.db import migrations
 
-# إنشاء جدول الأقسام إن لم يكن موجودًا (لن يعمل إن كان مُنشأ من 0001)
-CREATE_DEPARTMENT_TABLE_SQL = r"""
-CREATE TABLE IF NOT EXISTS reports_department (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(120) NOT NULL,
-    slug VARCHAR(64) UNIQUE NOT NULL,
-    role_label VARCHAR(120) NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
-);
-"""
+def repair_ticket_department_fk(apps, schema_editor):
+    conn = schema_editor.connection
+    vendor = conn.vendor
+    cursor = conn.cursor()
 
-# بذور أساسية للأقسام المعروفة
-SEED_KNOWN_DEPARTMENTS_SQL = r"""
-INSERT INTO reports_department (name, slug, role_label, is_active)
-VALUES
-('الإدارة',            'admin_officer',     'ضابط إداري',            TRUE),
-('النشاط الطلابي',     'activity_officer',  'ضابط النشاط',           TRUE),
-('التطوع',             'volunteer_officer', 'ضابط التطوع',           TRUE),
-('الشؤون المدرسية',    'affairs_officer',   'ضابط الشؤون المدرسية',  TRUE),
-('الإدارة العليا',     'manager',           'المدير',                TRUE)
-ON CONFLICT (slug) DO UPDATE SET
-    name = EXCLUDED.name,
-    role_label = EXCLUDED.role_label,
-    is_active = EXCLUDED.is_active;
-"""
+    # الهدف:
+    # 1) إضافة العمود department_id إلى reports_ticket إن لم يكن موجودًا (NULLABLE).
+    # 2) إنشاء فهرس للعمود.
+    # 3) تفعيل FK إلى reports_department في Postgres فقط (SQLite يحتاج إعادة بناء الجدول لإضافة FK لاحقًا).
+    #
+    # ملاحظة: نعتمد على أسماء الجداول الافتراضية من Django:
+    #   reports_ticket (الحقل الجديد department_id INTEGER/INT)
+    #   reports_department (المرجع)
 
-# إضافة عمود FK إن لم يوجد (سيكون موجودًا أصلًا من 0001، فلا ضرر)
-ADD_TICKET_DEPT_ID_COLUMN_SQL = r"""
-ALTER TABLE reports_ticket
-ADD COLUMN IF NOT EXISTS department_id INTEGER NULL;
-"""
+    if vendor == "sqlite":
+        # --- SQLite ---
+        # helper: check column exists
+        def sqlite_column_exists(table, col):
+            rows = cursor.execute(f'PRAGMA table_info("{table}")').fetchall()
+            cols = [r[1] for r in rows]  # name at index 1
+            return col in cols
 
-# استيراد أقسام من عمود نصي قديم إن وُجد 'department'
-SEED_DEPTS_FROM_TICKETS_SQL = r"""
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name='reports_ticket' AND column_name='department'
-    ) THEN
-        INSERT INTO reports_department (name, slug, role_label, is_active)
-        SELECT DISTINCT
-            INITCAP(REPLACE(TRIM(t.department), '_', ' ')) AS name,
-            LOWER(TRIM(t.department)) AS slug,
-            INITCAP(REPLACE(TRIM(t.department), '_', ' ')) AS role_label,
-            TRUE
-        FROM reports_ticket t
-        WHERE t.department IS NOT NULL AND t.department <> ''
-        ON CONFLICT (slug) DO NOTHING;
-    END IF;
-END $$;
-"""
+        # 1) add column if missing
+        if not sqlite_column_exists("reports_ticket", "department_id"):
+            cursor.execute('ALTER TABLE "reports_ticket" ADD COLUMN "department_id" INTEGER NULL')
 
-# تعبئة department_id من العمود النصي القديم إن وُجد
-FILL_TICKET_DEPT_ID_SQL = r"""
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name='reports_ticket' AND column_name='department'
-    ) THEN
-        UPDATE reports_ticket AS t
-        SET department_id = d.id
-        FROM reports_department AS d
-        WHERE LOWER(TRIM(t.department)) = d.slug
-          AND (t.department_id IS NULL OR t.department_id = 0);
-    END IF;
-END $$;
-"""
+        # 2) index (safe if exists)
+        cursor.execute('CREATE INDEX IF NOT EXISTS "reports_ticket_department_id_idx" ON "reports_ticket" ("department_id")')
 
-# فهارس مناسبة
-CREATE_TICKET_DEPT_INDEX_SQL = r"""
-CREATE INDEX IF NOT EXISTS reports_ticket_department_id_idx
-ON reports_ticket (department_id);
-"""
+        # 3) no FK add (requires table rebuild in SQLite) — نتجاوزه لبيئة التطوير
 
-CREATE_TICKET_DEPT_STATUS_CREATED_IDX_SQL = r"""
-CREATE INDEX IF NOT EXISTS reports_ticket_dept_status_created_idx
-ON reports_ticket (department_id, status, created_at);
-"""
+    elif vendor == "postgresql":
+        # --- PostgreSQL ---
+        # 1) add column if missing
+        cursor.execute("ALTER TABLE reports_ticket ADD COLUMN IF NOT EXISTS department_id INTEGER NULL")
 
-# إضافة FK فقط في حالة وجود العمود النصي القديم (سيناريو ترحيل قديم)
-ADD_TICKET_DEPT_FK_NOT_VALID_SQL = r"""
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name='reports_ticket' AND column_name='department'
-    ) THEN
-        IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint WHERE conname = 'reports_ticket_department_id_fk'
-        ) THEN
-            ALTER TABLE reports_ticket
-            ADD CONSTRAINT reports_ticket_department_id_fk
-            FOREIGN KEY (department_id) REFERENCES reports_department (id)
-            ON DELETE SET NULL
-            DEFERRABLE INITIALLY DEFERRED
-            NOT VALID;
-        END IF;
-    END IF;
-END $$;
-"""
+        # 2) add FK constraint if missing
+        cursor.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint WHERE conname = 'reports_ticket_department_id_fk'
+            ) THEN
+                ALTER TABLE reports_ticket
+                ADD CONSTRAINT reports_ticket_department_id_fk
+                FOREIGN KEY (department_id) REFERENCES reports_department (id)
+                ON DELETE SET NULL DEFERRABLE INITIALLY DEFERRED;
+            END IF;
+        END
+        $$;
+        """)
 
-# تفعيل/التحقق من الـ FK إن كان قد أضيف أعلاه
-VALIDATE_TICKET_DEPT_FK_SQL = r"""
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'reports_ticket_department_id_fk'
-    ) THEN
-        ALTER TABLE reports_ticket VALIDATE CONSTRAINT reports_ticket_department_id_fk;
-    END IF;
-END $$;
-"""
+        # 3) index
+        cursor.execute("CREATE INDEX IF NOT EXISTS reports_ticket_department_id_idx ON reports_ticket (department_id)")
+
+    else:
+        # --- Other vendors (e.g., MySQL) — best-effort without breaking ---
+        try:
+            cursor.execute("ALTER TABLE reports_ticket ADD COLUMN department_id INTEGER NULL")
+        except Exception:
+            pass
+        try:
+            cursor.execute("CREATE INDEX reports_ticket_department_id_idx ON reports_ticket (department_id)")
+        except Exception:
+            pass
+        # FK optional here
+
+def noop_reverse(apps, schema_editor):
+    # لا حاجة لعكس — آمن
+    pass
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('reports', '0002_repair_teacher_role_fk'),
+        ("reports", "0002_repair_teacher_role_fk"),
     ]
-
     operations = [
-        migrations.RunSQL(CREATE_DEPARTMENT_TABLE_SQL,  reverse_sql=""),
-        migrations.RunSQL(SEED_KNOWN_DEPARTMENTS_SQL,   reverse_sql=""),
-        migrations.RunSQL(ADD_TICKET_DEPT_ID_COLUMN_SQL, reverse_sql=""),
-        migrations.RunSQL(SEED_DEPTS_FROM_TICKETS_SQL,  reverse_sql=""),
-        migrations.RunSQL(FILL_TICKET_DEPT_ID_SQL,      reverse_sql=""),
-        migrations.RunSQL(CREATE_TICKET_DEPT_INDEX_SQL, reverse_sql=""),
-        migrations.RunSQL(CREATE_TICKET_DEPT_STATUS_CREATED_IDX_SQL, reverse_sql=""),
-        migrations.RunSQL(ADD_TICKET_DEPT_FK_NOT_VALID_SQL, reverse_sql=""),
-        migrations.RunSQL(VALIDATE_TICKET_DEPT_FK_SQL,  reverse_sql=""),
+        migrations.RunPython(repair_ticket_department_fk, noop_reverse),
     ]

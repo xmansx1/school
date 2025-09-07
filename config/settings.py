@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-secret")
 ENV = os.getenv("ENV", "development").lower()
 
-# كشف تلقائي لبيئة Render (اختياري لكن مفيد)
+# كشف تلقائي لـ Render
 if os.getenv("RENDER", "") or os.getenv("RENDER_EXTERNAL_URL", ""):
     ENV = "production"
 
@@ -69,7 +69,10 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "reports.context_processors.nav_counters",
+                "reports.context_processors.nav_context",
+
+                # ⬇️ استبدال المعالج القديم بالجديد المتوافق مع الأيقونة/الهيدر
+                "reports.context_processors.nav_badges",
             ],
         },
     },
@@ -126,15 +129,13 @@ USE_TZ = True
 
 # ----------------- الملفات الثابتة -----------------
 STATIC_URL = "/static/"
-# مهم: عرّف دائماً STATIC_ROOT + STATICFILES_DIRS ليتم جمع مجلد المشروع "static"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]  # هنا يوجد img/logo.png
 
-# WhiteNoise storage في الإنتاج فقط (يولد manifest وملفات مضغوطة)
+# WhiteNoise في الإنتاج
 if ENV == "production":
     STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-    # (اختياري) عمر الكاش للملفات الثابتة سنة
-    WHITENOISE_MAX_AGE = 60 * 60 * 24 * 365
+    WHITENOISE_MAX_AGE = 60 * 60 * 24 * 365  # 1 سنة
 
 # ----------------- ملفات الوسائط -----------------
 MEDIA_URL = "/media/"

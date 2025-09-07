@@ -34,7 +34,7 @@
             <th class="text-right">المعلم</th>
             <th class="text-right">رقم الهوية</th>
             <th class="text-right">رقم الجوال</th>
-            <th class="text-center">الدور</th>
+            <th class="text-center">القسم / الدور</th>
             <th class="text-center">الحالة</th>
             <th class="text-center">الإجراءات</th>
           </tr>
@@ -44,9 +44,7 @@
           <tr>
             <td data-label="المعلم">
               <div class="teacher-info">
-                <div class="teacher-avatar">
-                  <i class="fas fa-user"></i>
-                </div>
+                <div class="teacher-avatar"><i class="fas fa-user"></i></div>
                 <div class="teacher-details">
                   <div class="teacher-name">{{ t.name }}</div>
                 </div>
@@ -56,32 +54,62 @@
             <td data-label="رقم الهوية">{{ t.national_id|default:"-" }}</td>
             <td data-label="رقم الجوال">{{ t.phone }}</td>
 
-            {# ===== عمود الدور: اسم الدور فقط ===== #}
-            <td data-label="الدور" class="text-center">
-              {% if t.role %}
-                {% with slug=t.role.slug label=t.role.name|default:t.role.slug %}
-                  <span class="badge
-                               {% if slug == 'manager' %}badge-primary
-                               {% elif slug == 'teacher' %}badge-success
-                               {% else %}badge-primary{% endif %}">
-                    {{ label }}
-                  </span>
-                {% endwith %}
-              {% else %}
-                <span class="badge badge-muted">-</span>
-              {% endif %}
+            {# ===== عمود القسم/الدور ===== #}
+            <td data-label="القسم / الدور" class="text-center">
+              {% with memberships=t.dept_memberships.all %}
+                {% if memberships %}
+                  <div class="chips">
+                    {% for m in memberships %}
+                      {% with dep=m.department rt=m.role_type|stringformat:"s"|lower %}
+                        <span class="chip chip-dept" data-slug="{{ dep.slug|default_if_none:''|lower }}">
+                          <i class="fas fa-building"></i>
+                          {{ dep.name|default:dep.slug }}
+                          <span class="chip-role {% if rt == 'officer' or rt == '1' %}role-officer{% else %}role-employee{% endif %}">
+                            {% if rt == 'officer' or rt == '1' %}
+                              <i class="fas fa-user-shield"></i> مسؤول
+                            {% else %}
+                              <i class="fas fa-id-badge"></i> موظف
+                            {% endif %}
+                          </span>
+                        </span>
+                      {% endwith %}
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  {# لا توجد عضوية: اعرض بحسب الدور العام #}
+                  {% if t.role %}
+                    {% with slug=t.role.slug|default_if_none:''|lower label=t.role_dept_name|default:t.role.name|default:t.role.slug %}
+                      {% if slug == 'manager' %}
+                        <span class="chip chip-role role-manager">
+                          <i class="fas fa-crown"></i> مدير
+                        </span>
+                      {% elif slug == 'teacher' %}
+                        <span class="chip chip-role role-teacher">
+                          <i class="fas fa-user-graduate"></i> معلم
+                        </span>
+                      {% else %}
+                        {# دور عام يطابق قسمًا: نعتبره "موظف" في ذلك القسم #}
+                        <span class="chip chip-dept" data-slug="{{ slug }}">
+                          <i class="fas fa-building"></i> {{ label }}
+                          <span class="chip-role role-employee">
+                            <i class="fas fa-id-badge"></i> موظف
+                          </span>
+                        </span>
+                      {% endif %}
+                    {% endwith %}
+                  {% else %}
+                    <span class="badge badge-muted">—</span>
+                  {% endif %}
+                {% endif %}
+              {% endwith %}
             </td>
             {# ===================================== #}
 
             <td data-label="الحالة" class="text-center">
               {% if t.is_active %}
-              <span class="status-badge status-active">
-                <i class="fas fa-check-circle"></i> نشط
-              </span>
+              <span class="status-badge status-active"><i class="fas fa-check-circle"></i> نشط</span>
               {% else %}
-              <span class="status-badge status-inactive">
-                <i class="fas fa-times-circle"></i> معطل
-              </span>
+              <span class="status-badge status-inactive"><i class="fas fa-times-circle"></i> معطل</span>
               {% endif %}
             </td>
 
@@ -92,7 +120,6 @@
                    class="btn btn-icon btn-edit" title="تعديل">
                   <i class="fas fa-edit"></i>
                 </a>
-
                 <form method="post"
                       action="{% url 'reports:delete_teacher' pk=t.id %}?next={{ nxt|urlencode }}"
                       style="display:inline">
@@ -124,9 +151,7 @@
 
     {% else %}
     <div class="empty-state">
-      <div class="empty-icon">
-        <i class="fas fa-users-slash"></i>
-      </div>
+      <div class="empty-icon"><i class="fas fa-users-slash"></i></div>
       <h3>لا يوجد معلمين</h3>
       <p>لم يتم العثور على نتائج{% if term %} لبحثك عن "<strong>{{ term }}</strong>"{% endif %}</p>
       <a href="{% url 'reports:add_teacher' %}" class="btn btn-primary">
@@ -163,7 +188,7 @@
 
   /* الجدول */
   .table-responsive { overflow-x:auto; border-radius:12px; border:1px solid #e2e8f0; }
-  .teachers-table { width:100%; border-collapse:collapse; min-width:800px; }
+  .teachers-table { width:100%; border-collapse:collapse; min-width:880px; }
   .teachers-table th { background-color:#f8fafc; padding:16px; font-weight:600; color:#475569; text-align:right; border-bottom:1px solid #e2e8f0; }
   .teachers-table td { padding:16px; border-bottom:1px solid #e2e8f0; color:#334155; }
   .teachers-table tr:last-child td { border-bottom:none; }
@@ -178,12 +203,28 @@
   .teacher-details { display:flex; flex-direction:column; }
   .teacher-name { font-weight:600; color:#1e293b; }
 
-  /* البادجات */
-  .badge { padding:6px 12px; border-radius:20px; font-size:12px; font-weight:600; }
-  .badge-primary { background-color:#dbeafe; color:#1d4ed8; }
-  .badge-success { background-color:#dcfce7; color:#166534; }
-  .badge-muted   { background-color:#f1f5f9; color:#475569; }
+  /* الشرائح (chips) */
+  .chips { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+  .chip { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:9999px; font-size:12px; font-weight:700; line-height:1; border:1px solid rgba(0,0,0,.05); }
 
+  /* ألوان الأقسام (حسب slug) */
+  .chip-dept { background:#f1f5f9; color:#334155; }
+  .chip-dept[data-slug*="نشاط"], .chip-dept[data-slug="activity"]    { background:#dbeafe; color:#1d4ed8; }
+  .chip-dept[data-slug*="تطوع"], .chip-dept[data-slug="volunteer"]   { background:#dcfce7; color:#166534; }
+  .chip-dept[data-slug*="مدرس"], .chip-dept[data-slug="school"]      { background:#fef3c7; color:#92400e; }
+  .chip-dept[data-slug*="إداري"], .chip-dept[data-slug="admin"]      { background:#fee2e2; color:#b91c1c; }
+  .chip-dept[data-slug*="معلم"], .chip-dept[data-slug="teachers"]    { background:#ede9fe; color:#6d28d9; }
+
+  /* شريحة الدور داخل القسم */
+  .chip-role { display:inline-flex; align-items:center; gap:4px; padding:4px 8px; border-radius:9999px; font-weight:800; margin-right:6px; border:1px dashed rgba(0,0,0,.08); }
+  .role-officer  { background:#eef2ff; color:#3730a3; }   /* مسؤول القسم */
+  .role-employee { background:#ecfeff; color:#155e75; }   /* موظف/معلم */
+
+  /* أدوار عامة بدون قسم */
+  .chip-role.role-manager  { background:#ffe4e6; color:#be123c; }
+  .chip-role.role-teacher  { background:#e9d5ff; color:#6d28d9; }
+
+  /* بادجات الحالة */
   .status-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; font-size:13px; font-weight:600; }
   .status-active { background-color:#f0fdf4; color:#166534; }
   .status-inactive { background-color:#fef2f2; color:#dc2626; }

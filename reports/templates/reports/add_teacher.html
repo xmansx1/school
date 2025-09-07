@@ -31,7 +31,7 @@
 
       <div class="form-grid">
         <div class="form-group">
-          <label><i class="fas fa-user icon"></i> اسم المعلم</label>
+          <label><i class="fas fa-user icon"></i> اسم المعلّم</label>
           {{ form.name }}
           {% for e in form.name.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
           <div class="form-hint">الاسم الكامل للمعلم</div>
@@ -41,7 +41,7 @@
           <label><i class="fas fa-id-card icon"></i> رقم الهوية</label>
           {{ form.national_id }}
           {% for e in form.national_id.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
-          <div class="form-hint">رقم الهوية الوطنية مكون من 10 أرقام</div>
+          <div class="form-hint">رقم الهوية الوطنية مكوّن من 10 أرقام (اختياري)</div>
         </div>
 
         <div class="form-group">
@@ -60,7 +60,7 @@
             </button>
           </div>
           {% for e in form.password.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
-          <div class="form-hint">كلمة مرور قوية تحتوي على أحرف وأرقام (اتركها فارغة عند التعديل إذا لا تريد تغييرها)</div>
+          <div class="form-hint">اتركها فارغة عند التعديل إذا لا تريد تغييرها</div>
         </div>
 
         <div class="form-group switch-container">
@@ -75,14 +75,26 @@
           </div>
         </div>
 
+        <!-- القسم -->
         <div class="form-group">
-          <label><i class="fas fa-user-shield icon"></i> الدور</label>
+          <label><i class="fas fa-building icon"></i> القسم</label>
           <div class="select-wrapper">
-            {{ form.role }}
+            {{ form.department }}
             <div class="select-arrow"><i class="fas fa-chevron-down"></i></div>
           </div>
-          {% for e in form.role.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
-          <div class="form-hint">اختر: معلم، مدير، مسؤول النشاط، مسؤول التطوع ، مسؤول الشؤون المدرسية ، مسؤول الشؤون الإدارية</div>
+          {% for e in form.department.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          <div class="form-hint">اختر القسم الذي يتبع له المعلّم</div>
+        </div>
+
+        <!-- الدور داخل القسم -->
+        <div class="form-group">
+          <label><i class="fas fa-user-shield icon"></i> الدور داخل القسم</label>
+          <div class="select-wrapper">
+            {{ form.membership_role }}
+            <div class="select-arrow"><i class="fas fa-chevron-down"></i></div>
+          </div>
+          {% for e in form.membership_role.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          <div class="form-hint">“مسؤول القسم” يمنح صلاحيات الاطلاع على تقارير القسم. في قسم المعلّمين يظهر خيار “معلم” فقط.</div>
         </div>
       </div>
 
@@ -113,7 +125,7 @@
   }
 
   * { box-sizing: border-box; }
-  .container { max-width: 800px; margin: 30px auto; padding: 0 15px; }
+  .container { max-width: 880px; margin: 30px auto; padding: 0 15px; }
 
   .teacher-card {
     background: #fff; border-radius: 16px; overflow: hidden;
@@ -133,11 +145,11 @@
   .form-group label { display:flex; align-items:center; margin-bottom:8px; font-weight:600; color:var(--dark); }
   .icon { margin-left:8px; color:var(--primary); width:16px; }
 
-  input, select {
+  input, select, textarea {
     width:100%; padding:12px 16px; border:1px solid var(--border); border-radius:10px;
     font-size:1rem; transition:all .3s ease; background-color:var(--light);
   }
-  input:focus, select:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(67,97,238,.15); outline:none; }
+  input:focus, select:focus, textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(67,97,238,.15); outline:none; }
 
   .form-hint { font-size:.8rem; color:var(--secondary); margin-top:5px; }
   .field-error { color:#b91c1c; font-size:.85rem; margin-top:6px; }
@@ -163,7 +175,7 @@
   .slider.round:before { border-radius:50%; }
   .switch-label { flex:1; }
 
-  /* حقل الدور (Select) */
+  /* حقل select */
   .select-wrapper { position:relative; }
   .select-wrapper select { appearance:none; padding-left:40px; }
   .select-arrow { position:absolute; top:50%; left:15px; transform:translateY(-50%); pointer-events:none; color:var(--secondary); }
@@ -202,7 +214,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     // إظهار وإخفاء كلمة المرور
     const togglePassword = document.querySelector("#togglePassword");
-    const passwordInput = document.querySelector('input[type="password"]') || document.getElementById('id_password');
+    const passwordInput = document.getElementById('id_password') || document.querySelector('input[type="password"]');
     if (togglePassword && passwordInput) {
       togglePassword.addEventListener("click", function () {
         const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
@@ -210,6 +222,34 @@
         this.querySelector("i").classList.toggle("fa-eye");
         this.querySelector("i").classList.toggle("fa-eye-slash");
       });
+    }
+
+    // ضبط خيارات الدور داخل القسم
+    const dept = document.getElementById('id_department');
+    const role = document.getElementById('membership_role') || document.getElementById('id_membership_role');
+    const TEACHERS = new Set(["teachers","معلمين","المعلمين"]);
+
+    function adjustRoleChoices() {
+      if (!dept || !role) return;
+      const val = (dept.value || "").trim().toLowerCase();
+      const isTeachers = TEACHERS.has(val);
+      // تعطيل "مسؤول" في قسم المعلّمين
+      for (const opt of role.options) {
+        if (opt.value.toLowerCase() === "officer") {
+          opt.disabled = isTeachers;
+          if (isTeachers && role.value.toLowerCase() === "officer") {
+            // إجبار الاختيار على "معلم"
+            for (const o of role.options) {
+              if (o.value.toLowerCase() === "teacher") { role.value = o.value; break; }
+            }
+          }
+        }
+      }
+    }
+
+    if (dept) {
+      dept.addEventListener('change', adjustRoleChoices);
+      adjustRoleChoices();
     }
 
     // تأثيرات عند التركيز على الحقول
