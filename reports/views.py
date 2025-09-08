@@ -536,16 +536,45 @@ def _get_report_for_user_or_404(user, pk: int):
 @login_required(login_url="reports:login")
 @require_http_methods(["GET"])
 def report_print(request: HttpRequest, pk: int) -> HttpResponse:
-    # السماح للطباعة بحسب صلاحيات الدور/القسم
+    # السماح بالطباعة بحسب صلاحيات الدور/القسم
     r = _get_report_for_user_or_404(request.user, pk)
 
-    # تسمية توقيع ديناميكية آمنة بدون خرائط ثابتة
-    signer_label = "المعلّم"
+    # توقيع = اسم القسم المرتبط بالتصنيف (إن وُجد)، وإلا "القسم"
+    dept_name = None
     try:
-        if getattr(r, "category", None) and getattr(r.category, "name", None):
-            signer_label = f"مسؤول {r.category.name}"
+        cat = getattr(r, "category", None)
+        if cat:
+            # 1) علاقة مباشرة FK: ReportType.department
+            if hasattr(cat, "department") and getattr(cat, "department", None):
+                d = getattr(cat, "department")
+                dept_name = getattr(d, "name", None) or getattr(d, "role_label", None) or getattr(d, "slug", None)
+
+            # 2) علاقة M2M: ReportType.departments (أو أسماء شائعة)
+            if not dept_name and HAS_DEPT_MODEL and Department is not None:
+                for rel_name in ("departments", "depts", "dept_list"):
+                    if hasattr(cat, rel_name):
+                        rel = getattr(cat, rel_name)
+                        try:
+                            first = rel.all().first() if hasattr(rel, "all") else None
+                        except Exception:
+                            first = None
+                        if first:
+                            dept_name = getattr(first, "name", None) or getattr(first, "role_label", None) or getattr(first, "slug", None)
+                            if dept_name:
+                                break
+
+            # 3) بحث عكسي احتياطي: Department.reporttypes يحتوي هذا التصنيف
+            if not dept_name and HAS_DEPT_MODEL and Department is not None:
+                try:
+                    d = Department.objects.filter(reporttypes=cat).only("name", "role_label", "slug").first()
+                    if d:
+                        dept_name = getattr(d, "name", None) or getattr(d, "role_label", None) or getattr(d, "slug", None)
+                except Exception:
+                    pass
     except Exception:
         pass
+
+    signer_label = (dept_name or "القسم")
 
     return render(request, "reports/report_print.html", {"r": r, "signer_label": signer_label})
 

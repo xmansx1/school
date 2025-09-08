@@ -162,27 +162,7 @@
       <!-- التواقيع -->
       <div class="sign">
         <div class="box">
-          {% if signer_label %}
-            {# إن كانت الصيغة "مسؤول ..." نحولها إلى "المسؤول الـ..." #}
-            {% if signer_label|slice:":7" == "مسؤول " %}
-              {% with rest=signer_label|slice:"7:" %}
-                {% with first2=rest|slice:":2" %}
-                  <b>توقيع المسؤول {% if first2 != "ال" %}ال{% endif %}{{ rest }}</b>
-                {% endwith %}
-              {% endwith %}
-            {% else %}
-              <b>توقيع {{ signer_label }}</b>
-            {% endif %}
-          {% else %}
-            {# احتياطي: "توقيع المسؤول + (الـ + اسم التصنيف)" #}
-            {% with cat=r.category.name|default:"" %}
-              {% if cat %}
-                <b>توقيع المسؤول {% if cat|slice:":2" != "ال" %}ال{% endif %}{{ cat }}</b>
-              {% else %}
-                <b>توقيع المسؤول</b>
-              {% endif %}
-            {% endwith %}
-          {% endif %}
+          <b>توقيع ( {{ signer_label|default:"القسم" }} )</b>
           <div class="muted">.............................</div>
         </div>
         <div class="box">
