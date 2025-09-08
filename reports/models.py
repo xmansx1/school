@@ -767,3 +767,47 @@ def ensure_manager_department_and_role(sender, **kwargs):
     except Exception:
         # لا نرفع خطأ أثناء post_migrate للحفاظ على استقرار الهجرات
         pass
+
+
+# -*- coding: utf-8 -*-
+from django.db import models
+from django.conf import settings
+from django.utils import timezone
+
+# استيراد Teacher من موديلاتك الحالية
+from .models import Teacher  # إذا كان هذا السطر داخل نفس الملف، لا تكرره. استورد Teacher من الموضع المناسب لديك.
+
+class Notification(models.Model):
+    title = models.CharField(max_length=120, blank=True, default="")
+    message = models.TextField()
+    is_important = models.BooleanField(default=False)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    created_by = models.ForeignKey(
+        Teacher, null=True, blank=True, on_delete=models.SET_NULL, related_name="notifications_created"
+    )
+
+    class Meta:
+        db_table = "reports_notification"
+        ordering = ("-created_at", "-id")
+
+    def __str__(self):
+        return self.title or (self.message[:30] + ("..." if len(self.message) > 30 else ""))
+
+
+class NotificationRecipient(models.Model):
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name="recipients")
+    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name="notifications")
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "reports_notification_recipient"
+        indexes = [
+            models.Index(fields=["teacher", "is_read", "-created_at"]),
+        ]
+        unique_together = (("notification", "teacher"),)
+
+    def __str__(self):
+        return f"{self.teacher} ← {self.notification}"

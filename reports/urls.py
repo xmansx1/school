@@ -50,28 +50,25 @@ urlpatterns = [
 
     # إضافة قسم (اسم جديد + اسم قديم)
     path("staff/departments/add/", views.department_create, name="department_create"),
-    path("staff/departments/add/", views.department_create, name="departments_add"),
+    path("staff/departments/add/", views.department_create, name="departments_add"),  # alias قديم
 
-    # تعديل بالقيمة الدلالية (slug/code)
+    # تعديل بالأكواد الدلالية (slug/code) + توافق قديم (pk)
     path("staff/departments/<slug:code>/edit/", views.department_edit, name="department_edit"),
-    # توافق قديم (pk)
-    path("staff/departments/<int:pk>/edit/", views.department_update, name="departments_edit"),
+    path("staff/departments/<int:pk>/edit/", views.department_update, name="departments_edit"),  # alias قديم
 
-    # الأعضاء بالقيمة الدلالية
+    # الأعضاء بالأكواد الدلالية + توافق قديم (pk)
     path("staff/departments/<slug:code>/members/", views.department_members, name="department_members"),
-    # توافق قديم (pk)
-    path("staff/departments/<int:pk>/members/", views.department_members, name="departments_members"),
+    path("staff/departments/<int:pk>/members/", views.department_members, name="departments_members"),  # alias قديم
 
-    # حذف بالقيمة الدلالية
+    # حذف بالأكواد الدلالية + توافق قديم (pk)
     path("staff/departments/<slug:code>/delete/", views.department_delete, name="department_delete"),
-    # توافق قديم (pk)
-    path("staff/departments/<int:pk>/delete/", views.department_delete, name="departments_delete"),
+    path("staff/departments/<int:pk>/delete/", views.department_delete, name="departments_delete"),  # alias قديم
 
     # =========================
     # لوحة المدير
     # =========================
     path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
-    path("manager/", views.admin_dashboard, name="manager_dashboard"),
+    path("manager/", views.admin_dashboard, name="manager_dashboard"),  # alias قديم
 
     # =========================
     # أنواع التقارير
@@ -90,6 +87,8 @@ urlpatterns = [
     path("requests/assigned/", views.assigned_to_me, name="assigned_to_me"),
     path("requests/<int:pk>/", views.ticket_detail, name="ticket_detail"),
     path("requests/admin/<int:pk>/", views.admin_request_update, name="admin_request_update"),
+
+    # Officer
     path("officer/reports/", views.officer_reports, name="officer_reports"),
     path("officer/reports/<int:pk>/delete/", views.officer_delete_report, name="officer_delete_report"),
 
@@ -97,4 +96,22 @@ urlpatterns = [
     # API
     # =========================
     path("api/department-members/", views.api_department_members, name="api_department_members"),
+
+    # =========================
+    # الإشعارات
+    # =========================
+    path("notifications/<int:pk>/", views.notification_detail, name="notification_detail"),
+    path("notifications/<int:pk>/delete/", views.notification_delete, name="notification_delete"),
+    path("notifications/send/", views.send_notification, name="send_notification"),  # تحويل للإنشاء (توافق قديم)
+    path("notifications/create/", views.notifications_create, name="notifications_create"),
+    path("notifications/sent/", views.notifications_sent, name="notifications_sent"),
+    path("notifications/mine/", views.my_notifications, name="my_notifications"),
+    path("notifications/<int:pk>/read/", views.notification_mark_read, name="notification_mark_read"),
+    path("notifications/mark-all-read/", views.notifications_mark_all_read, name="notifications_mark_all_read"),
+    # جديد: تعليم كمقروء بالاعتماد على رقم الإشعار (للهيرو/الواجهة)
+    path(
+        "notifications/<int:pk>/read-by-notification/",
+        views.notification_mark_read_by_notification,
+        name="notification_mark_read_by_notification",
+    ),
 ]

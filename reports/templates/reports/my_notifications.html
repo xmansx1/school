@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}إشعاراتي{% endblock %}
+
+{% block head %}
+<style>
+  /* تخطيط عام */
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 18px}
+  .page-title{margin:0;font-size:1.35rem;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:10px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-weight:900;font-size:.86rem}
+  .chip.badge{background:#eef2ff;border:1px solid #e5e7eb;color:#1e40af}
+  .chip.danger{background:#fff5f5;border:1px solid #ffe0e0;color:#b91c1c}
+  .chip.muted{background:#f8fafc;border:1px solid var(--line);color:#475569}
+
+  .head-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .btn-outline{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:800;color:#0f172a;cursor:pointer}
+  .btn-outline:hover{box-shadow:0 4px 14px rgba(2,6,23,.08)}
+
+  /* بطاقة الإشعار */
+  .n-card{
+    position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:14px 14px 12px;box-shadow:var(--shadow);transition:transform .18s ease, box-shadow .18s ease
+  }
+  .n-card:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(2,6,23,.12)}
+  .n-card.read{background:#f9fafb}
+  .n-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .n-title{margin:0;font-weight:900;color:#0b1b3a;line-height:1.5}
+  .n-time{white-space:nowrap;color:#64748b;font-weight:800;font-size:.9rem}
+  .n-body{color:#334155;margin:10px 0 8px;white-space:pre-wrap;line-height:1.9;font-weight:700}
+
+  /* المرسل */
+  .sender{display:flex;align-items:center;gap:10px;margin-top:4px;color:#0f172a}
+  .avatar-dot{--c:var(--brand);width:10px;height:10px;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px rgba(37,99,235,.20)}
+  .read .avatar-dot{--c:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.20)}
+  .sender-name{font-weight:900}
+  .sender-role{color:#475569;font-weight:800;font-size:.9rem}
+
+  /* أزرار أسفل البطاقة */
+  .n-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .btn-sm{padding:7px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:800;text-decoration:none;color:#1e293b}
+  .btn-sm.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn-sm.ghost{background:#eef2ff;border-color:#e5e7eb;color:#1e40af}
+  .btn-sm.success{background:#ecfdf5;border-color:#d1fae5;color:#065f46}
+
+  /* خط تقدم بسيط (اختياري) */
+  .progress{margin-top:8px;height:8px;border-radius:999px;background:var(--line-2);overflow:hidden;border:1px solid var(--line)}
+  .progress .bar{height:100%;width:100%;background:linear-gradient(90deg,var(--brand),#10b981)}
+
+  /* شبكة الاستجابة */
+  .cards{display:grid;gap:14px}
+  @media(min-width:900px){.cards{grid-template-columns:1fr 1fr}}
+  @media(min-width:1200px){.cards{grid-template-columns:1fr 1fr 1fr}}
+
+  .empty{
+    padding:28px;border:1px dashed var(--line);border-radius:14px;background:#fff;text-align:center;color:#475569;font-weight:800
+  }
+
+  /* صفحة الترقيم */
+  .pager{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:16px}
+  .pager a,.pager span{padding:6px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-weight:800;text-decoration:none;color:#1e293b}
+  .pager .on{background:var(--brand-ghost);color:var(--brand);border-color:#cfe0ff}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" dir="rtl">
+
+  <header class="page-head">
+    <h1 class="page-title">
+      <i class="fa-solid fa-bell"></i> إشعاراتي
+      {% if NAV_NOTIFICATIONS_UNREAD|default:0 > 0 %}
+        <span class="chip badge" title="غير مقروءة">{{ NAV_NOTIFICATIONS_UNREAD }} غير مقروءة</span>
+      {% endif %}
+    </h1>
+
+    <form class="head-actions" method="post" action="{% url 'reports:notifications_mark_all_read' %}">
+      {% csrf_token %}
+      <button class="btn-outline" type="submit">
+        <i class="fa-solid fa-check-double"></i> تحديد جميع الإشعارات كمقروءة
+      </button>
+    </form>
+  </header>
+
+  {% if page_obj and page_obj.object_list %}
+    <section class="cards">
+      {% for r in page_obj %}
+        {% with n=r.notification %}
+        <article class="n-card {% if r.is_read %}read{% endif %}">
+          <div class="n-head">
+            <h3 class="n-title">
+              {% if n.is_important %}<span class="chip danger">هام</span>{% endif %}
+              {{ n.title|default:"رسالة من الإدارة" }}
+            </h3>
+            <time class="n-time" datetime="{{ r.created_at|date:'c' }}">{{ r.created_at|date:"Y-m-d H:i" }}</time>
+          </div>
+
+          {% with body=None %}
+            {% firstof n.message n.body n.content n.text n.details as body %}
+            {% if body %}<div class="n-body">{{ body|linebreaksbr }}</div>{% endif %}
+          {% endwith %}
+
+          <div class="sender" aria-label="المرسِل">
+            <span class="avatar-dot" aria-hidden="true"></span>
+            <span class="sender-name">
+              {% with s=n.created_by %}
+                {% firstof s.name s.phone s.username "الإدارة" %}
+              {% endwith %}
+            </span>
+            <span class="sender-role">
+              {% with s=n.created_by %}
+                {% if s and s.role %}
+                  — {% firstof s.role.name s.role.slug %}
+                {% endif %}
+              {% endwith %}
+            </span>
+          </div>
+
+          {% if n.expires_at %}
+            <div class="chip muted" style="margin-top:8px">
+              <i class="fa-regular fa-clock"></i>
+              ينتهي: {{ n.expires_at|date:"Y-m-d H:i" }}
+            </div>
+          {% endif %}
+
+          <div class="n-actions">
+            {% if n.action_url %}
+              <a class="btn-sm primary" href="{{ n.action_url }}" rel="noopener">
+                <i class="fa-solid fa-up-right-from-square"></i> فتح الرابط
+              </a>
+            {% endif %}
+
+            {% if not r.is_read %}
+              <form method="post" action="{% url 'reports:notification_mark_read' r.pk %}">
+                {% csrf_token %}
+                <button class="btn-sm ghost" type="submit">
+                  <i class="fa-solid fa-check"></i> تمت القراءة
+                </button>
+              </form>
+            {% else %}
+              <span class="btn-sm success" title="قُرئت">
+                <i class="fa-solid fa-circle-check"></i> مقروء
+              </span>
+              {% if r.read_at %}
+                <span class="chip muted" title="وقت القراءة">
+                  <i class="fa-regular fa-clock"></i> {{ r.read_at|date:"Y-m-d H:i" }}
+                </span>
+              {% endif %}
+            {% endif %}
+          </div>
+        </article>
+        {% endwith %}
+      {% endfor %}
+    </section>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+      <nav class="pager" aria-label="pagination">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}">السابق</a>
+        {% endif %}
+        <span class="on">صفحة {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">التالي</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+
+  {% else %}
+    <div class="empty">
+      لا توجد إشعارات حتى الآن.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

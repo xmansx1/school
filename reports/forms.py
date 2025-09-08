@@ -589,3 +589,61 @@ class DepartmentForm(forms.ModelForm):
         if qs.exists():
             raise forms.ValidationError("المعرّف (slug) مستخدم مسبقًا لقسم آخر.")
         return slug
+
+
+from django import forms
+from django.utils import timezone
+from .models import Notification, NotificationRecipient, Teacher
+from .permissions import restrict_queryset_for_user  # إن رغبت الاستفادة من هذا التصميم لقوائم المعلمين
+
+class NotificationCreateForm(forms.Form):
+    title = forms.CharField(max_length=120, required=False, label="عنوان (اختياري)")
+    message = forms.CharField(widget=forms.Textarea(attrs={"rows":5}), label="نص الإشعار")
+    is_important = forms.BooleanField(required=False, initial=False, label="مهم")
+    expires_at = forms.DateTimeField(required=False, label="ينتهي في (اختياري)",
+                                     widget=forms.DateTimeInput(attrs={"type":"datetime-local"}))
+    teachers = forms.ModelMultipleChoiceField(
+        queryset=Teacher.objects.none(),
+        required=True,
+        label="المستلمون (يمكن اختيار أكثر من معلم)",
+        widget=forms.SelectMultiple(attrs={"size":12})
+    )
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+
+        # حصر المعلمين حسب صلاحية المُنشئ:
+        qs = Teacher.objects.filter(is_active=True).order_by("name")
+        # إن كان المُنشئ Officer، قصِر القائمة على معلمي قسمه فقط:
+        try:
+            role_slug = getattr(getattr(user, "role", None), "slug", None)
+            if role_slug and role_slug not in (None, "manager"):
+                # استخدم منطقك الحالي لجلب أعضاء القسم
+                from .views import _user_department_codes
+                codes = _user_department_codes(user)
+                if codes:
+                    qs = qs.filter(
+                        models.Q(role__slug__in=codes) |
+                        models.Q(dept_memberships__department__slug__in=codes)  # إن كانت لديك علاقة عضويات
+                    ).distinct()
+        except Exception:
+            pass
+
+        self.fields["teachers"].queryset = qs
+
+    def save(self, creator):
+        cleaned = self.cleaned_data
+        n = Notification.objects.create(
+            title=cleaned.get("title") or "",
+            message=cleaned["message"],
+            is_important=bool(cleaned.get("is_important")),
+            expires_at=cleaned.get("expires_at") or None,
+            created_by=creator,
+        )
+        teachers = list(cleaned["teachers"])
+        if teachers:
+            NotificationRecipient.objects.bulk_create([
+                NotificationRecipient(notification=n, teacher=t) for t in teachers
+            ], ignore_conflicts=True)
+        return n

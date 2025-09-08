@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}الإشعارات المرسلة{% endblock %}
+
+{% block head %}
+<style>
+  .page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+  .page-header h1{margin:0;font-size:1.35rem;font-weight:900;color:var(--ink)}
+  .cards-grid{display:grid;gap:14px}
+  @media(min-width:880px){.cards-grid{grid-template-columns:1fr 1fr}}
+
+  .notif-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 14px 12px;box-shadow:var(--shadow);transition:transform .18s ease, box-shadow .18s ease}
+  .notif-card:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(2,6,23,.12)}
+  .notif-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .notif-title{font-weight:900;margin:0;color:#0b1b3a;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--line);background:#f8fbff;color:#0b1b3a;border-radius:999px;font-weight:800;font-size:.86rem}
+  .pill.important{background:#fff5f5;border-color:#ffe0e0;color:#b91c1c}
+  .pill.blue{background:#eef2ff;border-color:#e5e7eb;color:#1e40af}
+  .notif-time{color:#64748b;font-weight:800;font-size:.9rem;white-space:nowrap}
+  .notif-body{color:#334155;margin:10px 0 8px;white-space:pre-wrap;line-height:1.9;font-weight:700}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;color:#475569;font-weight:800;margin-top:6px}
+
+  .progress{margin-top:10px;height:10px;border-radius:999px;background:var(--line-2);overflow:hidden;border:1px solid var(--line)}
+  .progress .bar{height:100%;width:0%;background:linear-gradient(90deg,var(--brand),#10b981);transition:width .35s ease}
+
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+  .btn-sm{padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:800;text-decoration:none;color:#1e293b}
+  .btn-sm.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .btn-sm.danger{background:#fff0f0;color:#b91c1c;border-color:#fecaca}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" dir="rtl">
+  <div class="page-header">
+    <h1>الإشعارات المرسلة</h1>
+    <a class="btn btn-primary" href="{% url 'reports:notifications_create' %}">+ إنشاء إشعار</a>
+  </div>
+
+  {% if page_obj and page_obj.object_list %}
+    <div class="cards-grid">
+      {% for n in page_obj %}
+        <article class="notif-card" data-id="{{ n.id }}">
+          <div class="notif-head">
+            <h3 class="notif-title">
+              <span>{{ n.title|default:"رسالة" }}</span>
+              {% if n.is_important %}<span class="pill important">هام</span>{% endif %}
+              {% if n.is_broadcast %}<span class="pill blue">للجميع</span>{% endif %}
+            </h3>
+            <time class="notif-time" datetime="{{ n.created_at|date:'c' }}">{{ n.created_at|date:"Y-m-d H:i" }}</time>
+          </div>
+
+          {% with body=None %}
+            {% firstof n.message n.body n.content n.text n.details as body %}
+            {% if body %}<div class="notif-body">{{ body|linebreaksbr }}</div>{% endif %}
+          {% endwith %}
+
+          <div class="meta">
+            {% if n.expires_at %}<span class="pill">ينتهي: {{ n.expires_at|date:"Y-m-d H:i" }}</span>{% endif %}
+            {% if n.created_by and n.created_by.name %}<span class="pill">مرسِل: {{ n.created_by.name }}</span>{% endif %}
+          </div>
+
+          <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="bar"></div>
+          </div>
+
+          <div class="actions">
+            <a class="btn-sm" href="{% url 'reports:notification_detail' n.id %}">عرض التفاصيل</a>
+            {% if n.action_url %}<a class="btn-sm primary" href="{{ n.action_url }}" rel="noopener">فتح الرابط</a>{% endif %}
+            {% url 'reports:notification_delete' n.id as del_url %}
+            {% if del_url %}
+              <form method="post" action="{{ del_url }}" style="display:inline" onsubmit="return confirm('هل تريد حذف هذا الإشعار نهائيًا؟');">
+                {% csrf_token %}
+                <button class="btn-sm danger" type="submit">حذف</button>
+              </form>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+      <nav class="pager" aria-label="pagination" style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+        {% if page_obj.has_previous %}<a class="btn-sm" href="?page={{ page_obj.previous_page_number }}">السابق</a>{% endif %}
+        <span class="btn-sm" style="background:var(--brand-ghost);color:var(--brand)">صفحة {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a class="btn-sm" href="?page={{ page_obj.next_page_number }}">التالي</a>{% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="empty">لا توجد إشعارات مرسلة حتى الآن.</div>
+  {% endif %}
+</div>
+
+{{ stats|json_script:"notif-stats-data" }}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function(){
+    const script = document.getElementById('notif-stats-data');
+    let stats = {};
+    if(script){ try{ stats = JSON.parse(script.textContent||"{}"); }catch(e){} }
+
+    document.querySelectorAll('.notif-card').forEach(card=>{
+      const id = card.getAttribute('data-id');
+      const bucket = stats[id] || {};
+      const total = Number(bucket.total||0);
+      const read  = Number(bucket.read ||0);
+      const rate  = total ? Math.round((read/total)*100) : 0;
+      const bar = card.querySelector('.progress .bar');
+      const prog = card.querySelector('.progress');
+      if(bar){ bar.style.width = rate + '%'; }
+      if(prog){ prog.setAttribute('aria-valuenow', String(rate)); prog.setAttribute('title', 'نسبة القراءة: ' + rate + '%'); }
+    });
+  })();
+</script>
+{% endblock %}

@@ -255,3 +255,20 @@ class TicketNoteAdmin(admin.ModelAdmin):
     autocomplete_fields = ("ticket", "author")
     date_hierarchy = "created_at"
     readonly_fields = ("created_at",)
+
+
+
+from django.contrib import admin
+from .models import Notification, NotificationRecipient  # استورد من موضعك الفعلي
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ("id", "title", "is_important", "created_by", "created_at", "expires_at")
+    search_fields = ("title", "message")
+    list_filter = ("is_important", "created_at")
+
+@admin.register(NotificationRecipient)
+class NotificationRecipientAdmin(admin.ModelAdmin):
+    list_display = ("id", "notification", "teacher", "is_read", "created_at", "read_at")
+    list_filter = ("is_read", "created_at")
+    search_fields = ("notification__title", "teacher__name")

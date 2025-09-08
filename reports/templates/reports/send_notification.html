@@ -1,0 +1,240 @@
+{# reports/templates/reports/send_notification.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}إرسال إشعار{% endblock %}
+
+{% block head %}
+<style>
+  :root{
+    --brand:#2563eb; --brand-2:#1e40af; --accent:#10b981;
+    --ink:#0f172a; --muted:#64748b; --line:#e5e7eb; --bg:#f8fafc; --card:#fff;
+    --shadow:0 10px 30px rgba(2,6,23,.08); --radius:16px; --t:all .22s ease
+  }
+  .wrap{max-width:1200px;margin:0 auto;padding:18px}
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+  .title{margin:0;font-weight:900;color:var(--brand-2)}
+  .hint{color:var(--muted);font-weight:700}
+
+  .grid{display:grid;gap:18px}
+  @media(min-width:1040px){.grid{grid-template-columns:1.15fr .85fr}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card-hd{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .card-bd{padding:16px}
+
+  .form-grid{display:grid;gap:14px}
+  @media(min-width:640px){.form-grid{grid-template-columns:1fr 1fr}}
+  .field{display:flex;flex-direction:column;gap:8px}
+  .field.full{grid-column:1/-1}
+  label{font-weight:900;color:#111827}
+  input[type="text"],input[type="url"],input[type="datetime-local"],textarea,select{
+    border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;background:#fff
+  }
+  input[type="file"]{font:inherit}
+  textarea{min-height:160px;resize:vertical}
+  .help{color:var(--muted);font-size:.9rem}
+  .errors{color:#b91c1c;font-weight:800}
+
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .btn{padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:#fff;font-weight:900;cursor:pointer;text-decoration:none;color:#111827}
+  .btn-primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn-ghost{background:#eef2ff;border-color:#e5e7eb;color:#1e40af}
+  .btn:disabled{opacity:.7;cursor:not-allowed}
+
+  /* المعاينة */
+  .preview{background:linear-gradient(180deg,#f9fbff,#ffffff)}
+  .notif{border:1px dashed #dbeafe;border-radius:14px;padding:12px;background:#fff}
+  .nt-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .nt-title{margin:0;font-weight:900;color:#0b1b3a}
+  .nt-ico{font-size:1.2rem}
+  .nt-body{white-space:pre-wrap;margin-top:8px;color:#334155;font-weight:700;line-height:1.9}
+  .nt-meta{margin-top:8px;color:#475569;font-weight:800;display:flex;gap:10px;flex-wrap:wrap}
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--line);
+    background:#f8fbff;color:#0b1b3a;border-radius:999px;font-weight:800;font-size:.9rem
+  }
+  .pill.important{background:#fff5f5;border-color:#ffe0e0;color:#b91c1c}
+  .badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#ef4444;color:#fff;font-size:12px;font-weight:900}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+
+  <header class="page-head">
+    <div>
+      <h1 class="title">إرسال إشعار</h1>
+      <div class="hint">اكتب عنوانًا جذابًا ومحتوى واضحًا. يمكنك معاينة الشكل قبل الإرسال.</div>
+    </div>
+    <div class="hint">
+      <a class="btn btn-ghost" href="{% url 'reports:notifications_sent' %}">الإشعارات المرسلة</a>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    {# ————————————— العمود الأيسر: النموذج ————————————— #}
+    <section class="card" aria-labelledby="form-title">
+      <div class="card-hd">
+        <strong id="form-title">نموذج الإشعار</strong>
+        <span class="help">يظهر هذا الخيار للمصرّح لهم فقط</span>
+      </div>
+      <div class="card-bd">
+
+        {% if form %}
+          {% if form.media %}{{ form.media }}{% endif %}
+          <form method="post" enctype="multipart/form-data" action="" id="notifyForm" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+              <div class="errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-grid">
+              {# نعرض الحقول تلقائيًا بدون أوسمة غير مدعومة #}
+              {% for field in form.visible_fields %}
+                <div class="field" data-name="{{ field.html_name|lower }}">
+                  <label for="{{ field.id_for_label }}">{{ field.label|default:"الحقل" }}</label>
+                  {{ field }}
+                  {% if field.help_text %}<div class="help">{{ field.help_text|safe }}</div>{% endif %}
+                  {% for e in field.errors %}<div class="errors">{{ e }}</div>{% endfor %}
+                </div>
+              {% endfor %}
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-primary" type="submit">إرسال الإشعار</button>
+              <a class="btn" href="{% url 'reports:home' %}">الرجوع للرئيسية</a>
+            </div>
+          </form>
+        {% else %}
+          {# فالباك بسيط إذا لم يُمرر فورم من الـ view #}
+          <form method="post" enctype="multipart/form-data" action="" id="notifyForm" novalidate>
+            {% csrf_token %}
+            <div class="form-grid">
+              <div class="field full">
+                <label for="id_title">العنوان</label>
+                <input type="text" id="id_title" name="title" maxlength="120" placeholder="عنوان الإشعار">
+                <div class="help">حتى 120 حرفًا</div>
+              </div>
+
+              <div class="field full">
+                <label for="id_message">المحتوى</label>
+                <textarea id="id_message" name="message" placeholder="نص الإشعار"></textarea>
+              </div>
+
+              <div class="field">
+                <label for="id_action_url">رابط إجراء (اختياري)</label>
+                <input type="url" id="id_action_url" name="action_url" placeholder="https://...">
+              </div>
+
+              <div class="field">
+                <label class="row" style="display:flex;align-items:center;gap:8px">
+                  <input type="checkbox" id="id_is_important" name="is_important" value="1">
+                  <span>وضعه كهام</span>
+                </label>
+              </div>
+
+              <div class="field">
+                <label for="id_expires_at">ينتهي في (اختياري)</label>
+                <input type="datetime-local" id="id_expires_at" name="expires_at">
+              </div>
+
+              <div class="field full">
+                <label for="id_recipients">المستلمون (اختياري)</label>
+                <input type="text" id="id_recipients" name="recipients" placeholder="معرّفات/أسماء/أرقام مفصولة بفواصل">
+                <div class="help">اتركه فارغاً لإرساله وفق سياسة الاستهداف في النموذج الفعلي.</div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-primary" type="submit">إرسال الإشعار</button>
+              <a class="btn" href="{% url 'reports:home' %}">الرجوع للرئيسية</a>
+            </div>
+          </form>
+        {% endif %}
+      </div>
+    </section>
+
+    {# ————————————— العمود الأيمن: المعاينة ————————————— #}
+    <aside class="card preview" aria-labelledby="preview-title">
+      <div class="card-hd"><strong id="preview-title">معاينة فورية</strong><span class="help">تحدَّث تلقائيًا</span></div>
+      <div class="card-bd">
+        <div class="notif">
+          <div class="nt-h">
+            <h3 class="nt-title" id="pv_title">عنوان الإشعار</h3>
+            <div class="nt-ico" id="pv_important" title="هام" style="display:none">⚠️</div>
+          </div>
+          <div class="nt-body" id="pv_body">سيظهر نص الإشعار هنا…</div>
+          <div class="nt-meta">
+            <span class="pill">
+              <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
+              <span>مرسل: {% firstof request.user.name request.user.phone "الإدارة" %}</span>
+            </span>
+            <span class="pill" id="pv_action" style="display:none">🔗 يحتوي على رابط إجراء</span>
+            <span class="pill" id="pv_expires" style="display:none">⏳ ينتهي لاحقًا</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function(){
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+
+    // عناصر حقول متوقعة (من الفورم أو الفالباك)
+    const titleInput = $("#id_title") || document.querySelector('[name*="title"],[name*="subject"],[name*="heading"]');
+    const msgInput   = $("#id_message") || document.querySelector('textarea[name*="message"],textarea[name*="body"],textarea[name*="content"],textarea[name*="text"],textarea[name*="details"]');
+    const urlInput   = $("#id_action_url") || document.querySelector('input[type="url"],input[name*="action_url"]');
+    const impInput   = $("#id_is_important") || document.querySelector('input[name*="is_important"]');
+    const expInput   = $("#id_expires_at") || document.querySelector('input[name*="expires_at"],input[name*="ends_at"]');
+
+    const pvTitle = $("#pv_title");
+    const pvBody  = $("#pv_body");
+    const pvImportant = $("#pv_important");
+    const pvAction = $("#pv_action");
+    const pvExpires = $("#pv_expires");
+
+    function updatePreview(){
+      if(pvTitle && titleInput){ pvTitle.textContent = (titleInput.value || "").trim() || "عنوان الإشعار"; }
+      if(pvBody  && msgInput ){ pvBody.textContent  = (msgInput.value  || "").trim() || "سيظهر نص الإشعار هنا…"; }
+      if(pvImportant && impInput){ pvImportant.style.display = impInput.checked ? "block" : "none"; }
+      if(pvAction && urlInput){ const has = !!(urlInput.value || "").trim(); pvAction.style.display = has ? "inline-flex" : "none"; }
+      if(pvExpires && expInput){ pvExpires.style.display = (expInput.value || "").trim() ? "inline-flex" : "none"; }
+    }
+    [titleInput, msgInput, urlInput, impInput, expInput].forEach(el=>{
+      if(el){ el.addEventListener("input", updatePreview); el.addEventListener("change", updatePreview); }
+    });
+    updatePreview();
+
+    // اجعل بعض الحقول تمتد بعرض الشبكة (بدون استخدام وسوم غير مدعومة)
+    $$('.form-grid .field').forEach(box=>{
+      const input = box.querySelector('input, textarea, select');
+      if(!input) return;
+      const nm = (input.getAttribute('name') || '').toLowerCase();
+      if(input.tagName === 'TEXTAREA' ||
+         nm.includes('title') || nm.includes('subject') || nm.includes('heading') ||
+         nm.includes('message') || nm.includes('body') || nm.includes('content') ||
+         nm.includes('text') || nm.includes('details')){
+        box.classList.add('full');
+      }
+    });
+
+    // منع الإرسال المزدوج
+    const form = document.getElementById('notifyForm');
+    if(form){
+      form.addEventListener('submit', function(){
+        const btn = form.querySelector('button[type="submit"]');
+        if(btn){ btn.disabled = true; btn.textContent = 'جارٍ الإرسال…'; }
+      });
+    }
+  })();
+</script>
+{% endblock %}

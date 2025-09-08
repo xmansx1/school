@@ -1,7 +1,13 @@
 # reports/views.py
 # -*- coding: utf-8 -*-
 from __future__ import annotations
-
+from .forms import (
+    ReportForm,
+    TeacherForm,
+    TicketActionForm,
+    TicketCreateForm,
+    DepartmentForm,  # أضف هذا السطر
+)
 import logging
 import os
 import traceback
@@ -34,12 +40,20 @@ from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods
 
+# ===== فورمات =====
 from .forms import (
     ReportForm,
     TeacherForm,
     TicketActionForm,
     TicketCreateForm,
 )
+# إشعارات
+try:
+    from .forms import NotificationCreateForm  # type: ignore
+except Exception:
+    NotificationCreateForm = None  # type: ignore
+
+# ===== موديلات =====
 from .models import (
     Report,
     Teacher,
@@ -48,6 +62,14 @@ from .models import (
     Role,
 )
 
+# موديلات الإشعارات
+try:
+    from .models import Notification, NotificationRecipient  # type: ignore
+except Exception:
+    Notification = None  # type: ignore
+    NotificationRecipient = None  # type: ignore
+
+# ===== صلاحيات =====
 from .permissions import allowed_categories_for, role_required, restrict_queryset_for_user
 
 logger = logging.getLogger(__name__)
@@ -76,26 +98,18 @@ except Exception:  # pragma: no cover
     DepartmentMembership = None  # type: ignore
 
 try:
-    from .forms import DepartmentForm  # type: ignore
+    from django.apps import apps as _apps
 except Exception:  # pragma: no cover
-    DepartmentForm = None  # pragma: no cover
+    _apps = None  # type: ignore
 
-HAS_DEPT_MODEL: bool = Department is not None
-
-DM_TEACHER = getattr(DepartmentMembership, "TEACHER", "teacher") if DepartmentMembership else "teacher"
-DM_OFFICER = getattr(DepartmentMembership, "OFFICER", "officer") if DepartmentMembership else "officer"
-
-# ========= دعم اكتشاف Officer + فاحص صلاحيات موحّد =========
 try:
-    # إن كانت متوفرة في permissions سنستخدمها مباشرة
     from .permissions import is_officer  # type: ignore
 except Exception:
-    # بديل آمن إذا لم تتوفر الدالة
     def is_officer(user) -> bool:
         try:
             if not getattr(user, "is_authenticated", False):
                 return False
-            from .models import DepartmentMembership  # import محلي لتفادي الدورات
+            from .models import DepartmentMembership  # import محلي
             role_type = getattr(DepartmentMembership, "OFFICER", "officer")
             return DepartmentMembership.objects.filter(
                 teacher=user, role_type=role_type, department__is_active=True
@@ -103,14 +117,14 @@ except Exception:
         except Exception:
             return False
 
+DM_TEACHER = getattr(DepartmentMembership, "TEACHER", "teacher") if DepartmentMembership else "teacher"
+DM_OFFICER = getattr(DepartmentMembership, "OFFICER", "officer") if DepartmentMembership else "officer"
+
 def _is_staff(user) -> bool:
     return bool(user and user.is_authenticated and user.is_staff)
 
 def _is_staff_or_officer(user) -> bool:
-    """
-    يسمح للموظّفين (is_staff) أو لمسؤولي الأقسام (Officer).
-    لا يمنح Officer صلاحيات المدير إلا ضمن نطاق أنواعه عبر فلاتر الوصول في الدوال المساعدة.
-    """
+    """يسمح للموظّفين (is_staff) أو لمسؤولي الأقسام (Officer)."""
     return bool(getattr(user, "is_authenticated", False) and
                 (getattr(user, "is_staff", False) or is_officer(user)))
 
@@ -122,19 +136,13 @@ def _safe_next_url(next_url: str | None) -> str | None:
     if not next_url:
         return None
     parsed = urlparse(next_url)
-    # نسمح فقط بالمسارات النسبية (بدون دومين/بروتوكول)
     if parsed.scheme == "" and parsed.netloc == "":
         return next_url
     return None
 
-
 def _role_display_map() -> dict:
-    """
-    خريطة عربية لعرض أسماء الأدوار باستخدام Department.role_label عند توفر Department.
-    (Fallback آمن فقط إن لم يتوفر الموديل)
-    """
-    base = {"teacher": "المعلم", "manager": "المدير"}
-    if HAS_DEPT_MODEL and Department is not None:
+    base = {"teacher": "المعلم", "manager": "المدير", "officer": "مسؤول قسم"}
+    if Department is not None:
         try:
             for d in Department.objects.filter(is_active=True).only("slug", "role_label", "name"):
                 base[d.slug] = d.role_label or d.name or d.slug
@@ -142,13 +150,11 @@ def _role_display_map() -> dict:
             pass
     return base
 
-
 def _safe_redirect(request: HttpRequest, fallback_name: str) -> HttpResponse:
     nxt = request.POST.get("next") or request.GET.get("next")
     if nxt and url_has_allowed_host_and_scheme(nxt, {request.get_host()}):
         return redirect(nxt)
     return redirect(fallback_name)
-
 
 def _parse_date_safe(value: str | None) -> date | None:
     if not value:
@@ -239,7 +245,6 @@ def home(request: HttpRequest) -> HttpResponse:
         if settings.DEBUG or os.getenv("SHOW_ERRORS") == "1":
             html = "<h2>Home exception</h2><pre>{}</pre>".format(traceback.format_exc())
             return HttpResponse(html, status=500)
-    # لا تكشف الاستثناء في الإنتاج
     return redirect("reports:home")
 
 
@@ -307,11 +312,10 @@ def my_reports(request: HttpRequest) -> HttpResponse:
 
 
 @user_passes_test(_is_staff, login_url="reports:login")
-@role_required({"manager"})              # المدير فقط (والسوبر يمر داخل الديكوريتر)
+@role_required({"manager"})
 @require_http_methods(["GET"])
 def admin_reports(request: HttpRequest) -> HttpResponse:
-    # فلترة ديناميكية حسب صلاحيات الدور (from DB)
-    cats = allowed_categories_for(request.user)  # {"activity", ...} أو {"all"}
+    cats = allowed_categories_for(request.user)
     qs = Report.objects.select_related("teacher", "category").order_by("-report_date", "-id")
     qs = restrict_queryset_for_user(qs, request.user)
 
@@ -329,14 +333,12 @@ def admin_reports(request: HttpRequest) -> HttpResponse:
             qs = qs.filter(teacher_name__icontains=t)
 
     if category:
-        # مسموح فقط إن كان ضمن الأنواع المصرّح بها
         if cats and "all" not in cats:
             if category in cats:
                 qs = qs.filter(category__code=category)
         else:
             qs = qs.filter(category__code=category)
 
-    # خيارات فلتر التصنيفات
     if HAS_RTYPE and ReportType is not None:
         rtypes_qs = ReportType.objects.all().order_by("order", "name")
         if cats and "all" not in cats:
@@ -371,37 +373,31 @@ def admin_reports(request: HttpRequest) -> HttpResponse:
 @login_required(login_url="reports:login")
 @require_http_methods(["GET"])
 def officer_reports(request: HttpRequest) -> HttpResponse:
-    """
-    لوحة تقارير المسؤول:
-    - تعتمد على عضوية DepartmentMembership.role_type = OFFICER.
-    - المدير العام (superuser) يُحوّل للوحة المدير.
-    - الأنواع المسموح بها = reporttypes المرتبطة بالقسم، مع fallback لأنواع الدور إن لزم.
-    """
     user = request.user
-
-    # المدير العام يستخدم لوحة المدير
     if user.is_superuser:
         return redirect("reports:admin_reports")
 
-    if not (HAS_DEPT_MODEL and Department is not None and DepartmentMembership is not None):
+    if not (Department is not None and DepartmentMembership is not None):
         messages.error(request, "صلاحيات المسؤول تتطلب تفعيل الأقسام وعضوياتها.")
         return redirect("reports:home")
 
-    # اكتشف عضوية المسؤول
     membership = (
         DepartmentMembership.objects.select_related("department")
         .filter(teacher=user, role_type=DM_OFFICER, department__is_active=True)
         .first()
     )
-    if not membership:
+
+    if not (membership or is_officer(user)):
         messages.error(request, "لا تملك صلاحية مسؤول قسم.")
         return redirect("reports:home")
 
-    dept = membership.department  # القسم المسؤول عنه
-    allowed_cats_qs = getattr(dept, "reporttypes", None)
-    allowed_cats_qs = (allowed_cats_qs.filter(is_active=True) if allowed_cats_qs is not None else None)
+    dept = membership.department if membership else None
 
-    # احتياط: لو لا يوجد ربط أنواع، ارجع لأنواع الدور إن وُجدت
+    allowed_cats_qs = None
+    if dept is not None:
+        allowed_cats_qs = getattr(dept, "reporttypes", None)
+        allowed_cats_qs = (allowed_cats_qs.filter(is_active=True) if allowed_cats_qs is not None else None)
+
     role = getattr(user, "role", None)
     if (allowed_cats_qs is None) or (not allowed_cats_qs.exists()):
         if role is not None and hasattr(role, "allowed_reporttypes"):
@@ -425,7 +421,6 @@ def officer_reports(request: HttpRequest) -> HttpResponse:
             },
         )
 
-    # فلترة حسب المدخلات
     start_date = request.GET.get("start_date") or ""
     end_date = request.GET.get("end_date") or ""
     teacher_name = request.GET.get("teacher_name", "").strip()
@@ -440,7 +435,6 @@ def officer_reports(request: HttpRequest) -> HttpResponse:
     if teacher_name:
         qs = qs.filter(Q(teacher__name__icontains=teacher_name) | Q(teacher_name__icontains=teacher_name))
     if category:
-        # في officer_reports نستخدم pk للنوع في الفلتر الواجهـي
         qs = qs.filter(category_id=category)
 
     qs = qs.order_by("-report_date", "-created_at")
@@ -485,11 +479,6 @@ def admin_delete_report(request: HttpRequest, pk: int) -> HttpResponse:
 @user_passes_test(_is_staff_or_officer, login_url="reports:login")
 @require_http_methods(["POST"])
 def officer_delete_report(request: HttpRequest, pk: int) -> HttpResponse:
-    """
-    يسمح لمسؤول القسم بحذف تقرير داخل نطاق صلاحياته فقط.
-    - التحقق من الوصول يتم عبر _get_report_for_user_or_404 (فلتر بالأنواع المسموحة أو تقاريره).
-    - لا يمنح officer صلاحيات مدير؛ إنما يقيّده بتقاريره/أنواع قسمه.
-    """
     try:
         r = _get_report_for_user_or_404(request.user, pk)  # 404 تلقائيًا خارج النطاق
         r.delete()
@@ -500,21 +489,14 @@ def officer_delete_report(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 # =========================
-# الوصول إلى تقرير معيّن بحسب صلاحيات المستخدم (للطباعة/الـ PDF)
+# الوصول إلى تقرير معيّن
 # =========================
 def _get_report_for_user_or_404(user, pk: int):
-    """
-    يسمح للمدير/الموظف برؤية الكل، وللمستخدم العادي:
-      - تقاريره الخاصة دائمًا
-      - أو أي تقرير يقع ضمن الأنواع المسموح بها له (مسؤول قسم عبر Department/reporttypes).
-    """
     qs = Report.objects.select_related("teacher", "category")
 
-    # موظّف/مدير: يرى الكل
     if getattr(user, "is_staff", False):
         return get_object_or_404(qs, pk=pk)
 
-    # فئات مسموح بها (مسؤول القسم، أو أدوار لها allowed_reporttypes)
     try:
         cats = allowed_categories_for(user) or set()
     except Exception:
@@ -529,28 +511,23 @@ def _get_report_for_user_or_404(user, pk: int):
             pk=pk,
         )
 
-    # دون صلاحيات إضافية: تقاريره فقط
     return get_object_or_404(qs, pk=pk, teacher=user)
 
 
 @login_required(login_url="reports:login")
 @require_http_methods(["GET"])
 def report_print(request: HttpRequest, pk: int) -> HttpResponse:
-    # السماح بالطباعة بحسب صلاحيات الدور/القسم
     r = _get_report_for_user_or_404(request.user, pk)
 
-    # توقيع = اسم القسم المرتبط بالتصنيف (إن وُجد)، وإلا "القسم"
     dept_name = None
     try:
         cat = getattr(r, "category", None)
         if cat:
-            # 1) علاقة مباشرة FK: ReportType.department
             if hasattr(cat, "department") and getattr(cat, "department", None):
                 d = getattr(cat, "department")
                 dept_name = getattr(d, "name", None) or getattr(d, "role_label", None) or getattr(d, "slug", None)
 
-            # 2) علاقة M2M: ReportType.departments (أو أسماء شائعة)
-            if not dept_name and HAS_DEPT_MODEL and Department is not None:
+            if not dept_name and Department is not None:
                 for rel_name in ("departments", "depts", "dept_list"):
                     if hasattr(cat, rel_name):
                         rel = getattr(cat, rel_name)
@@ -563,8 +540,7 @@ def report_print(request: HttpRequest, pk: int) -> HttpResponse:
                             if dept_name:
                                 break
 
-            # 3) بحث عكسي احتياطي: Department.reporttypes يحتوي هذا التصنيف
-            if not dept_name and HAS_DEPT_MODEL and Department is not None:
+            if not dept_name and Department is not None:
                 try:
                     d = Department.objects.filter(reporttypes=cat).only("name", "role_label", "slug").first()
                     if d:
@@ -575,7 +551,6 @@ def report_print(request: HttpRequest, pk: int) -> HttpResponse:
         pass
 
     signer_label = (dept_name or "القسم")
-
     return render(request, "reports/report_print.html", {"r": r, "signer_label": signer_label})
 
 
@@ -594,7 +569,7 @@ def report_pdf(request: HttpRequest, pk: int) -> HttpResponse:
     pdf = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf(stylesheets=[css])
 
     resp = HttpResponse(pdf, content_type="application/pdf")
-    resp["Content-Disposition"] = f'inline; filename="report-{r.pk}.pdf'
+    resp["Content-Disposition"] = f'inline; filename="report-{r.pk}.pdf"'
     return resp
 
 
@@ -607,8 +582,7 @@ def report_pdf(request: HttpRequest, pk: int) -> HttpResponse:
 def manage_teachers(request: HttpRequest) -> HttpResponse:
     term = (request.GET.get("q") or "").strip()
 
-    # جلب اسم القسم المطابق لرمز الدور (slug) عبر Subquery
-    if HAS_DEPT_MODEL and Department is not None:
+    if Department is not None:
         dept_name_sq = Department.objects.filter(slug=OuterRef("role__slug")).values("name")[:1]
         qs = Teacher.objects.select_related("role").annotate(role_dept_name=Subquery(dept_name_sq)).order_by("-id")
     else:
@@ -630,7 +604,7 @@ def add_teacher(request: HttpRequest) -> HttpResponse:
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    form.save(commit=True)  # الفورم ينشئ العضوية ويضبط الدور
+                    form.save(commit=True)
                 messages.success(request, "✅ تم إضافة المستخدم بنجاح.")
                 next_url = _safe_next_url(request.POST.get("next") or request.GET.get("next"))
                 return redirect(next_url or "reports:manage_teachers")
@@ -656,7 +630,7 @@ def edit_teacher(request: HttpRequest, pk: int) -> HttpResponse:
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    form.save(commit=True)  # الفورم يحدّث الدور/العضوية
+                    form.save(commit=True)
                 messages.success(request, "✏️ تم تحديث بيانات المستخدم بنجاح.")
                 return redirect("reports:manage_teachers")
             except Exception:
@@ -665,7 +639,6 @@ def edit_teacher(request: HttpRequest, pk: int) -> HttpResponse:
         else:
             messages.error(request, "الرجاء تصحيح الأخطاء الظاهرة.")
     else:
-        # تهيئة مبدئية للقسم/الدور من العضوية أو الدور الحالي
         initial = {}
         memb = None
         if DepartmentMembership is not None:
@@ -771,7 +744,7 @@ def my_requests(request: HttpRequest) -> HttpResponse:
         qs = qs.order_by(order)
 
     page = Paginator(qs, 12).get_page(request.GET.get("page") or 1)
-    view_mode = request.GET.get("view", "list")  # list | table
+    view_mode = request.GET.get("view", "list")
 
     return render(
         request,
@@ -851,7 +824,6 @@ def ticket_detail(request: HttpRequest, pk: int) -> HttpResponse:
 @user_passes_test(_is_staff, login_url="reports:login")
 @require_http_methods(["GET", "POST"])
 def admin_request_update(request: HttpRequest, pk: int) -> HttpResponse:
-    # نعيد استخدام نفس صفحة التفاصيل للمسؤول
     return ticket_detail(request, pk)
 
 
@@ -863,7 +835,6 @@ def _dept_code_for(dept_obj_or_code) -> str:
         return getattr(dept_obj_or_code, "code")
     return str(dept_obj_or_code or "").strip()
 
-
 def _arabic_label_for(dept_obj_or_code) -> str:
     if hasattr(dept_obj_or_code, "name") and getattr(dept_obj_or_code, "name"):
         return dept_obj_or_code.name
@@ -874,20 +845,14 @@ def _arabic_label_for(dept_obj_or_code) -> str:
     )
     return _role_display_map().get(code, code or "—")
 
-
 def _resolve_department_by_code_or_pk(code_or_pk: str) -> Tuple[Optional[object], str, str]:
-    """
-    يقبل slug أو pk رقمي. يتجنب استخدام lookups نصية على حقول رقمية.
-    """
     dept_obj = None
     dept_code = (code_or_pk or "").strip()
 
-    if HAS_DEPT_MODEL and Department is not None:
+    if Department is not None:
         try:
-            # حاول بحسب الـ slug أولاً
             dept_obj = Department.objects.filter(slug__iexact=dept_code).first()
             if not dept_obj:
-                # إن كان المدخل رقماً جرّب المطابقة كـ pk
                 try:
                     dept_obj = Department.objects.filter(pk=int(dept_code)).first()
                 except (ValueError, TypeError):
@@ -898,21 +863,14 @@ def _resolve_department_by_code_or_pk(code_or_pk: str) -> Tuple[Optional[object]
         if dept_obj:
             dept_code = getattr(dept_obj, "slug", dept_code)
 
-    # عنوان عربي للسرد
     dept_label = _arabic_label_for(dept_obj or dept_code)
     return dept_obj, dept_code, dept_label
 
-
 def _members_for_department(dept_code: str):
-    """
-    إرجاع أعضاء القسم عبر العضويات (DepartmentMembership) + الدور Teacher.role__slug.
-    """
     if not dept_code:
         return Teacher.objects.none()
-    # أساس: من يمتلك الدور بنفس slug
     role_qs = Teacher.objects.filter(is_active=True, role__slug=dept_code)
-    # دمج مع العضويات
-    if HAS_DEPT_MODEL and DepartmentMembership is not None:
+    if DepartmentMembership is not None:
         member_ids = DepartmentMembership.objects.filter(
             department__slug=dept_code
         ).values_list("teacher_id", flat=True)
@@ -920,13 +878,7 @@ def _members_for_department(dept_code: str):
         return qs.order_by("name")
     return role_qs.order_by("name")
 
-
 def _user_department_codes(user) -> list[str]:
-    """
-    أكواد الأقسام الخاصة بالمستخدم:
-    - من role.slug إن وُجد وكان ليس 'teacher'
-    - ومن عضويات DepartmentMembership
-    """
     codes = set()
     try:
         role = getattr(user, "role", None)
@@ -935,7 +887,7 @@ def _user_department_codes(user) -> list[str]:
     except Exception:
         pass
 
-    if HAS_DEPT_MODEL and DepartmentMembership is not None:
+    if DepartmentMembership is not None:
         try:
             mem_codes = DepartmentMembership.objects.filter(teacher=user)\
                           .values_list("department__slug", flat=True)
@@ -947,7 +899,6 @@ def _user_department_codes(user) -> list[str]:
 
     return list(codes)
 
-
 def _tickets_stats_for_department(dept_code: str) -> dict:
     qs = Ticket.objects.filter(department__slug=dept_code)
     return {
@@ -956,22 +907,18 @@ def _tickets_stats_for_department(dept_code: str) -> dict:
         "done": qs.filter(status="done").count(),
     }
 
-
 def _all_departments():
     items = []
-    if HAS_DEPT_MODEL and Department is not None:
+    if Department is not None:
         qs = Department.objects.all().order_by("id")
         for d in qs:
             code = _dept_code_for(d)
             stats = _tickets_stats_for_department(code)
-
-            # احسب عدد الأعضاء عبر العضويات + الدور بدون تكرار
             role_ids = set(Teacher.objects.filter(role__slug=code, is_active=True).values_list("id", flat=True))
             member_ids = set()
             if DepartmentMembership is not None:
                 member_ids = set(DepartmentMembership.objects.filter(department=d).values_list("teacher_id", flat=True))
             members_count = len(role_ids | member_ids)
-
             items.append(
                 {
                     "pk": d.pk,
@@ -986,8 +933,6 @@ def _all_departments():
         items = []
     return items
 
-
-# ---- نموذج قسم احتياطي + مزوّد موحّد ----
 class _DepartmentForm(forms.ModelForm):
     class Meta:
         model = Department
@@ -1001,9 +946,8 @@ class _DepartmentForm(forms.ModelForm):
         cleaned = super().clean()
         return cleaned
 
-
 def get_department_form():
-    if DepartmentForm is not None and Department is not None:
+    if Department is not None and 'DepartmentForm' in globals() and (DepartmentForm is not None):
         return DepartmentForm
     if Department is not None:
         return _DepartmentForm
@@ -1013,6 +957,7 @@ def get_department_form():
 # ---- لوحة المدير المجمعة ----
 @login_required(login_url="reports:login")
 @user_passes_test(_is_staff, login_url="reports:login")
+@role_required({"manager"})
 def admin_dashboard(request: HttpRequest) -> HttpResponse:
     ctx = {
         "reports_count": Report.objects.count(),
@@ -1021,7 +966,7 @@ def admin_dashboard(request: HttpRequest) -> HttpResponse:
         "tickets_open": Ticket.objects.filter(status__in=["open", "in_progress"]).count(),
         "tickets_done": Ticket.objects.filter(status="done").count(),
         "tickets_rejected": Ticket.objects.filter(status="rejected").count(),
-        "has_dept_model": HAS_DEPT_MODEL,
+        "has_dept_model": Department is not None,
     }
 
     has_reporttype = False
@@ -1053,7 +998,7 @@ def departments_list(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "reports/departments_list.html",
-        {"departments": depts, "has_dept_model": HAS_DEPT_MODEL},
+        {"departments": depts, "has_dept_model": Department is not None},
     )
 
 
@@ -1063,7 +1008,7 @@ def departments_list(request: HttpRequest) -> HttpResponse:
 @require_http_methods(["GET", "POST"])
 def department_create(request: HttpRequest) -> HttpResponse:
     FormCls = get_department_form()
-    if not (HAS_DEPT_MODEL and Department is not None and FormCls is not None):
+    if not (Department is not None and FormCls is not None):
         messages.error(request, "إنشاء الأقسام يتطلب تفعيل موديل Department.")
         return redirect("reports:departments_list")
 
@@ -1083,7 +1028,7 @@ def department_create(request: HttpRequest) -> HttpResponse:
 @require_http_methods(["GET", "POST"])
 def department_update(request: HttpRequest, pk: int) -> HttpResponse:
     FormCls = get_department_form()
-    if not (HAS_DEPT_MODEL and Department is not None and FormCls is not None):
+    if not (Department is not None and FormCls is not None):
         messages.error(request, "نموذج الأقسام غير مُعد بعد.")
         return redirect("reports:departments_list")
     dep = get_object_or_404(Department, pk=pk)  # type: ignore[arg-type]
@@ -1100,7 +1045,7 @@ def department_update(request: HttpRequest, pk: int) -> HttpResponse:
 @role_required({"manager"})
 @require_http_methods(["GET", "POST"])
 def department_edit(request: HttpRequest, code: str) -> HttpResponse:
-    if not (HAS_DEPT_MODEL and Department is not None):
+    if Department is None:
         messages.error(request, "تعديل الأقسام غير متاح بدون موديل Department.")
         return redirect("reports:departments_list")
 
@@ -1124,7 +1069,7 @@ def department_edit(request: HttpRequest, code: str) -> HttpResponse:
     return render(request, "reports/department_form.html", {"form": form, "mode": "edit", "department": obj})
 
 
-# ---- مساعد لتعيين الدور عبر slug (fallback عند عدم نجاح العضويات) ----
+# ---- مساعد لتعيين الدور عبر slug ----
 def _assign_role_by_slug(teacher: Teacher, slug: str) -> bool:
     role_obj = Role.objects.filter(slug=slug).first()
     if not role_obj:
@@ -1142,7 +1087,7 @@ def _assign_role_by_slug(teacher: Teacher, slug: str) -> bool:
 @role_required({"manager"})
 @require_http_methods(["POST"])
 def department_delete(request: HttpRequest, code: str) -> HttpResponse:
-    if not (HAS_DEPT_MODEL and Department is not None):
+    if Department is None:
         messages.error(request, "حذف الأقسام غير متاح بدون موديل Department.")
         return redirect("reports:departments_list")
 
@@ -1162,7 +1107,6 @@ def department_delete(request: HttpRequest, code: str) -> HttpResponse:
     return redirect("reports:departments_list")
 
 
-# ---- دعم m2m و through detection (احتياطي) ----
 def _dept_m2m_field_name_to_teacher(dep_obj) -> str | None:
     try:
         if dep_obj is None:
@@ -1173,7 +1117,6 @@ def _dept_m2m_field_name_to_teacher(dep_obj) -> str | None:
     except Exception:
         logger.exception("Failed to detect forward M2M Department→Teacher")
     return None
-
 
 def _deptmember_field_names() -> tuple[str | None, str | None]:
     dep_field = tea_field = None
@@ -1205,7 +1148,6 @@ def _deptmember_field_names() -> tuple[str | None, str | None]:
 
     return (dep_field, tea_field)
 
-
 def _dept_add_member(dep, teacher: Teacher) -> bool:
     try:
         m2m_name = _dept_m2m_field_name_to_teacher(dep)
@@ -1226,7 +1168,6 @@ def _dept_add_member(dep, teacher: Teacher) -> bool:
         logger.exception("Add via DepartmentMembership failed")
 
     return False
-
 
 def _dept_remove_member(dep, teacher: Teacher) -> bool:
     try:
@@ -1261,13 +1202,13 @@ def department_members(request: HttpRequest, code: str | int) -> HttpResponse:
 
     if request.method == "POST":
         teacher_id = request.POST.get("teacher_id")
-        action = (request.POST.get("action") or "").strip()  # add/remove
+        action = (request.POST.get("action") or "").strip()
         teacher = Teacher.objects.filter(pk=teacher_id).first()
         if not teacher:
             messages.error(request, "المعلّم غير موجود.")
             return redirect("reports:department_members", code=dept_code)
 
-        if HAS_DEPT_MODEL and Department is not None and obj:
+        if Department is not None and obj:
             try:
                 with transaction.atomic():
                     ok = False
@@ -1276,7 +1217,6 @@ def department_members(request: HttpRequest, code: str | int) -> HttpResponse:
                         if ok:
                             messages.success(request, f"تم تكليف {teacher.name} في قسم «{dept_label}».")
                         else:
-                            # fallback: تعيين الدور حسب slug القسم
                             if not _assign_role_by_slug(teacher, dept_code):
                                 messages.error(request, "تعذّر إسناد المعلّم — تحقّق من بنية DepartmentMembership/Role.")
                             else:
@@ -1286,7 +1226,6 @@ def department_members(request: HttpRequest, code: str | int) -> HttpResponse:
                         if ok:
                             messages.success(request, f"تم إلغاء تكليف {teacher.name}.")
                         else:
-                            # fallback: إن كان دوره نفس القسم أعده teacher
                             if getattr(getattr(teacher, "role", None), "slug", None) == dept_code:
                                 if not _assign_role_by_slug(teacher, "teacher"):
                                     messages.error(request, "تعذّر الإلغاء (الدور).")
@@ -1322,7 +1261,7 @@ def department_members(request: HttpRequest, code: str | int) -> HttpResponse:
             "dept_label": dept_label,
             "members": members_qs,
             "all_teachers": available,
-            "has_dept_model": HAS_DEPT_MODEL,
+            "has_dept_model": Department is not None,
         },
     )
 
@@ -1332,7 +1271,7 @@ def department_members(request: HttpRequest, code: str | int) -> HttpResponse:
 @role_required({"manager"})
 @require_http_methods(["GET"])
 def reporttypes_list(request: HttpRequest) -> HttpResponse:
-    if not (HAS_RTYPE and ReportType is not None):
+    if not (ReportType is not None):
         messages.error(request, "إدارة الأنواع تتطلب تفعيل موديل ReportType وتشغيل الهجرات.")
         return render(request, "reports/reporttypes_list.html", {"items": [], "db_backed": False})
 
@@ -1348,7 +1287,7 @@ def reporttypes_list(request: HttpRequest) -> HttpResponse:
 @role_required({"manager"})
 @require_http_methods(["GET", "POST"])
 def reporttype_create(request: HttpRequest) -> HttpResponse:
-    if not (HAS_RTYPE and ReportType is not None):
+    if ReportType is None:
         messages.error(request, "إنشاء الأنواع يتطلب تفعيل موديل ReportType.")
         return redirect("reports:reporttypes_list")
 
@@ -1375,7 +1314,7 @@ def reporttype_create(request: HttpRequest) -> HttpResponse:
 @role_required({"manager"})
 @require_http_methods(["GET", "POST"])
 def reporttype_update(request: HttpRequest, pk: int) -> HttpResponse:
-    if not (HAS_RTYPE and ReportType is not None):
+    if ReportType is None:
         messages.error(request, "تعديل الأنواع يتطلب تفعيل موديل ReportType.")
         return redirect("reports:reporttypes_list")
 
@@ -1404,7 +1343,7 @@ def reporttype_update(request: HttpRequest, pk: int) -> HttpResponse:
 @role_required({"manager"})
 @require_http_methods(["POST"])
 def reporttype_delete(request: HttpRequest, pk: int) -> HttpResponse:
-    if not (HAS_RTYPE and ReportType is not None):
+    if ReportType is None:
         messages.error(request, "حذف الأنواع يتطلب تفعيل موديل ReportType.")
         return redirect("reports:reporttypes_list")
 
@@ -1447,7 +1386,6 @@ def api_department_members(request: HttpRequest) -> HttpResponse:
 def tickets_inbox(request: HttpRequest) -> HttpResponse:
     qs = Ticket.objects.select_related("creator", "assignee", "department").order_by("-created_at")
 
-    # ليس مديرًا؟ اعرض تذاكر معيّنة له أو ضمن أقسامه
     is_manager = bool(getattr(getattr(request.user, "role", None), "slug", None) == "manager")
     if not is_manager:
         user_codes = _user_department_codes(request.user)
@@ -1546,3 +1484,369 @@ def delete_my_report(request: HttpRequest, pk: int) -> HttpResponse:
     messages.success(request, "🗑️ تم حذف التقرير.")
     nxt = request.POST.get("next") or request.GET.get("next")
     return redirect(nxt or "reports:my_reports")
+
+
+# =========================
+# الإشعارات (إرسال/استقبال)
+# =========================
+
+@login_required(login_url="reports:login")
+@user_passes_test(_is_staff_or_officer, login_url="reports:login")   # فتح للمسؤول Officer أيضًا
+@require_http_methods(["GET", "POST"])
+def notifications_create(request: HttpRequest) -> HttpResponse:
+    if NotificationCreateForm is None:
+        messages.error(request, "نموذج إنشاء الإشعار غير متوفر.")
+        return redirect("reports:home")
+
+    form = NotificationCreateForm(request.POST or None, user=request.user)
+    if request.method == "POST":
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    n = form.save(creator=request.user)
+                messages.success(request, "✅ تم إرسال الإشعار.")
+                return redirect("reports:notifications_sent")
+            except Exception:
+                logger.exception("notifications_create failed")
+                messages.error(request, "تعذّر الإرسال. جرّب لاحقًا.")
+        else:
+            messages.error(request, "الرجاء تصحيح الأخطاء.")
+    return render(request, "reports/notifications_create.html", {"form": form, "title": "إنشاء إشعار"})
+
+
+# حذف إشعار (مدير/سوبر/المرسِل)
+@login_required(login_url="reports:login")
+@user_passes_test(_is_staff_or_officer, login_url="reports:login")
+@require_http_methods(["POST"])
+def notification_delete(request: HttpRequest, pk: int) -> HttpResponse:
+    if Notification is None:
+        messages.error(request, "نموذج الإشعار غير متاح.")
+        return redirect("reports:notifications_sent")
+    n = get_object_or_404(Notification, pk=pk)
+    role_slug = getattr(getattr(request.user, "role", None), "slug", None)
+    is_owner = getattr(n, "created_by_id", None) == request.user.id
+    is_manager = bool(request.user.is_superuser or role_slug == "manager")
+    if not (is_manager or is_owner):
+        messages.error(request, "لا تملك صلاحية حذف هذا الإشعار.")
+        return redirect("reports:notifications_sent")
+    try:
+        n.delete()
+        messages.success(request, "🗑️ تم حذف الإشعار.")
+    except Exception:
+        logger.exception("notification_delete failed")
+        messages.error(request, "تعذّر حذف الإشعار.")
+    return redirect("reports:notifications_sent")
+
+
+# تفاصيل إشعار: عنوان + محتوى + جدول المستلمين (اسم، دور، حالة)
+def _recipient_is_read(rec) -> tuple[bool, str | None]:
+    for flag in ("is_read", "read", "seen", "opened"):
+        if hasattr(rec, flag):
+            try:
+                return (bool(getattr(rec, flag)), None)
+            except Exception:
+                pass
+    for dt in ("read_at", "seen_at", "opened_at"):
+        if hasattr(rec, dt):
+            try:
+                val = getattr(rec, dt)
+                return (bool(val), getattr(val, "strftime", lambda fmt: None)("%Y-%m-%d %H:%M") if val else None)
+            except Exception:
+                pass
+    if hasattr(rec, "status"):
+        try:
+            st = str(getattr(rec, "status") or "").lower()
+            if st in {"read", "seen", "opened", "done"}:
+                return (True, None)
+        except Exception:
+            pass
+    return (False, None)
+
+def _arabic_role_label(role_slug: str) -> str:
+    return _role_display_map().get((role_slug or "").lower(), role_slug or "")
+
+@login_required(login_url="reports:login")
+@user_passes_test(_is_staff_or_officer, login_url="reports:login")
+@require_http_methods(["GET"])
+def notification_detail(request: HttpRequest, pk: int) -> HttpResponse:
+    if Notification is None:
+        messages.error(request, "نموذج الإشعار غير متاح.")
+        return redirect("reports:notifications_sent")
+
+    n = get_object_or_404(Notification, pk=pk)
+
+    role_slug = getattr(getattr(request.user, "role", None), "slug", None)
+    if not (request.user.is_superuser or role_slug == "manager"):
+        if getattr(n, "created_by_id", None) != request.user.id:
+            messages.error(request, "لا تملك صلاحية عرض هذا الإشعار.")
+            return redirect("reports:notifications_sent")
+
+    body = (
+        getattr(n, "message", None) or getattr(n, "body", None) or
+        getattr(n, "content", None) or getattr(n, "text", None) or
+        getattr(n, "details", None) or ""
+    )
+
+    recipients = []
+    if NotificationRecipient is not None:
+        # اكتشف اسم FK للإشعار
+        notif_fk = None
+        for f in NotificationRecipient._meta.get_fields():
+            if getattr(getattr(f, "remote_field", None), "model", None) is Notification:
+                notif_fk = f.name
+                break
+
+        # اسم حقل الشخص
+        user_fk = None
+        for cand in ("teacher", "user", "recipient"):
+            if hasattr(NotificationRecipient, cand):
+                user_fk = cand
+                break
+
+        if notif_fk:
+            qs = NotificationRecipient.objects.filter(**{f"{notif_fk}": n})
+            if user_fk:
+                qs = qs.select_related(f"{user_fk}", f"{user_fk}__role")
+            qs = qs.order_by("id")
+
+            for r in qs:
+                t = getattr(r, user_fk) if user_fk else None
+                if not t:
+                    continue
+                name = getattr(t, "name", None) or getattr(t, "phone", None) or getattr(t, "username", None) or f"مستخدم #{getattr(t, 'pk', '')}"
+                rslug = getattr(getattr(t, "role", None), "slug", "") or ""
+                role_label = _arabic_role_label(rslug)
+                is_read, read_at_str = _recipient_is_read(r)
+                recipients.append({
+                    "name": str(name),
+                    "role": role_label,
+                    "read": bool(is_read),
+                    "read_at": read_at_str,
+                })
+
+    ctx = {
+        "n": n,
+        "body": body,
+        "recipients": recipients,
+    }
+    return render(request, "reports/notification_detail.html", ctx)
+
+
+# إشعاراتي (للمعلّم)
+@login_required(login_url="reports:login")
+@require_http_methods(["GET"])
+def my_notifications(request: HttpRequest) -> HttpResponse:
+    if NotificationRecipient is None:
+        return render(request, "reports/my_notifications.html", {"page_obj": Paginator([], 12).get_page(1)})
+
+    qs = (NotificationRecipient.objects
+          .select_related("notification")
+          .filter(teacher=request.user)
+          .order_by("-created_at", "-id"))
+
+    # إخفاء المنتهية بحسب الحقول المتاحة
+    now = timezone.now()
+    try:
+        if Notification is not None and hasattr(Notification, "expires_at"):
+            qs = qs.exclude(notification__expires_at__lt=now)
+        elif Notification is not None and hasattr(Notification, "ends_at"):
+            qs = qs.exclude(notification__ends_at__lt=now)
+    except Exception:
+        pass
+
+    page = Paginator(qs, 12).get_page(request.GET.get("page") or 1)
+    return render(request, "reports/my_notifications.html", {"page_obj": page})
+
+
+# قائمة المرسلة (للمدير/المسؤول)
+@login_required(login_url="reports:login")
+@user_passes_test(_is_staff_or_officer, login_url="reports:login")
+@require_http_methods(["GET"])
+def notifications_sent(request: HttpRequest) -> HttpResponse:
+    if Notification is None:
+        return render(request, "reports/notifications_sent.html", {"page_obj": Paginator([], 20).get_page(1), "stats": {}})
+
+    qs = Notification.objects.all().order_by("-created_at", "-id")
+
+    role_slug = getattr(getattr(request.user, "role", None), "slug", None)
+    if role_slug and role_slug != "manager" and not request.user.is_superuser:
+        qs = qs.filter(created_by=request.user)
+
+    qs = qs.select_related("created_by")
+    page = Paginator(qs, 20).get_page(request.GET.get("page") or 1)
+
+    notif_ids = [n.id for n in page.object_list]
+    stats: dict[int, dict] = {}
+
+    # حساب read/total بمرونة على NotificationRecipient
+    if NotificationRecipient is not None and notif_ids:
+        notif_fk_name = None
+        try:
+            for f in NotificationRecipient._meta.get_fields():
+                if getattr(getattr(f, "remote_field", None), "model", None) is Notification:
+                    notif_fk_name = f.name
+                    break
+        except Exception:
+            notif_fk_name = None
+
+        if notif_fk_name:
+            fields = {f.name for f in NotificationRecipient._meta.get_fields()}
+            if "is_read" in fields:
+                read_filter = Q(is_read=True)
+            elif "read_at" in fields:
+                read_filter = Q(read_at__isnull=False)
+            elif "seen_at" in fields:
+                read_filter = Q(seen_at__isnull=False)
+            elif "status" in fields:
+                read_filter = Q(status__in=["read", "seen", "opened", "done"])
+            else:
+                read_filter = Q(pk__in=[])
+
+            rc = (NotificationRecipient.objects
+                  .filter(**{f"{notif_fk_name}_id__in": notif_ids})
+                  .values(f"{notif_fk_name}_id")
+                  .annotate(total=Count("id"), read=Count("id", filter=read_filter)))
+            for row in rc:
+                stats[row[f"{notif_fk_name}_id"]] = {"total": row["total"], "read": row["read"]}
+
+    # أسماء مستلمين مختصرة (نستعملها فقط لو أردتها لاحقًا؛ حالياً صفحة التفاصيل هي الأساس)
+    rec_names_map: dict[int, list[str]] = {i: [] for i in notif_ids}
+
+    def _name_of(person) -> str:
+        return (getattr(person, "name", None) or
+                getattr(person, "phone", None) or
+                getattr(person, "username", None) or
+                getattr(person, "national_id", None) or
+                str(person))
+
+    for n in page.object_list:
+        names_set = set()
+        try:
+            rel = getattr(n, "recipients", None)
+            if rel is not None:
+                for t in rel.all()[:12]:
+                    if t:
+                        nm = _name_of(t)
+                        if nm not in names_set:
+                            names_set.add(nm)
+        except Exception:
+            pass
+        rec_names_map[n.id] = list(names_set)
+
+    remaining_ids = [nid for nid, arr in rec_names_map.items() if len(arr) < 5]
+    if remaining_ids and NotificationRecipient is not None:
+        notif_fk_name = None
+        try:
+            for f in NotificationRecipient._meta.get_fields():
+                if getattr(getattr(f, "remote_field", None), "model", None) is Notification:
+                    notif_fk_name = f.name
+                    break
+        except Exception:
+            pass
+
+        if notif_fk_name:
+            thr_qs = NotificationRecipient.objects.filter(**{f"{notif_fk_name}_id__in": remaining_ids})
+            for r in thr_qs:
+                nid = getattr(r, f"{notif_fk_name}_id", None)
+                if not nid:
+                    continue
+                person = (getattr(r, "teacher", None) or
+                          getattr(r, "user", None) or
+                          getattr(r, "recipient", None))
+                if person:
+                    nm = _name_of(person)
+                    arr = rec_names_map.get(nid, [])
+                    if nm and nm not in arr and len(arr) < 12:
+                        arr.append(nm)
+                        rec_names_map[nid] = arr
+
+    for n in page.object_list:
+        n.rec_names = rec_names_map.get(n.id, [])
+
+    return render(request, "reports/notifications_sent.html", {"page_obj": page, "stats": stats})
+
+
+# تعليم الإشعار كمقروء (حسب Recipient pk)
+@login_required(login_url="reports:login")
+@require_http_methods(["POST"])
+def notification_mark_read(request: HttpRequest, pk: int) -> HttpResponse:
+    if NotificationRecipient is None:
+        return redirect(request.POST.get("next") or "reports:my_notifications")
+    item = get_object_or_404(NotificationRecipient, pk=pk, teacher=request.user)
+    if not getattr(item, "is_read", False):
+        if hasattr(item, "is_read"):
+            item.is_read = True
+        if hasattr(item, "read_at"):
+            item.read_at = timezone.now()
+        try:
+            if hasattr(item, "is_read") and hasattr(item, "read_at"):
+                item.save(update_fields=["is_read", "read_at"])
+            else:
+                item.save()
+        except Exception:
+            item.save()
+    return redirect(request.POST.get("next") or "reports:my_notifications")
+
+
+# تحديد الكل كمقروء
+@login_required(login_url="reports:login")
+@require_http_methods(["POST"])
+def notifications_mark_all_read(request: HttpRequest) -> HttpResponse:
+    if NotificationRecipient is None:
+        return redirect(request.POST.get("next") or "reports:my_notifications")
+    qs = NotificationRecipient.objects.filter(teacher=request.user)
+    try:
+        if "is_read" in {f.name for f in NotificationRecipient._meta.get_fields()}:
+            qs = qs.filter(is_read=False)
+            qs.update(is_read=True, read_at=timezone.now() if hasattr(NotificationRecipient, "read_at") else None)
+        elif "read_at" in {f.name for f in NotificationRecipient._meta.get_fields()}:
+            qs = qs.filter(read_at__isnull=True)
+            qs.update(read_at=timezone.now())
+        else:
+            pass
+    except Exception:
+        for x in qs:
+            try:
+                if hasattr(x, "is_read"):
+                    x.is_read = True
+                if hasattr(x, "read_at"):
+                    x.read_at = timezone.now()
+                x.save()
+            except Exception:
+                continue
+    messages.success(request, "تم تحديد جميع الإشعارات كمقروءة.")
+    return redirect(request.POST.get("next") or "reports:my_notifications")
+
+
+# تعليم الإشعار كمقروء (حسب رقم الإشعار نفسه لا الـRecipient)
+@login_required(login_url="reports:login")
+@require_http_methods(["POST"])
+def notification_mark_read_by_notification(request: HttpRequest, pk: int) -> HttpResponse:
+    if NotificationRecipient is None:
+        return JsonResponse({"ok": False}, status=400)
+    try:
+        item = NotificationRecipient.objects.filter(
+            notification_id=pk, teacher=request.user
+        ).first()
+        if item:
+            if hasattr(item, "is_read") and not item.is_read:
+                item.is_read = True
+            if hasattr(item, "read_at") and getattr(item, "read_at", None) is None:
+                item.read_at = timezone.now()
+            try:
+                if hasattr(item, "is_read") and hasattr(item, "read_at"):
+                    item.save(update_fields=["is_read", "read_at"])
+                else:
+                    item.save()
+            except Exception:
+                item.save()
+        return JsonResponse({"ok": True})
+    except Exception:
+        return JsonResponse({"ok": False}, status=400)
+
+
+# إبقاء المسار القديم للتوافق الخلفي: تحويل إلى صفحة الإنشاء
+@login_required(login_url="reports:login")
+@user_passes_test(_is_staff, login_url="reports:login")
+def send_notification(request: HttpRequest) -> HttpResponse:
+    return redirect("reports:notifications_create")
