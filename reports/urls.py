@@ -91,6 +91,7 @@ urlpatterns = [
     path("requests/<int:pk>/", views.ticket_detail, name="ticket_detail"),
     path("requests/admin/<int:pk>/", views.admin_request_update, name="admin_request_update"),
     path("officer/reports/", views.officer_reports, name="officer_reports"),
+    path("officer/reports/<int:pk>/delete/", views.officer_delete_report, name="officer_delete_report"),
 
     # =========================
     # API

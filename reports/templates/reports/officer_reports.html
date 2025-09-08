@@ -8,7 +8,7 @@
     <h1 class="admin-title"><i class="fas fa-chart-bar"></i> لوحة المسؤول – تقارير قسمي</h1>
     <p class="admin-subtitle">
       عرض وإدارة تقارير القسم:
-      <b>{{ officer_department_name|default:request.user.role.name }}</b>
+      <b>{{ department.name|default:request.user.role.name }}</b>
     </p>
   </div>
 
@@ -75,7 +75,7 @@
               {{ r.report_date|date:"Y-m-d" }}<br>
               <small class="text-muted">{{ r.day_name }}</small>
             </td>
-            <td>{% firstof r.teacher_display_name r.teacher.name %}</td>
+            <td>{% firstof r.teacher_name r.teacher.name %}</td>
             <td>{{ r.title }}</td>
             <td>{% if r.category %}{{ r.category.name }}{% else %}{{ r.get_category_display }}{% endif %}</td>
             <td class="text-center">{{ r.beneficiaries_count }}</td>
@@ -98,14 +98,15 @@
               <div class="action-buttons">
                 <button class="btn btn-show-idea"
                         data-idea-id="idea-{{ r.pk }}"
-                        data-teacher="{% firstof r.teacher_display_name r.teacher.name|escapejs %}"
+                        data-teacher="{{ r.teacher_name|default_if_none:''|escapejs }}{% if not r.teacher_name %}{{ r.teacher.name|escapejs }}{% endif %}"
                         data-program="{{ r.title|escapejs }}"
                         data-date="{{ r.report_date|date:'Y-m-d' }} - {{ r.day_name|default_if_none:''|escapejs }}"
                         data-images="{% if r.image1 %}{{ r.image1.url }}{% endif %}|{% if r.image2 %}{{ r.image2.url }}{% endif %}|{% if r.image3 %}{{ r.image3.url }}{% endif %}|{% if r.image4 %}{{ r.image4.url }}{% endif %}">
                   <i class="fas fa-eye"></i>
                 </button>
                 <a href="{% url 'reports:report_print' r.pk %}" target="_blank" class="btn btn-print"><i class="fas fa-print"></i></a>
-                <form method="POST" action="{% url 'reports:admin_delete_report' r.pk %}">
+                <!-- ✅ حذف عبر مسار الضابط -->
+                <form method="POST" action="{% url 'reports:officer_delete_report' r.pk %}">
                   {% csrf_token %}
                   <input type="hidden" name="next" value="{{ request.get_full_path }}">
                   <button class="btn btn-danger" type="submit" onclick="return confirm('هل أنت متأكد من الحذف؟')"><i class="fas fa-trash"></i></button>
@@ -126,7 +127,7 @@
       <div class="report-card">
         <div class="report-header">
           <span>📅 {{ r.report_date|date:"Y-m-d" }} – {{ r.day_name }}</span>
-          <span>👨‍🏫 {% firstof r.teacher_display_name r.teacher.name %}</span>
+          <span>👨‍🏫 {% firstof r.teacher_name r.teacher.name %}</span>
         </div>
         <p class="report-program">📖 {{ r.title }} | 🏷️ {% if r.category %}{{ r.category.name }}{% else %}{{ r.get_category_display }}{% endif %} | 👥 {{ r.beneficiaries_count }}</p>
 
@@ -143,14 +144,15 @@
         <div class="card-actions">
           <button class="btn btn-show-idea"
                   data-idea-id="idea-m-{{ r.pk }}"
-                  data-teacher="{% firstof r.teacher_display_name r.teacher.name|escapejs %}"
+                  data-teacher="{{ r.teacher_name|default_if_none:''|escapejs }}{% if not r.teacher_name %}{{ r.teacher.name|escapejs }}{% endif %}"
                   data-program="{{ r.title|escapejs }}"
                   data-date="{{ r.report_date|date:'Y-m-d' }} - {{ r.day_name|default_if_none:''|escapejs }}"
                   data-images="{% if r.image1 %}{{ r.image1.url }}{% endif %}|{% if r.image2 %}{{ r.image2.url }}{% endif %}|{% if r.image3 %}{{ r.image3.url }}{% endif %}|{% if r.image4 %}{{ r.image4.url }}{% endif %}">
             👁 عرض
           </button>
           <a href="{% url 'reports:report_print' r.pk %}" target="_blank" class="btn btn-print">🖨 طباعة</a>
-          <form method="POST" action="{% url 'reports:admin_delete_report' r.pk %}">
+          <!-- ✅ حذف عبر مسار الضابط -->
+          <form method="POST" action="{% url 'reports:officer_delete_report' r.pk %}">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
             <button class="btn btn-danger" type="submit" onclick="return confirm('هل أنت متأكد من الحذف؟')">🗑 حذف</button>
@@ -304,7 +306,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const ideaId = btn.dataset.ideaId;
     const ta = ideaId ? document.getElementById(ideaId) : null;
     let idea = ta ? ta.value : "";
-    idea = idea.replace(/\r/g, "");
+    idea = idea.replace(/\\r/g, "");
     modalIdea.innerText = idea;
 
     modalTeacher.innerText = btn.dataset.teacher || "";

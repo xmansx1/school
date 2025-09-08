@@ -85,6 +85,35 @@ HAS_DEPT_MODEL: bool = Department is not None
 DM_TEACHER = getattr(DepartmentMembership, "TEACHER", "teacher") if DepartmentMembership else "teacher"
 DM_OFFICER = getattr(DepartmentMembership, "OFFICER", "officer") if DepartmentMembership else "officer"
 
+# ========= دعم اكتشاف Officer + فاحص صلاحيات موحّد =========
+try:
+    # إن كانت متوفرة في permissions سنستخدمها مباشرة
+    from .permissions import is_officer  # type: ignore
+except Exception:
+    # بديل آمن إذا لم تتوفر الدالة
+    def is_officer(user) -> bool:
+        try:
+            if not getattr(user, "is_authenticated", False):
+                return False
+            from .models import DepartmentMembership  # import محلي لتفادي الدورات
+            role_type = getattr(DepartmentMembership, "OFFICER", "officer")
+            return DepartmentMembership.objects.filter(
+                teacher=user, role_type=role_type, department__is_active=True
+            ).exists()
+        except Exception:
+            return False
+
+def _is_staff(user) -> bool:
+    return bool(user and user.is_authenticated and user.is_staff)
+
+def _is_staff_or_officer(user) -> bool:
+    """
+    يسمح للموظّفين (is_staff) أو لمسؤولي الأقسام (Officer).
+    لا يمنح Officer صلاحيات المدير إلا ضمن نطاق أنواعه عبر فلاتر الوصول في الدوال المساعدة.
+    """
+    return bool(getattr(user, "is_authenticated", False) and
+                (getattr(user, "is_staff", False) or is_officer(user)))
+
 
 # =========================
 # أدوات مساعدة عامة
@@ -125,10 +154,6 @@ def _parse_date_safe(value: str | None) -> date | None:
     if not value:
         return None
     return parse_date(value)
-
-
-def _is_staff(user) -> bool:
-    return bool(user and user.is_authenticated and user.is_staff)
 
 
 # =========================
@@ -214,7 +239,8 @@ def home(request: HttpRequest) -> HttpResponse:
         if settings.DEBUG or os.getenv("SHOW_ERRORS") == "1":
             html = "<h2>Home exception</h2><pre>{}</pre>".format(traceback.format_exc())
             return HttpResponse(html, status=500)
-        raise
+    # لا تكشف الاستثناء في الإنتاج
+    return redirect("reports:home")
 
 
 # =========================
@@ -450,6 +476,27 @@ def admin_delete_report(request: HttpRequest, pk: int) -> HttpResponse:
     report.delete()
     messages.success(request, "تم حذف التقرير بنجاح.")
     return _safe_redirect(request, "reports:admin_reports")
+
+
+# =========================
+# حذف تقرير (لوحة المسؤول Officer)
+# =========================
+@login_required(login_url="reports:login")
+@user_passes_test(_is_staff_or_officer, login_url="reports:login")
+@require_http_methods(["POST"])
+def officer_delete_report(request: HttpRequest, pk: int) -> HttpResponse:
+    """
+    يسمح لمسؤول القسم بحذف تقرير داخل نطاق صلاحياته فقط.
+    - التحقق من الوصول يتم عبر _get_report_for_user_or_404 (فلتر بالأنواع المسموحة أو تقاريره).
+    - لا يمنح officer صلاحيات مدير؛ إنما يقيّده بتقاريره/أنواع قسمه.
+    """
+    try:
+        r = _get_report_for_user_or_404(request.user, pk)  # 404 تلقائيًا خارج النطاق
+        r.delete()
+        messages.success(request, "🗑️ تم حذف التقرير بنجاح.")
+    except Exception:
+        messages.error(request, "تعذّر حذف التقرير أو لا تملك صلاحية لذلك.")
+    return _safe_redirect(request, "reports:officer_reports")
 
 
 # =========================
