@@ -4,7 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>تقرير برنامج - {{ r.title }}</title>
+  {% with cat_label=r.category.name|default:"غير مصنّف" %}
+  <title>تقرير {{ cat_label }} - {{ r.title }}</title>
+  {% endwith %}
 
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
 
@@ -17,7 +19,6 @@
     *{box-sizing:border-box}
     body{margin:0;font-family:'Tajawal',sans-serif;color:var(--ink);background:#fff}
 
-    /* شريط الأدوات (غير مطبوع) */
     .toolbar{
       display:flex;gap:8px;justify-content:center;
       padding:10px;background:#f3f6ff;border-bottom:1px solid var(--line);
@@ -32,7 +33,6 @@
       box-shadow:0 6px 18px rgba(0,0,0,.05)
     }
 
-    /* الهيدر */
     .hero{
       display:flex;align-items:center;gap:14px;
       background:linear-gradient(135deg, var(--brand) 0%, var(--accent) 100%);
@@ -48,10 +48,8 @@
       color:#fff;font-weight:800;line-height:1.2
     }
 
-    /* المحتوى */
     .content{padding:18px}
 
-    /* شبكة البيانات */
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
     .card-row{
       display:flex;flex-direction:column;justify-content:center;align-items:center;
@@ -60,14 +58,12 @@
     .label{color:var(--muted);font-weight:800}
     .value{font-weight:900;font-size:1rem}
 
-    /* شارة التصنيف في الشبكة */
     .badge{
       display:inline-flex;align-items:center;gap:6px;
       padding:6px 12px;border-radius:999px;background:var(--chip);color:var(--chip-ink);
       font-weight:800;font-size:.9rem;border:1px solid #dbeafe
     }
 
-    /* فكرة البرنامج */
     .section-title{
       margin:16px 0 8px;font-weight:900;color:var(--ink);
       display:inline-flex;align-items:center;gap:8px;
@@ -79,16 +75,13 @@
       line-height:1.8;font-weight:600
     }
 
-    /* الصور */
     .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:12px}
     .photos img{width:100%;height:200px;object-fit:cover;border-radius:12px;border:1px solid var(--line);box-shadow:0 4px 10px rgba(0,0,0,.08)}
 
-    /* التواقيع */
     .sign{display:flex;gap:14px;margin-top:20px;flex-wrap:wrap}
     .sign .box{flex:1;border:1px dashed var(--line);border-radius:12px;padding:14px;min-height:80px;background:var(--bg);text-align:center}
     .muted{color:var(--muted)}
 
-    /* الطباعة */
     @page{size:A4;margin:8mm 8mm}
     @media print{
       body{background:#fff}
@@ -97,7 +90,6 @@
       .sheet{box-shadow:none;border:none;margin:0}
     }
 
-    /* استجابة */
     @media (max-width:640px){
       .grid{grid-template-columns:1fr}
       .hero .logo{width:54px;height:54px}
@@ -108,7 +100,6 @@
 </head>
 <body>
 
-<!-- أدوات العرض -->
 <div class="toolbar no-print">
   <button class="btn btn-primary" onclick="window.print()">🖨️ طباعة</button>
 </div>
@@ -116,15 +107,14 @@
 <div class="container">
   <div class="sheet">
 
-    <!-- الهيدر -->
-    {% with cat_label=r.get_category_display|default:'نشاط' %}
+    {% with cat_label=r.category.name|default:"غير مصنّف" %}
     <div class="hero">
       <img class="logo"
            src="{% if SCHOOL_LOGO_URL %}{{ SCHOOL_LOGO_URL }}{% else %}{% static 'img/logo.png' %}{% endif %}"
            alt="{{ SCHOOL_NAME|default:'شعار المدرسة' }}">
       <div>
         <div class="title">
-          تقرير برنامج / <span class="cat-badge">{{ cat_label }}</span>
+          تقرير <span class="cat-badge">{{ cat_label }}</span>
         </div>
         <div class="sub">
           {% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}نظام توثيق أعمال المعلمين{% endif %}
@@ -133,7 +123,6 @@
     </div>
     {% endwith %}
 
-    <!-- المحتوى -->
     <div class="content">
       <div class="grid">
         <div class="card-row">
@@ -174,11 +163,25 @@
       <div class="sign">
         <div class="box">
           {% if signer_label %}
-            <!-- signer_label آتٍ من ROLE_CHOICES عبر الـ View -->
-            <b>توقيع {{ signer_label }}</b>
+            {# إن كانت الصيغة "مسؤول ..." نحولها إلى "المسؤول الـ..." #}
+            {% if signer_label|slice:":7" == "مسؤول " %}
+              {% with rest=signer_label|slice:"7:" %}
+                {% with first2=rest|slice:":2" %}
+                  <b>توقيع المسؤول {% if first2 != "ال" %}ال{% endif %}{{ rest }}</b>
+                {% endwith %}
+              {% endwith %}
+            {% else %}
+              <b>توقيع {{ signer_label }}</b>
+            {% endif %}
           {% else %}
-            <!-- احتياطي: لو ما انمرّر signer_label -->
-            <b>توقيع مسؤول {{ r.get_category_display }}</b>
+            {# احتياطي: "توقيع المسؤول + (الـ + اسم التصنيف)" #}
+            {% with cat=r.category.name|default:"" %}
+              {% if cat %}
+                <b>توقيع المسؤول {% if cat|slice:":2" != "ال" %}ال{% endif %}{{ cat }}</b>
+              {% else %}
+                <b>توقيع المسؤول</b>
+              {% endif %}
+            {% endwith %}
           {% endif %}
           <div class="muted">.............................</div>
         </div>
@@ -189,10 +192,9 @@
       </div>
       <!-- /التواقيع -->
 
-    </div> <!-- /content -->
-
-  </div> <!-- /sheet -->
-</div> <!-- /container -->
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
