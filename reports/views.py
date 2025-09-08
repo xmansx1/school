@@ -80,7 +80,6 @@ try:
 except Exception:  # pragma: no cover
     DepartmentForm = None  # pragma: no cover
 
-
 HAS_DEPT_MODEL: bool = Department is not None
 
 DM_TEACHER = getattr(DepartmentMembership, "TEACHER", "teacher") if DepartmentMembership else "teacher"
@@ -441,11 +440,6 @@ def officer_reports(request: HttpRequest) -> HttpResponse:
     )
 
 
-
-
-
-
-
 # =========================
 # حذف تقرير (لوحة المدير)
 # =========================
@@ -458,14 +452,45 @@ def admin_delete_report(request: HttpRequest, pk: int) -> HttpResponse:
     return _safe_redirect(request, "reports:admin_reports")
 
 
+# =========================
+# الوصول إلى تقرير معيّن بحسب صلاحيات المستخدم (للطباعة/الـ PDF)
+# =========================
+def _get_report_for_user_or_404(user, pk: int):
+    """
+    يسمح للمدير/الموظف برؤية الكل، وللمستخدم العادي:
+      - تقاريره الخاصة دائمًا
+      - أو أي تقرير يقع ضمن الأنواع المسموح بها له (مسؤول قسم عبر Department/reporttypes).
+    """
+    qs = Report.objects.select_related("teacher", "category")
+
+    # موظّف/مدير: يرى الكل
+    if getattr(user, "is_staff", False):
+        return get_object_or_404(qs, pk=pk)
+
+    # فئات مسموح بها (مسؤول القسم، أو أدوار لها allowed_reporttypes)
+    try:
+        cats = allowed_categories_for(user) or set()
+    except Exception:
+        cats = set()
+
+    if "all" in cats:
+        return get_object_or_404(qs, pk=pk)
+
+    if cats:
+        return get_object_or_404(
+            qs.filter(Q(teacher=user) | Q(category__code__in=list(cats))),
+            pk=pk,
+        )
+
+    # دون صلاحيات إضافية: تقاريره فقط
+    return get_object_or_404(qs, pk=pk, teacher=user)
+
+
 @login_required(login_url="reports:login")
 @require_http_methods(["GET"])
 def report_print(request: HttpRequest, pk: int) -> HttpResponse:
-    # السماح للموظفين برؤية أي تقرير، وللمعلّم رؤية تقاريره فقط
-    if request.user.is_staff:
-        r = get_object_or_404(Report.objects.select_related("teacher", "category"), pk=pk)
-    else:
-        r = get_object_or_404(Report.objects.select_related("teacher", "category"), pk=pk, teacher=request.user)
+    # السماح للطباعة بحسب صلاحيات الدور/القسم
+    r = _get_report_for_user_or_404(request.user, pk)
 
     # تسمية توقيع ديناميكية آمنة بدون خرائط ثابتة
     signer_label = "المعلّم"
@@ -486,17 +511,14 @@ def report_pdf(request: HttpRequest, pk: int) -> HttpResponse:
     except Exception:
         return HttpResponse("WeasyPrint غير مثبت. ثبّت الحزمة وشغّل مجددًا.", status=500)
 
-    if request.user.is_staff:
-        r = get_object_or_404(Report.objects.select_related("teacher", "category"), pk=pk)
-    else:
-        r = get_object_or_404(Report.objects.select_related("teacher", "category"), pk=pk, teacher=request.user)
+    r = _get_report_for_user_or_404(request.user, pk)
 
     html = render_to_string("reports/report_print.html", {"r": r, "for_pdf": True}, request=request)
     css = CSS(string="@page { size: A4; margin: 14mm 12mm; }")
     pdf = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf(stylesheets=[css])
 
     resp = HttpResponse(pdf, content_type="application/pdf")
-    resp["Content-Disposition"] = f'inline; filename="report-{r.pk}.pdf"'
+    resp["Content-Disposition"] = f'inline; filename="report-{r.pk}.pdf'
     return resp
 
 
@@ -758,7 +780,6 @@ def admin_request_update(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 # ========= دعم الأقسام =========
-
 def _dept_code_for(dept_obj_or_code) -> str:
     if hasattr(dept_obj_or_code, "slug") and getattr(dept_obj_or_code, "slug"):
         return getattr(dept_obj_or_code, "slug")
