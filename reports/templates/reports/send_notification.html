@@ -42,6 +42,13 @@
   .btn-ghost{background:#eef2ff;border-color:#e5e7eb;color:#1e40af}
   .btn:disabled{opacity:.7;cursor:not-allowed}
 
+  /* أدوات المعلّمين */
+  .teacher-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:6px 0 8px}
+  .teacher-tools input[type="search"]{flex:1 1 260px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .teacher-tools .mini{font-weight:800;color:#334155}
+  .teacher-tools .count{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:4px 10px;font-weight:900}
+  .teacher-tools .btn-sm{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:900;cursor:pointer}
+
   /* المعاينة */
   .preview{background:linear-gradient(180deg,#f9fbff,#ffffff)}
   .notif{border:1px dashed #dbeafe;border-radius:14px;padding:12px;background:#fff}
@@ -92,7 +99,7 @@
             {% endif %}
 
             <div class="form-grid">
-              {# نعرض الحقول تلقائيًا بدون أوسمة غير مدعومة #}
+              {# عرض الحقول تلقائيًا دون استخدام سمات خاصة #}
               {% for field in form.visible_fields %}
                 <div class="field" data-name="{{ field.html_name|lower }}">
                   <label for="{{ field.id_for_label }}">{{ field.label|default:"الحقل" }}</label>
@@ -205,16 +212,16 @@
     function updatePreview(){
       if(pvTitle && titleInput){ pvTitle.textContent = (titleInput.value || "").trim() || "عنوان الإشعار"; }
       if(pvBody  && msgInput ){ pvBody.textContent  = (msgInput.value  || "").trim() || "سيظهر نص الإشعار هنا…"; }
-      if(pvImportant && impInput){ pvImportant.style.display = impInput.checked ? "block" : "none"; }
+      if(pvImportant && impInput){ pvImportant.style.display = impInput && impInput.checked ? "block" : "none"; }
       if(pvAction && urlInput){ const has = !!(urlInput.value || "").trim(); pvAction.style.display = has ? "inline-flex" : "none"; }
-      if(pvExpires && expInput){ pvExpires.style.display = (expInput.value || "").trim() ? "inline-flex" : "none"; }
+      if(pvExpires && expInput){ pvExpires.style.display = (expInput && expInput.value || "").trim() ? "inline-flex" : "none"; }
     }
     [titleInput, msgInput, urlInput, impInput, expInput].forEach(el=>{
       if(el){ el.addEventListener("input", updatePreview); el.addEventListener("change", updatePreview); }
     });
     updatePreview();
 
-    // اجعل بعض الحقول تمتد بعرض الشبكة (بدون استخدام وسوم غير مدعومة)
+    // اجعل بعض الحقول تمتد بعرض الشبكة
     $$('.form-grid .field').forEach(box=>{
       const input = box.querySelector('input, textarea, select');
       if(!input) return;
@@ -226,6 +233,138 @@
         box.classList.add('full');
       }
     });
+
+    // =========================
+    // بحث بالاسم + تحديد/إلغاء تحديد كل المعلّمين
+    // =========================
+
+    // نحدّد الحقل الذي يحتوي قائمة كبيرة من Checkboxes (المعلّمين)
+    function findTeacherField(){
+      const fields = $$('.form-grid .field');
+      for(const f of fields){
+        const checkboxes = f.querySelectorAll('input[type="checkbox"]');
+        const multiSelect = f.querySelector('select[multiple]');
+        // استبعد خانة "هام"
+        const isImportantOnly = (checkboxes.length === 1 && f.querySelector('#id_is_important'));
+        if(!isImportantOnly && (checkboxes.length >= 3 || (multiSelect && multiSelect.options.length >= 3))){
+          return f;
+        }
+      }
+      return null;
+    }
+
+    const teacherField = findTeacherField();
+    if(teacherField){
+      // أنشئ أدوات البحث والتحديد
+      const tools = document.createElement('div');
+      tools.className = 'teacher-tools';
+      tools.innerHTML = `
+        <input id="teacherSearch" type="search" placeholder="ابحث باسم المعلّم…" aria-label="البحث عن معلّم">
+        <button type="button" id="btnToggleAll" class="btn-sm" aria-pressed="false">تحديد جميع المعلّمين</button>
+        <span class="mini">| المحدّد: <span class="count" id="selCount">0</span></span>
+      `;
+
+      // موضع الأدوات: قبل القائمة مباشرة
+      const firstList = teacherField.querySelector('ul, ol, .checkboxselectmultiple, .related-widget-wrapper, div, fieldset, select[multiple]');
+      teacherField.insertBefore(tools, firstList || teacherField.firstChild);
+
+      const searchInput = $('#teacherSearch');
+      const btnToggleAll = $('#btnToggleAll');
+      const selCount = $('#selCount');
+
+      // اجمع العناصر القابلة للتصفية (li/label حول كل Checkbox أو option في select[multiple])
+      function getTeacherItems(){
+        const items = [];
+        const listLike = teacherField.querySelectorAll('li, label, .form-check, .checkbox');
+        if(listLike.length){
+          listLike.forEach(el=>{
+            const cb = el.querySelector('input[type="checkbox"]');
+            if(cb){ items.push({wrap:el, input:cb}); }
+          });
+        }else{
+          const cbs = teacherField.querySelectorAll('input[type="checkbox"]');
+          cbs.forEach(cb=>{
+            // حاول إيجاد أقرب وسم قابل لعرض الاسم
+            let wrap = cb.closest('label') || cb.parentElement || cb;
+            items.push({wrap, input:cb});
+          });
+        }
+
+        // دعم select[multiple] إن وُجد
+        const sel = teacherField.querySelector('select[multiple]');
+        if(sel){
+          Array.from(sel.options).forEach(op=>{
+            items.push({wrap:op, option:op}); // خيار بديل
+          });
+        }
+        return items;
+      }
+
+      let teacherItems = getTeacherItems();
+
+      function isVisible(el){
+        return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+      }
+
+      function updateCount(){
+        let count = 0;
+        teacherItems.forEach(it=>{
+          if(it.input && it.input.checked) count++;
+          if(it.option && it.option.selected) count++;
+        });
+        if(selCount) selCount.textContent = String(count);
+        // حدّث نص زر التبديل
+        const allVisibleSelected = teacherItems.filter(it=> isVisible(it.wrap)).every(it=>{
+          if(it.input) return it.input.checked;
+          if(it.option) return it.option.selected;
+          return true;
+        });
+        btnToggleAll.setAttribute('aria-pressed', allVisibleSelected ? 'true' : 'false');
+        btnToggleAll.textContent = allVisibleSelected ? 'إلغاء تحديد الكل' : 'تحديد جميع المعلّمين';
+      }
+
+      function filterByQuery(q){
+        const query = q.trim().toLowerCase();
+        teacherItems.forEach(it=>{
+          const text = (it.wrap.textContent || '').toLowerCase().trim();
+          const show = !query || text.includes(query);
+          it.wrap.style.display = show ? '' : 'none';
+        });
+        updateCount();
+      }
+
+      function toggleAllVisible(select=true){
+        teacherItems.forEach(it=>{
+          if(!isVisible(it.wrap)) return;
+          if(it.input){ it.input.checked = !!select; it.input.dispatchEvent(new Event('change', {bubbles:true})); }
+          if(it.option){ it.option.selected = !!select; }
+        });
+        updateCount();
+      }
+
+      // مستمعو الأحداث
+      if(searchInput){
+        searchInput.addEventListener('input', e => filterByQuery(searchInput.value));
+      }
+      if(btnToggleAll){
+        btnToggleAll.addEventListener('click', ()=>{
+          const pressed = btnToggleAll.getAttribute('aria-pressed') === 'true';
+          toggleAllVisible(!pressed); // إذا كان محددًا، ألغِ؛ وإلا حدّد
+        });
+      }
+
+      // عدّاد يتحدّث عند تغيّر أي اختيار
+      teacherField.addEventListener('change', (e)=>{
+        const t = e.target;
+        if(t && (t.matches('input[type="checkbox"]') || t.matches('select[multiple]'))){
+          updateCount();
+        }
+      });
+
+      // تهيئة أولية
+      filterByQuery('');
+      updateCount();
+    }
 
     // منع الإرسال المزدوج
     const form = document.getElementById('notifyForm');
