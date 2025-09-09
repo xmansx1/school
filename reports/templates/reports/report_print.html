@@ -32,12 +32,15 @@
     }
     .btn{padding:8px 14px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-weight:700;text-decoration:none;color:#1e293b}
     .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+    .muted{color:var(--muted)}
 
     /* صفحة التقرير */
     .container{max-width:900px;margin:auto;padding:10px}
     .sheet{
       border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card);
-      box-shadow:0 6px 18px rgba(0,0,0,.05)
+      box-shadow:0 6px 18px rgba(0,0,0,.05);
+      display:flex;flex-direction:column; /* يسمح بدفع التواقيع لأسفل عند قِصر المحتوى */
+      min-height:calc(100vh - 120px);
     }
 
     .hero{
@@ -55,7 +58,7 @@
       color:#fff;font-weight:800;line-height:1.2
     }
 
-    .content{padding:18px}
+    .content{padding:18px;flex:1}
 
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
     .card-row{
@@ -88,26 +91,35 @@
       break-inside:avoid; page-break-inside:avoid;
     }
 
-    .sign{display:flex;gap:14px;margin-top:20px;flex-wrap:wrap}
-    .sign .box{
-      flex:1;border:1px dashed var(--line);border-radius:12px;padding:14px;min-height:80px;background:var(--bg);text-align:center;
+    /* التواقيع */
+    .sign{
+      display:flex;gap:14px;margin-top:20px;flex-wrap:wrap;
       break-inside:avoid; page-break-inside:avoid;
+      margin-top:auto; /* دفع التواقيع لأسفل الصفحة إن كان المحتوى قصيرًا */
+      padding:18px;
+      border-top:1px dashed var(--line);
+      background:linear-gradient(180deg,#fff, #f9fbff);
     }
-    .muted{color:var(--muted)}
+    .sign .box{
+      flex:1;border:1px dashed var(--line);border-radius:12px;padding:14px;min-height:100px;background:var(--bg);text-align:center;
+      display:flex;flex-direction:column;justify-content:space-between;gap:8px;
+    }
+    .sign .title{font-weight:900}
+    .sign .name{font-weight:800;opacity:.9}
+    .sigline{height:1px;background:repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(0,0,0,.25) 8px, rgba(0,0,0,.25) 16px); margin:10px 0}
+    .hint{font-size:.85rem;color:var(--muted)}
 
     /* إعدادات الطباعة */
     @page{
       size: A4;
-      margin: 12mm; /* اترك هامشًا كافيًا حتى لا يلامس المحتوى حواف الصفحة */
+      margin: 12mm;
     }
     @media print{
       .toolbar{display:none!important}
       .container{padding:0}
-      .sheet{box-shadow:none;border:none;margin:0;border-radius:0}
-
-      /* متصفحات/أطر تضيف روابط بعد النص — أزلها */
+      .sheet{box-shadow:none;border:none;margin:0;border-radius:0;min-height:auto}
+      .sign{background:#fff}
       a[href]::after{content:"" !important}
-      /* لا تقسّم العناصر المهمة بين صفحتين */
       .hero,.section-title,.idea-box,.photos,.sign,.card-row{page-break-inside:avoid; break-inside:avoid}
     }
 
@@ -180,20 +192,25 @@
           {% if r.image4 %}<img src="{{ r.image4.url }}" alt="صورة 4">{% endif %}
         </div>
       {% endif %}
-
-      <!-- التواقيع -->
-      <div class="sign">
-        <div class="box">
-          <b>توقيع ( {{ signer_label|default:"المسؤول" }} )</b>
-          <div class="muted">.............................</div>
-        </div>
-        <div class="box">
-          <b>اعتماد مدير المدرسة</b>
-          <div class="muted">.............................</div>
-        </div>
-      </div>
-      <!-- /التواقيع -->
     </div>
+
+    <!-- التواقيع (تظهر مثبتة أسفل الصفحة عند قِصر المحتوى) -->
+    <div class="sign">
+      <div class="box">
+        <div class="title">توقيع منفذ التقرير</div>
+        <div class="name">{{ r.teacher_display_name }}</div>
+        <div class="sigline" aria-hidden="true"></div>
+        <div class="hint">الاسم والتوقيع</div>
+      </div>
+      <div class="box">
+        <div class="title">اعتماد مدير المدرسة</div>
+        <div class="name">فهــد بن عبدالله الفـهـــد </div>
+        <div class="sigline" aria-hidden="true"></div>
+        <div class="hint">الاسم والختم/التوقيع</div>
+      </div>
+    </div>
+    <!-- /التواقيع -->
+
   </div>
 </div>
 
