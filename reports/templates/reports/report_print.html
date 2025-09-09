@@ -4,9 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  {% with cat_label=r.category.name|default:"غير مصنّف" %}
-  <title>تقرير {{ cat_label }} - {{ r.title }}</title>
-  {% endwith %}
+
 
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
 
@@ -200,13 +198,11 @@
         <div class="title">توقيع منفذ التقرير</div>
         <div class="name">{{ r.teacher_display_name }}</div>
         <div class="sigline" aria-hidden="true"></div>
-        <div class="hint">الاسم والتوقيع</div>
       </div>
       <div class="box">
         <div class="title">اعتماد مدير المدرسة</div>
         <div class="name">فهــد بن عبدالله الفـهـــد </div>
         <div class="sigline" aria-hidden="true"></div>
-        <div class="hint">الاسم والختم/التوقيع</div>
       </div>
     </div>
     <!-- /التواقيع -->
