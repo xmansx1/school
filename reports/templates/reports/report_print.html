@@ -4,209 +4,109 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+  <title>تقرير - {{ r.title }}</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
-
   <style>
-    :root{
-      --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
-      --brand:#2563eb; --accent:#059669; --bg:#f8fafc; --card:#ffffff;
-      --chip:#eef2ff; --chip-ink:#1e40af;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
     body{
-      margin:0;font-family:'Tajawal',sans-serif;color:var(--ink);background:#fff;
-      -webkit-print-color-adjust:exact; print-color-adjust:exact;
+      margin:0;font-family:'Tajawal',sans-serif;
+      -webkit-print-color-adjust:exact;print-color-adjust:exact;
+      background:#fff;color:#0f172a;
     }
-    a{color:inherit;text-decoration:none}
+    .toolbar{display:flex;justify-content:center;gap:10px;padding:10px;background:#f3f6ff;border-bottom:1px solid #e2e8f0}
+    .btn{padding:8px 16px;border-radius:10px;font-weight:700;cursor:pointer}
+    .btn-primary{background:#2563eb;color:#fff;border:none}
 
-    /* شريط الأدوات (يختفي في الطباعة) */
-    .toolbar{
-      display:flex;gap:8px;justify-content:center;
-      padding:10px;background:#f3f6ff;border-bottom:1px solid var(--line);
-      position:sticky;top:0;z-index:9
-    }
-    .btn{padding:8px 14px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-weight:700;text-decoration:none;color:#1e293b}
-    .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
-    .muted{color:var(--muted)}
-
-    /* صفحة التقرير */
     .container{max-width:900px;margin:auto;padding:10px}
     .sheet{
-      border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card);
+      display:flex;flex-direction:column;
+      min-height:calc(297mm - 24mm); /* ارتفاع صفحة A4 مع هوامش */
+      border:1px solid #e2e8f0;border-radius:12px;background:#fff;
       box-shadow:0 6px 18px rgba(0,0,0,.05);
-      display:flex;flex-direction:column; /* يسمح بدفع التواقيع لأسفل عند قِصر المحتوى */
-      min-height:calc(100vh - 120px);
     }
 
-    .hero{
-      display:flex;align-items:center;gap:14px;
-      background:linear-gradient(135deg, var(--brand) 0%, var(--accent) 100%);
-      color:#fff;padding:16px 20px
-    }
-    .hero .logo{width:64px;height:64px;object-fit:contain;background:rgba(255,255,255,.15);border-radius:12px;padding:8px}
-    .hero .title{font-size:1.2rem;font-weight:900;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .hero .sub{opacity:.95;font-size:.9rem}
-    .cat-badge{
-      display:inline-flex;align-items:center;gap:6px;
-      padding:4px 10px;border-radius:999px;
-      background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.35);
-      color:#fff;font-weight:800;line-height:1.2
-    }
+    .hero{display:flex;align-items:center;gap:14px;padding:16px 20px;
+      background:linear-gradient(135deg,#2563eb,#059669);color:#fff}
+    .hero img{width:60px;height:60px;object-fit:contain;background:rgba(255,255,255,.15);border-radius:12px;padding:8px}
+    .hero .title{font-size:1.2rem;font-weight:900}
 
-    .content{padding:18px;flex:1}
+    .content{padding:20px;flex:1}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .card-row{padding:14px;border:1px dashed #e2e8f0;border-radius:10px;text-align:center}
+    .label{color:#64748b;font-weight:700}
+    .value{font-weight:900}
 
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-    .card-row{
-      display:flex;flex-direction:column;justify-content:center;align-items:center;
-      gap:8px;padding:14px;border:1px dashed var(--line);border-radius:12px;background:#fafafa;text-align:center;
-      break-inside:avoid; page-break-inside:avoid;
-    }
-    .label{color:var(--muted);font-weight:800}
-    .value{font-weight:900;font-size:1rem}
+    .section-title{margin:18px 0 10px;font-weight:900;background:#eef2ff;color:#1e40af;
+      display:inline-block;padding:6px 12px;border-radius:999px}
+    .idea-box{padding:14px;border:1px solid #e2e8f0;border-radius:12px;white-space:pre-wrap;line-height:1.8}
 
-    .section-title{
-      margin:16px 0 8px;font-weight:900;color:var(--ink);
-      display:inline-flex;align-items:center;gap:8px;
-      background:var(--chip);color:var(--chip-ink);padding:6px 12px;border-radius:999px;font-size:.95rem;
-      break-inside:avoid; page-break-inside:avoid;
-    }
-    .idea-box{
-      padding:14px;border:1px solid var(--line);border-radius:12px;background:#fbfdff;
-      white-space:pre-wrap; line-height:1.8;font-weight:600;
-      break-inside:avoid; page-break-inside:avoid;
-    }
+    .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+    .photos img{width:100%;height:200px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0}
 
-    .photos{
-      display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:12px;
-      break-inside:avoid; page-break-inside:avoid;
-    }
-    .photos img{
-      width:100%;height:200px;object-fit:cover;border-radius:12px;border:1px solid var(--line);
-      box-shadow:0 4px 10px rgba(0,0,0,.08);
-      break-inside:avoid; page-break-inside:avoid;
-    }
-
-    /* التواقيع */
-    .sign{
-      display:flex;gap:14px;margin-top:20px;flex-wrap:wrap;
-      break-inside:avoid; page-break-inside:avoid;
-      margin-top:auto; /* دفع التواقيع لأسفل الصفحة إن كان المحتوى قصيرًا */
-      padding:18px;
-      border-top:1px dashed var(--line);
-      background:linear-gradient(180deg,#fff, #f9fbff);
-    }
-    .sign .box{
-      flex:1;border:1px dashed var(--line);border-radius:12px;padding:14px;min-height:100px;background:var(--bg);text-align:center;
-      display:flex;flex-direction:column;justify-content:space-between;gap:8px;
-    }
+    .sign{display:flex;gap:14px;margin-top:auto;padding:20px;border-top:1px dashed #e2e8f0;background:#fafafa}
+    .sign .box{flex:1;border:1px dashed #cbd5e1;border-radius:12px;padding:14px;text-align:center}
     .sign .title{font-weight:900}
-    .sign .name{font-weight:800;opacity:.9}
-    .sigline{height:1px;background:repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(0,0,0,.25) 8px, rgba(0,0,0,.25) 16px); margin:10px 0}
-    .hint{font-size:.85rem;color:var(--muted)}
+    .sign .name{margin-top:6px;font-weight:800}
+    .sigline{margin:12px 0;height:1px;background:repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(0,0,0,.3) 8px,rgba(0,0,0,.3) 16px)}
 
-    /* إعدادات الطباعة */
-    @page{
-      size: A4;
-      margin: 12mm;
-    }
+    @page{size:A4;margin:12mm}
     @media print{
-      .toolbar{display:none!important}
-      .container{padding:0}
-      .sheet{box-shadow:none;border:none;margin:0;border-radius:0;min-height:auto}
-      .sign{background:#fff}
-      a[href]::after{content:"" !important}
-      .hero,.section-title,.idea-box,.photos,.sign,.card-row{page-break-inside:avoid; break-inside:avoid}
+      .toolbar{display:none}
+      .sheet{border:none;box-shadow:none;min-height:auto}
     }
-
-    @media (max-width:640px){
-      .grid{grid-template-columns:1fr}
-      .hero .logo{width:54px;height:54px}
-      .photos{grid-template-columns:1fr 1fr}
-      .photos img{height:160px}
-    }
+    @media(max-width:640px){.grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
 
 <div class="toolbar no-print">
   <button class="btn btn-primary" onclick="window.print()">🖨️ طباعة</button>
-  <span class="muted" style="font-weight:700">نصيحة: عطِّل خيار “Headers and footers” من إعدادات الطباعة لإخفاء رابط الصفحة ورقمها.</span>
 </div>
 
 <div class="container">
   <div class="sheet">
-
-    {% with cat_label=r.category.name|default:"غير مصنّف" %}
     <div class="hero">
-      <img class="logo"
-           src="{% if SCHOOL_LOGO_URL %}{{ SCHOOL_LOGO_URL }}{% else %}{% static 'img/logo.png' %}{% endif %}"
-           alt="{{ SCHOOL_NAME|default:'شعار المدرسة' }}">
+      <img src="{% if SCHOOL_LOGO_URL %}{{ SCHOOL_LOGO_URL }}{% else %}{% static 'img/logo.png' %}{% endif %}" alt="شعار">
       <div>
-        <div class="title">
-          تقرير <span class="cat-badge">{{ cat_label }}</span>
-        </div>
-        <div class="sub">
-          {% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}نظام توثيق أعمال المعلمين{% endif %}
-        </div>
+        <div class="title">تقرير {{ r.category.name|default:"غير مصنّف" }}</div>
+        <div>{{ SCHOOL_NAME|default:"نظام توثيق أعمال المعلمين" }}</div>
       </div>
     </div>
-    {% endwith %}
 
     <div class="content">
       <div class="grid">
-        <div class="card-row">
-          <div class="label">العنوان</div>
-          <div class="value">{{ r.title }}</div>
-        </div>
-
-        <div class="card-row">
-          <div class="label">تاريخ التقرير</div>
-          <div class="value">{{ r.report_date|date:"Y-m-d" }}{% if r.day_name %} • {{ r.day_name }}{% endif %}</div>
-        </div>
-
-        <div class="card-row">
-          <div class="label">المعلم</div>
-          <div class="value">{{ r.teacher_display_name }}</div>
-        </div>
-
-        <div class="card-row">
-          <div class="label">عدد المستفيدين</div>
-          <div class="value">{{ r.beneficiaries_count|default_if_none:"-" }}</div>
-        </div>
+        <div class="card-row"><div class="label">العنوان</div><div class="value">{{ r.title }}</div></div>
+        <div class="card-row"><div class="label">التاريخ</div><div class="value">{{ r.report_date|date:"Y-m-d" }}</div></div>
+        <div class="card-row"><div class="label">المعلم</div><div class="value">{{ r.teacher_display_name }}</div></div>
+        <div class="card-row"><div class="label">المستفيدون</div><div class="value">{{ r.beneficiaries_count|default:"-" }}</div></div>
       </div>
 
-      <h3 class="section-title">💡 الوصــف</h3>
-      <div class="idea-box">{{ r.idea|default_if_none:"" }}</div>
+      <h3 class="section-title">الوصف</h3>
+      <div class="idea-box">{{ r.idea }}</div>
 
       {% if r.image1 or r.image2 or r.image3 or r.image4 %}
-        <h3 class="section-title">📷 الصور المرفقة</h3>
-        <div class="photos">
-          {% if r.image1 %}<img src="{{ r.image1.url }}" alt="صورة 1">{% endif %}
-          {% if r.image2 %}<img src="{{ r.image2.url }}" alt="صورة 2">{% endif %}
-          {% if r.image3 %}<img src="{{ r.image3.url }}" alt="صورة 3">{% endif %}
-          {% if r.image4 %}<img src="{{ r.image4.url }}" alt="صورة 4">{% endif %}
-        </div>
+      <h3 class="section-title">الصور</h3>
+      <div class="photos">
+        {% if r.image1 %}<img src="{{ r.image1.url }}" alt="صورة 1">{% endif %}
+        {% if r.image2 %}<img src="{{ r.image2.url }}" alt="صورة 2">{% endif %}
+        {% if r.image3 %}<img src="{{ r.image3.url }}" alt="صورة 3">{% endif %}
+        {% if r.image4 %}<img src="{{ r.image4.url }}" alt="صورة 4">{% endif %}
+      </div>
       {% endif %}
     </div>
 
-    <!-- التواقيع (تظهر مثبتة أسفل الصفحة عند قِصر المحتوى) -->
     <div class="sign">
       <div class="box">
         <div class="title">توقيع منفذ التقرير</div>
-        <div class="name">{{ r.teacher_display_name }}</div>
-        <div class="sigline" aria-hidden="true"></div>
+        <div class="name">( {{ r.teacher_display_name }} )</div>
+        <div class="sigline"></div>
       </div>
       <div class="box">
         <div class="title">اعتماد مدير المدرسة</div>
-        <div class="name">فهــد بن عبدالله الفـهـــد </div>
-        <div class="sigline" aria-hidden="true"></div>
+        <div class="name">( فهــد بن عبدالله الفـهـــد )</div>
+        <div class="sigline"></div>
       </div>
     </div>
-    <!-- /التواقيع -->
-
   </div>
 </div>
 
