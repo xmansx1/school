@@ -1,4 +1,3 @@
-{# reports/templates/reports/send_notification.html #}
 {% extends "base.html" %}
 {% load static %}
 
@@ -6,63 +5,491 @@
 
 {% block head %}
 <style>
-  :root{
-    --brand:#2563eb; --brand-2:#1e40af; --accent:#10b981;
-    --ink:#0f172a; --muted:#64748b; --line:#e5e7eb; --bg:#f8fafc; --card:#fff;
-    --shadow:0 10px 30px rgba(2,6,23,.08); --radius:16px; --t:all .22s ease
+  :root {
+    --primary: #4361ee;
+    --primary-dark: #3a56d4;
+    --secondary: #7209b7;
+    --accent: #f72585;
+    --success: #4cc9f0;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #1e293b;
+    --text-light: #64748b;
+    --border: #e2e8f0;
+    --radius-lg: 20px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 10px 40px rgba(2, 6, 23, 0.08);
+    --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    --transition: all 0.3s ease;
   }
-  .wrap{max-width:1200px;margin:0 auto;padding:18px}
-  .page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
-  .title{margin:0;font-weight:900;color:var(--brand-2)}
-  .hint{color:var(--muted);font-weight:700}
 
-  .grid{display:grid;gap:18px}
-  @media(min-width:1040px){.grid{grid-template-columns:1.15fr .85fr}}
-
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
-  .card-hd{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .card-bd{padding:16px}
-
-  .form-grid{display:grid;gap:14px}
-  @media(min-width:640px){.form-grid{grid-template-columns:1fr 1fr}}
-  .field{display:flex;flex-direction:column;gap:8px}
-  .field.full{grid-column:1/-1}
-  label{font-weight:900;color:#111827}
-  input[type="text"],input[type="url"],input[type="datetime-local"],textarea,select{
-    border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;background:#fff
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f1f5f9;
+      --text-light: #94a3b8;
+      --border: #334155;
+    }
   }
-  input[type="file"]{font:inherit}
-  textarea{min-height:160px;resize:vertical}
-  .help{color:var(--muted);font-size:.9rem}
-  .errors{color:#b91c1c;font-weight:800}
 
-  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-  .btn{padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:#fff;font-weight:900;cursor:pointer;text-decoration:none;color:#111827}
-  .btn-primary{background:var(--brand);border-color:var(--brand);color:#fff}
-  .btn-ghost{background:#eef2ff;border-color:#e5e7eb;color:#1e40af}
-  .btn:disabled{opacity:.7;cursor:not-allowed}
+  .wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .page-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  
+  .title {
+    margin: 0;
+    font-weight: 900;
+    font-size: 2rem;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+    padding-bottom: 8px;
+  }
+  
+  .title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 80px;
+    height: 4px;
+    background: var(--gradient);
+    border-radius: 2px;
+  }
+  
+  .hint {
+    color: var(--text-light);
+    font-weight: 600;
+    margin-top: 8px;
+    font-size: 1.1rem;
+  }
+
+  .grid {
+    display: grid;
+    gap: 24px;
+  }
+  
+  @media (min-width: 1040px) {
+    .grid {
+      grid-template-columns: 1.15fr 0.85fr;
+    }
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 5px;
+    background: var(--gradient);
+  }
+  
+  .card-hd {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--bg);
+  }
+  
+  .card-hd strong {
+    font-weight: 900;
+    color: var(--text);
+    font-size: 1.2rem;
+  }
+  
+  .card-bd {
+    padding: 20px;
+  }
+
+  .form-grid {
+    display: grid;
+    gap: 20px;
+  }
+  
+  @media (min-width: 640px) {
+    .form-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .field.full {
+    grid-column: 1 / -1;
+  }
+  
+  label {
+    font-weight: 800;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  input[type="text"],
+  input[type="url"],
+  input[type="datetime-local"],
+  textarea,
+  select {
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    font: inherit;
+    background: var(--bg);
+    color: var(--text);
+    transition: var(--transition);
+  }
+  
+  input[type="text"]:focus,
+  input[type="url"]:focus,
+  input[type="datetime-local"]:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+  }
+  
+  input[type="file"] {
+    font: inherit;
+  }
+  
+  textarea {
+    min-height: 180px;
+    resize: vertical;
+    line-height: 1.6;
+  }
+  
+  .help {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  
+  .errors {
+    color: #ef4444;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-top: 4px;
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+  }
+  
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--card);
+    font-weight: 800;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text);
+    transition: var(--transition);
+  }
+  
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .btn-primary {
+    background: var(--gradient);
+    border: none;
+    color: #fff;
+    box-shadow: 0 8px 25px rgba(67, 97, 238, 0.3);
+  }
+  
+  .btn-primary:hover {
+    box-shadow: 0 12px 30px rgba(67, 97, 238, 0.4);
+  }
+  
+  .btn-ghost {
+    background: #eef2ff;
+    border-color: #e5e7eb;
+    color: #1e40af;
+  }
+  
+  .btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
 
   /* أدوات المعلّمين */
-  .teacher-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:6px 0 8px}
-  .teacher-tools input[type="search"]{flex:1 1 260px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-  .teacher-tools .mini{font-weight:800;color:#334155}
-  .teacher-tools .count{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;padding:4px 10px;font-weight:900}
-  .teacher-tools .btn-sm{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:900;cursor:pointer}
+  .teacher-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin: 10px 0 12px;
+    padding: 12px;
+    background: var(--bg);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+  }
+  
+  .teacher-tools input[type="search"] {
+    flex: 1 1 260px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    background: var(--card);
+  }
+  
+  .teacher-tools .mini {
+    font-weight: 800;
+    color: var(--text);
+  }
+  
+  .teacher-tools .count {
+    background: var(--primary);
+    color: #fff;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-weight: 900;
+    font-size: 0.9rem;
+  }
+  
+  .teacher-tools .btn-sm {
+    padding: 8px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--card);
+    font-weight: 800;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  
+  .teacher-tools .btn-sm:hover {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
 
   /* المعاينة */
-  .preview{background:linear-gradient(180deg,#f9fbff,#ffffff)}
-  .notif{border:1px dashed #dbeafe;border-radius:14px;padding:12px;background:#fff}
-  .nt-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .nt-title{margin:0;font-weight:900;color:#0b1b3a}
-  .nt-ico{font-size:1.2rem}
-  .nt-body{white-space:pre-wrap;margin-top:8px;color:#334155;font-weight:700;line-height:1.9}
-  .nt-meta{margin-top:8px;color:#475569;font-weight:800;display:flex;gap:10px;flex-wrap:wrap}
-  .pill{
-    display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--line);
-    background:#f8fbff;color:#0b1b3a;border-radius:999px;font-weight:800;font-size:.9rem
+  .preview {
+    background: linear-gradient(180deg, #f9fbff, #ffffff);
   }
-  .pill.important{background:#fff5f5;border-color:#ffe0e0;color:#b91c1c}
-  .badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#ef4444;color:#fff;font-size:12px;font-weight:900}
+  
+  @media (prefers-color-scheme: dark) {
+    .preview {
+      background: linear-gradient(180deg, #0f172a, #0b1326);
+    }
+  }
+  
+  .notif {
+    border: 2px dashed #dbeafe;
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    background: var(--card);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  }
+  
+  .nt-h {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  
+  .nt-title {
+    margin: 0;
+    font-weight: 900;
+    color: var(--text);
+    font-size: 1.3rem;
+  }
+  
+  .nt-ico {
+    font-size: 1.5rem;
+  }
+  
+  .nt-body {
+    white-space: pre-wrap;
+    margin: 16px 0;
+    color: var(--text);
+    font-weight: 500;
+    line-height: 1.8;
+    padding: 16px;
+    background: var(--bg);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--primary);
+  }
+  
+  .nt-meta {
+    margin-top: 16px;
+    color: var(--text-light);
+    font-weight: 700;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.9rem;
+  }
+  
+  .pill.important {
+    background: #fff5f5;
+    border-color: #ffe0e0;
+    color: #b91c1c;
+  }
+  
+  .pill.blue {
+    background: #eef2ff;
+    border-color: #e5e7eb;
+    color: #1e40af;
+  }
+  
+  .badge {
+    display: inline-grid;
+    place-items: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 900;
+  }
+
+  /* حالة التحميل */
+  .loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* تحسينات التجاوب */
+  @media (max-width: 768px) {
+    .wrap {
+      padding: 16px;
+    }
+    
+    .page-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .title {
+      font-size: 1.6rem;
+    }
+    
+    .card-hd {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    
+    .teacher-tools {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .teacher-tools input[type="search"] {
+      flex: 1 1 auto;
+    }
+    
+    .actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .btn {
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .title {
+      font-size: 1.4rem;
+    }
+    
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .nt-meta {
+      flex-direction: column;
+      gap: 8px;
+    }
+  }
+
+  /* تأثيرات للوضع الداكن */
+  @media (prefers-color-scheme: dark) {
+    .pill.important {
+      background: rgba(185, 28, 28, 0.15);
+      border-color: rgba(185, 28, 28, 0.4);
+    }
+    
+    .pill.blue {
+      background: rgba(30, 64, 175, 0.15);
+      border-color: rgba(30, 64, 175, 0.4);
+    }
+    
+    .btn-ghost {
+      background: rgba(30, 64, 175, 0.15);
+      border-color: rgba(30, 64, 175, 0.4);
+      color: #e0e7ff;
+    }
+  }
 </style>
 {% endblock %}
 
@@ -74,8 +501,10 @@
       <h1 class="title">إرسال إشعار</h1>
       <div class="hint">اكتب عنوانًا جذابًا ومحتوى واضحًا. يمكنك معاينة الشكل قبل الإرسال.</div>
     </div>
-    <div class="hint">
-      <a class="btn btn-ghost" href="{% url 'reports:notifications_sent' %}">الإشعارات المرسلة</a>
+    <div>
+      <a class="btn btn-ghost" href="{% url 'reports:notifications_sent' %}">
+        <i class="fa-solid fa-list"></i> الإشعارات المرسلة
+      </a>
     </div>
   </header>
 
@@ -102,7 +531,10 @@
               {# عرض الحقول تلقائيًا دون استخدام سمات خاصة #}
               {% for field in form.visible_fields %}
                 <div class="field" data-name="{{ field.html_name|lower }}">
-                  <label for="{{ field.id_for_label }}">{{ field.label|default:"الحقل" }}</label>
+                  <label for="{{ field.id_for_label }}">
+                    {% if field.field.required %}<span style="color:#ef4444">*</span>{% endif %}
+                    {{ field.label|default:"الحقل" }}
+                  </label>
                   {{ field }}
                   {% if field.help_text %}<div class="help">{{ field.help_text|safe }}</div>{% endif %}
                   {% for e in field.errors %}<div class="errors">{{ e }}</div>{% endfor %}
@@ -111,8 +543,12 @@
             </div>
 
             <div class="actions">
-              <button class="btn btn-primary" type="submit">إرسال الإشعار</button>
-              <a class="btn" href="{% url 'reports:home' %}">الرجوع للرئيسية</a>
+              <button class="btn btn-primary" type="submit" id="submitBtn">
+                <i class="fa-solid fa-paper-plane"></i> إرسال الإشعار
+              </button>
+              <a class="btn" href="{% url 'reports:home' %}">
+                <i class="fa-solid fa-home"></i> الرجوع للرئيسية
+              </a>
             </div>
           </form>
         {% else %}
@@ -121,14 +557,18 @@
             {% csrf_token %}
             <div class="form-grid">
               <div class="field full">
-                <label for="id_title">العنوان</label>
-                <input type="text" id="id_title" name="title" maxlength="120" placeholder="عنوان الإشعار">
+                <label for="id_title">
+                  <span style="color:#ef4444">*</span> العنوان
+                </label>
+                <input type="text" id="id_title" name="title" maxlength="120" placeholder="عنوان الإشعار" required>
                 <div class="help">حتى 120 حرفًا</div>
               </div>
 
               <div class="field full">
-                <label for="id_message">المحتوى</label>
-                <textarea id="id_message" name="message" placeholder="نص الإشعار"></textarea>
+                <label for="id_message">
+                  <span style="color:#ef4444">*</span> المحتوى
+                </label>
+                <textarea id="id_message" name="message" placeholder="نص الإشعار" required></textarea>
               </div>
 
               <div class="field">
@@ -156,8 +596,12 @@
             </div>
 
             <div class="actions">
-              <button class="btn btn-primary" type="submit">إرسال الإشعار</button>
-              <a class="btn" href="{% url 'reports:home' %}">الرجوع للرئيسية</a>
+              <button class="btn btn-primary" type="submit" id="submitBtn">
+                <i class="fa-solid fa-paper-plane"></i> إرسال الإشعار
+              </button>
+              <a class="btn" href="{% url 'reports:home' %}">
+                <i class="fa-solid fa-home"></i> الرجوع للرئيسية
+              </a>
             </div>
           </form>
         {% endif %}
@@ -166,12 +610,17 @@
 
     {# ————————————— العمود الأيمن: المعاينة ————————————— #}
     <aside class="card preview" aria-labelledby="preview-title">
-      <div class="card-hd"><strong id="preview-title">معاينة فورية</strong><span class="help">تحدَّث تلقائيًا</span></div>
+      <div class="card-hd">
+        <strong id="preview-title">معاينة فورية</strong>
+        <span class="help">تحدَّث تلقائيًا</span>
+      </div>
       <div class="card-bd">
         <div class="notif">
           <div class="nt-h">
             <h3 class="nt-title" id="pv_title">عنوان الإشعار</h3>
-            <div class="nt-ico" id="pv_important" title="هام" style="display:none">⚠️</div>
+            <div class="nt-ico" id="pv_important" title="هام" style="display:none">
+              <i class="fa-solid fa-circle-exclamation" style="color:#ef4444"></i>
+            </div>
           </div>
           <div class="nt-body" id="pv_body">سيظهر نص الإشعار هنا…</div>
           <div class="nt-meta">
@@ -179,8 +628,12 @@
               <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
               <span>مرسل: {% firstof request.user.name request.user.phone "الإدارة" %}</span>
             </span>
-            <span class="pill" id="pv_action" style="display:none">🔗 يحتوي على رابط إجراء</span>
-            <span class="pill" id="pv_expires" style="display:none">⏳ ينتهي لاحقًا</span>
+            <span class="pill" id="pv_action" style="display:none">
+              <i class="fa-solid fa-link"></i> يحتوي على رابط إجراء
+            </span>
+            <span class="pill" id="pv_expires" style="display:none">
+              <i class="fa-solid fa-clock"></i> ينتهي لاحقًا
+            </span>
           </div>
         </div>
       </div>
@@ -260,8 +713,10 @@
       tools.className = 'teacher-tools';
       tools.innerHTML = `
         <input id="teacherSearch" type="search" placeholder="ابحث باسم المعلّم…" aria-label="البحث عن معلّم">
-        <button type="button" id="btnToggleAll" class="btn-sm" aria-pressed="false">تحديد جميع المعلّمين</button>
-        <span class="mini">| المحدّد: <span class="count" id="selCount">0</span></span>
+        <button type="button" id="btnToggleAll" class="btn-sm" aria-pressed="false">
+          <i class="fa-solid fa-check-double"></i> تحديد الجميع
+        </button>
+        <span class="mini">المحدّد: <span class="count" id="selCount">0</span></span>
       `;
 
       // موضع الأدوات: قبل القائمة مباشرة
@@ -320,7 +775,9 @@
           return true;
         });
         btnToggleAll.setAttribute('aria-pressed', allVisibleSelected ? 'true' : 'false');
-        btnToggleAll.textContent = allVisibleSelected ? 'إلغاء تحديد الكل' : 'تحديد جميع المعلّمين';
+        btnToggleAll.innerHTML = allVisibleSelected ? 
+          '<i class="fa-solid fa-times"></i> إلغاء الكل' : 
+          '<i class="fa-solid fa-check-double"></i> تحديد الجميع';
       }
 
       function filterByQuery(q){
@@ -371,7 +828,10 @@
     if(form){
       form.addEventListener('submit', function(){
         const btn = form.querySelector('button[type="submit"]');
-        if(btn){ btn.disabled = true; btn.textContent = 'جارٍ الإرسال…'; }
+        if(btn){ 
+          btn.disabled = true; 
+          btn.innerHTML = '<span class="loading"></span> جارٍ الإرسال…'; 
+        }
       });
     }
   })();

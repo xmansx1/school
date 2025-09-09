@@ -4,80 +4,442 @@
 
 {% block head %}
 <style>
-  /* ===== نطاق الصفحة: لا يلمس الهيدر ===== */
-  .add-report{
-    --ink:#0f172a; --ink-soft:#1f2937; --muted:#64748b; --line:#e5e7eb;
-    --brand:#2563eb; --brand-light:#3b82f6; --accent:#059669; --accent-light:#10b981;
-    --card:#ffffff; --bg:#f8fafc; --error:#ef4444; --error-bg:#fef2f2;
-    --radius:16px; --radius-sm:10px; --shadow:0 4px 12px rgba(2,6,23,.08);
-    --shadow-hover:0 10px 25px rgba(2,6,23,.12); --transition:all .2s ease;
+  :root {
+    --primary: #4361ee;
+    --primary-dark: #3a56d4;
+    --secondary: #7209b7;
+    --accent: #f72585;
+    --success: #4cc9f0;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #1e293b;
+    --text-light: #64748b;
+    --border: #e2e8f0;
+    --radius-lg: 20px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 10px 40px rgba(2, 6, 23, 0.08);
+    --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    --transition: all 0.3s ease;
   }
-  .add-report .page-wrap{max-width: 850px; margin: 0 auto; padding: 20px 16px; background:var(--bg)}
-  .add-report .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);transition:var(--transition)}
-  .add-report .card:hover{box-shadow:var(--shadow-hover)}
-  .add-report .section-title{font-size:1.7rem;font-weight:900;color:var(--ink-soft);margin:0 0 24px 0;padding-bottom:16px;border-bottom:2px solid #f1f5f9;display:flex;align-items:center;gap:10px}
 
-  .add-report .form-grid{display:grid;gap:20px}
-  .add-report .form-group{display:flex;flex-direction:column;gap:8px}
-  .add-report label{font-weight:700;color:var(--ink-soft);font-size:.95rem}
-
-  .add-report input,
-  .add-report textarea,
-  .add-report select{
-    padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);
-    font-size:1rem;transition:var(--transition);background:#fff;font-family:inherit
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f1f5f9;
+      --text-light: #94a3b8;
+      --border: #334155;
+    }
   }
-  .add-report input:focus,
-  .add-report textarea:focus,
-  .add-report select:focus{outline:none;border-color:var(--brand-light);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
-  .add-report textarea{min-height:120px;resize:vertical}
 
-  .add-report .images-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin-top:8px}
-  .add-report .image-upload{position:relative;border:2px dashed #cbd5e1;border-radius:var(--radius-sm);padding:20px 10px;text-align:center;transition:var(--transition);background:#fafafa;cursor:pointer}
-  .add-report .image-upload:hover{border-color:var(--brand-light);background:#f0f9ff}
-  .add-report .image-upload input[type="file"]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
-  .add-report .upload-icon{font-size:2rem;color:#94a3b8;margin-bottom:8px}
-  .add-report .upload-text{font-size:.85rem;color:var(--muted)}
-  .add-report .preview-container{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px}
-  .add-report .image-preview{position:relative;border-radius:var(--radius-sm);overflow:hidden;height:100px;background:#f1f5f9;display:flex;align-items:center;justify-content:center}
-  .add-report .image-preview img{max-width:100%;max-height:100%;object-fit:cover}
-  .add-report .remove-image{position:absolute;top:5px;right:5px;background:rgba(239,68,68,.9);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;transition:var(--transition)}
-  .add-report .remove-image:hover{background:var(--error);transform:scale(1.1)}
+  .add-report {
+    min-height: 100vh;
+    background: var(--bg);
+    padding: 20px 0;
+  }
 
-  .add-report .form-note{font-size:.85rem;color:var(--muted);margin-top:6px;padding:10px 14px;background:#f8fafc;border-radius:var(--radius-sm);border-inline-start:3px solid var(--brand)}
-  .add-report .btn{padding:14px 24px;border:none;border-radius:var(--radius-sm);font-size:1rem;font-weight:700;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
-  .add-report .btn-accent{background:linear-gradient(135deg,var(--accent) 0%,var(--accent-light) 100%);color:#fff;box-shadow:0 4px 12px rgba(5,150,105,.25)}
-  .add-report .btn-accent:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(5,150,105,.35)}
-  .add-report .btn-outline{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
-  .add-report .btn-outline:hover{background:#f8fafc;border-color:var(--brand-light)}
-  .add-report .form-actions{display:grid;grid-template-columns:1fr;gap:16px;margin-top:24px}
-  @media (min-width:640px){.add-report .form-actions{grid-template-columns:1fr 1fr}}
+  .page-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
 
-  /* رسائل الخطأ (عميل) */
-  .add-report .client-error{color:var(--error);background:var(--error-bg);border:1px solid #fecaca;padding:10px 12px;border-radius:var(--radius-sm);font-size:.9rem}
-  .add-report .invalid{border-color:#fca5a5 !important; box-shadow:0 0 0 3px rgba(239,68,68,.15) !important}
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
 
-  /* طبقة التحميل (namespaced) */
-  .add-report-overlay{position:fixed;inset:0;background:rgba(15,23,42,.75);display:none;align-items:center;justify-content:center;z-index:9999}
-  .add-report-overlay .up-card{width:min(520px,92%);background:#fff;border-radius:16px;padding:22px;border:1px solid #e5e7eb;box-shadow:0 16px 40px rgba(0,0,0,.25)}
-  .add-report-overlay .up-title{margin:0 0 10px 0;font-weight:900;color:#0f172a}
-  .add-report-overlay .up-desc{margin:0 0 14px 0;color:#475569}
-  .add-report-overlay .bar{height:10px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:999px;overflow:hidden}
-  .add-report-overlay .bar-fill{height:100%;width:0;background:linear-gradient(90deg,#60a5fa,#2563eb)}
-  .add-report-overlay .mini{display:flex;justify-content:space-between;margin-top:10px;color:#64748b;font-weight:700;font-size:.9rem}
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 5px;
+    background: var(--gradient);
+  }
+
+  .card:hover {
+    box-shadow: 0 15px 50px rgba(2, 6, 23, 0.12);
+  }
+
+  .section-title {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--text);
+    margin: 0 0 28px 0;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .form-grid {
+    display: grid;
+    gap: 24px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  label {
+    font-weight: 800;
+    color: var(--text);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  input,
+  textarea,
+  select {
+    padding: 14px 16px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    transition: var(--transition);
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+  }
+
+  textarea {
+    min-height: 140px;
+    resize: vertical;
+    line-height: 1.6;
+  }
+
+  .images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+    margin-top: 12px;
+  }
+
+  .image-upload {
+    position: relative;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-md);
+    padding: 24px 12px;
+    text-align: center;
+    transition: var(--transition);
+    background: var(--bg);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .image-upload:hover {
+    border-color: var(--primary);
+    background: rgba(67, 97, 238, 0.05);
+    transform: translateY(-2px);
+  }
+
+  .image-upload input[type="file"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .upload-icon {
+    font-size: 2.2rem;
+    color: var(--text-light);
+  }
+
+  .upload-text {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-weight: 600;
+  }
+
+  .preview-container {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 16px;
+  }
+
+  .image-preview {
+    position: relative;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    height: 120px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow);
+  }
+
+  .image-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+  }
+
+  .remove-image {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(239, 68, 68, 0.9);
+    color: #fff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    transition: var(--transition);
+    border: none;
+  }
+
+  .remove-image:hover {
+    background: #ef4444;
+    transform: scale(1.1);
+  }
+
+  .form-note {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-top: 10px;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-radius: var(--radius-md);
+    border-right: 4px solid var(--primary);
+    font-weight: 600;
+  }
+
+  .btn {
+    padding: 16px 28px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .btn-accent {
+    background: var(--gradient);
+    color: #fff;
+    box-shadow: 0 8px 25px rgba(67, 97, 238, 0.3);
+  }
+
+  .btn-accent:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(67, 97, 238, 0.4);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+    border: 2px solid var(--border);
+  }
+
+  .btn-outline:hover {
+    background: var(--bg);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  .form-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 32px;
+  }
+
+  @media (min-width: 640px) {
+    .form-actions {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  /* رسائل الخطأ */
+  .client-error {
+    color: #ef4444;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .invalid {
+    border-color: #fca5a5 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+  }
+
+  /* طبقة التحميل */
+  .add-report-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    backdrop-filter: blur(4px);
+  }
+
+  .up-card {
+    width: min(520px, 92%);
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    text-align: center;
+  }
+
+  .up-title {
+    margin: 0 0 12px 0;
+    font-weight: 900;
+    color: var(--text);
+    font-size: 1.4rem;
+  }
+
+  .up-desc {
+    margin: 0 0 20px 0;
+    color: var(--text-light);
+    font-weight: 600;
+  }
+
+  .bar {
+    height: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    width: 0;
+    background: var(--gradient);
+    transition: width 0.3s ease;
+    border-radius: 999px;
+  }
+
+  .mini {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+    color: var(--text-light);
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  /* تحسينات التجاوب */
+  @media (max-width: 768px) {
+    .page-wrap {
+      padding: 0 16px;
+    }
+    
+    .card {
+      padding: 24px;
+    }
+    
+    .section-title {
+      font-size: 1.5rem;
+    }
+    
+    .images-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .form-actions {
+      grid-template-columns: 1fr;
+    }
+    
+    .btn {
+      padding: 14px 20px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .images-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .preview-container {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .section-title {
+      font-size: 1.3rem;
+    }
+  }
+
+  /* تأثيرات للوضع الداكن */
+  @media (prefers-color-scheme: dark) {
+    .client-error {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    
+    .btn-outline:hover {
+      background: rgba(67, 97, 238, 0.1);
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-{{ block.super }} {# يرث الهيدر ويبقيه ثابتاً #}
+{{ block.super }}
 <div class="add-report">
   <div class="page-wrap">
     <div class="card">
-      <h2 class="section-title">➕ إضافة تقرير جديد</h2>
+      <h2 class="section-title">
+        <i class="fa-solid fa-plus"></i> إضافة تقرير جديد
+      </h2>
 
-      {% if messages %}{% for message in messages %}<div class="client-error" style="margin-bottom:12px;">{{ message }}</div>{% endfor %}{% endif %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="client-error">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+      
       {% if form.non_field_errors %}
-        <div class="client-error" style="margin-bottom:12px;">
+        <div class="client-error">
           {% for e in form.non_field_errors %}• {{ e }}<br>{% endfor %}
         </div>
       {% endif %}
@@ -87,7 +449,9 @@
 
         <!-- نوع التقرير -->
         <div class="form-group" data-group="category">
-          <label for="{{ form.category.id_for_label }}">نوع التقرير</label>
+          <label for="{{ form.category.id_for_label }}">
+            <i class="fa-solid fa-tag"></i> نوع التقرير
+          </label>
           <select name="{{ form.category.html_name }}" id="{{ form.category.id_for_label }}" class="input" required>
             <option value="" selected hidden>— اختر نوع التقرير —</option>
             {% for value,label in form.fields.category.choices %}
@@ -106,61 +470,93 @@
 
         <!-- اسم المعلم -->
         <div class="form-group" data-group="teacher_name">
-          <label for="id_teacher_name">اسم المعلم</label>
+          <label for="id_teacher_name">
+            <i class="fa-solid fa-user"></i> اسم المعلم
+          </label>
           <input type="text" id="id_teacher_name" name="teacher_name" class="input" maxlength="120"
                  placeholder="اكتب اسم المعلم" value="{{ form.data.teacher_name|default:request.user.name }}" required />
         </div>
 
         <!-- العنوان -->
         <div class="form-group" data-group="title">
-          <label for="{{ form.title.id_for_label }}">العنوان</label>
+          <label for="{{ form.title.id_for_label }}">
+            <i class="fa-solid fa-heading"></i> العنوان
+          </label>
           {{ form.title }}
-          {% if form.title.errors %}<div class="client-error">{% for e in form.title.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+          {% if form.title.errors %}
+            <div class="client-error">{% for e in form.title.errors %}• {{ e }}<br>{% endfor %}</div>
+          {% endif %}
         </div>
 
         <!-- التاريخ -->
         <div class="form-group" data-group="report_date">
-          <label for="{{ form.report_date.id_for_label }}">📅 اختر التاريخ</label>
+          <label for="{{ form.report_date.id_for_label }}">
+            <i class="fa-solid fa-calendar"></i> اختر التاريخ
+          </label>
           {{ form.report_date }}
-          {% if form.report_date.errors %}<div class="client-error">{% for e in form.report_date.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+          {% if form.report_date.errors %}
+            <div class="client-error">{% for e in form.report_date.errors %}• {{ e }}<br>{% endfor %}</div>
+          {% endif %}
         </div>
 
         <!-- اليوم -->
         <div class="form-group">
-          <label for="{{ form.day_name.id_for_label }}">📌 اليوم</label>
+          <label for="{{ form.day_name.id_for_label }}">
+            <i class="fa-solid fa-calendar-day"></i> اليوم
+          </label>
           {{ form.day_name }}
-          {% if form.day_name.errors %}<div class="client-error">{% for e in form.day_name.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+          {% if form.day_name.errors %}
+            <div class="client-error">{% for e in form.day_name.errors %}• {{ e }}<br>{% endfor %}</div>
+          {% endif %}
         </div>
 
         <!-- عدد المستفيدين (اختياري) -->
         <div class="form-group">
-          <label for="{{ form.beneficiaries_count.id_for_label }}">عدد المستفيدين</label>
+          <label for="{{ form.beneficiaries_count.id_for_label }}">
+            <i class="fa-solid fa-users"></i> عدد المستفيدين
+          </label>
           {{ form.beneficiaries_count }}
-          {% if form.beneficiaries_count.errors %}<div class="client-error">{% for e in form.beneficiaries_count.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+          {% if form.beneficiaries_count.errors %}
+            <div class="client-error">{% for e in form.beneficiaries_count.errors %}• {{ e }}<br>{% endfor %}</div>
+          {% endif %}
         </div>
 
         <!-- الوصف -->
         <div class="form-group" data-group="idea">
-          <label for="{{ form.idea.id_for_label }}">الوصف</label>
+          <label for="{{ form.idea.id_for_label }}">
+            <i class="fa-solid fa-file-lines"></i> الوصف
+          </label>
           {{ form.idea }}
-          {% if form.idea.errors %}<div class="client-error">{% for e in form.idea.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
+          {% if form.idea.errors %}
+            <div class="client-error">{% for e in form.idea.errors %}• {{ e }}<br>{% endfor %}</div>
+          {% endif %}
         </div>
 
         <!-- الصور -->
         <div class="form-group">
-          <label>الصور (اختياري)</label>
+          <label>
+            <i class="fa-solid fa-images"></i> الصور (اختياري)
+          </label>
           <div class="images-grid">
             <div class="image-upload">
-              <div class="upload-icon">📷</div><div class="upload-text">صورة 1</div>{{ form.image1 }}
+              <div class="upload-icon"><i class="fa-solid fa-camera"></i></div>
+              <div class="upload-text">صورة 1</div>
+              {{ form.image1 }}
             </div>
             <div class="image-upload">
-              <div class="upload-icon">📷</div><div class="upload-text">صورة 2</div>{{ form.image2 }}
+              <div class="upload-icon"><i class="fa-solid fa-camera"></i></div>
+              <div class="upload-text">صورة 2</div>
+              {{ form.image2 }}
             </div>
             <div class="image-upload">
-              <div class="upload-icon">📷</div><div class="upload-text">صورة 3</div>{{ form.image3 }}
+              <div class="upload-icon"><i class="fa-solid fa-camera"></i></div>
+              <div class="upload-text">صورة 3</div>
+              {{ form.image3 }}
             </div>
             <div class="image-upload">
-              <div class="upload-icon">📷</div><div class="upload-text">صورة 4</div>{{ form.image4 }}
+              <div class="upload-icon"><i class="fa-solid fa-camera"></i></div>
+              <div class="upload-text">صورة 4</div>
+              {{ form.image4 }}
             </div>
           </div>
           <div class="preview-container" id="preview-container"></div>
@@ -168,21 +564,30 @@
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="btn btn-accent">💾 حفظ التقرير</button>
-          <a class="btn btn-outline" href="{% url 'reports:home' %}">↩ العودة للرئيسية</a>
+          <button type="submit" class="btn btn-accent">
+            <i class="fa-solid fa-floppy-disk"></i> حفظ التقرير
+          </button>
+          <a class="btn btn-outline" href="{% url 'reports:home' %}">
+            <i class="fa-solid fa-arrow-right"></i> العودة للرئيسية
+          </a>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<!-- طبقة التحميل (namespaced) -->
+<!-- طبقة التحميل -->
 <div class="add-report-overlay" id="uploadOverlay" aria-hidden="true">
   <div class="up-card">
-    <h3 class="up-title">⏳ يتم رفع الصور…</h3>
+    <h3 class="up-title"><i class="fa-solid fa-cloud-upload-alt"></i> يتم رفع الصور…</h3>
     <p class="up-desc">يرجى الانتظار حتى اكتمال الرفع وعدم إغلاق الصفحة.</p>
-    <div class="bar"><div class="bar-fill" id="upFill"></div></div>
-    <div class="mini"><span id="upLabel">بدء التحميل…</span><span id="upPct">0%</span></div>
+    <div class="bar">
+      <div class="bar-fill" id="upFill"></div>
+    </div>
+    <div class="mini">
+      <span id="upLabel">بدء التحميل…</span>
+      <span id="upPct">0%</span>
+    </div>
   </div>
 </div>
 
@@ -202,14 +607,13 @@
   })();
 
   // ✅ إتاحة "الكاميرا أو الاستديو" على الجوال:
-  // نضمن accept="image/*" ونزيل أي capture حتى لا تُفرض الكاميرا فقط.
   (function() {
     const ids = ['id_image1','id_image2','id_image3','id_image4'];
     ids.forEach(id=>{
       const inp = document.getElementById(id);
       if(!inp) return;
       inp.setAttribute('accept','image/*');
-      inp.removeAttribute('capture'); // مهم لظهور الخيارين على iOS/Android
+      inp.removeAttribute('capture');
     });
   })();
 
@@ -229,11 +633,12 @@
           wrap.className = 'image-preview';
           const img = document.createElement('img');
           img.src = ev.target.result;
-          const x = document.createElement('span');
+          const x = document.createElement('button');
           x.className = 'remove-image';
           x.innerHTML = '×';
           x.onclick = function(){ input.value=''; wrap.remove(); };
-          wrap.appendChild(img); wrap.appendChild(x);
+          wrap.appendChild(img);
+          wrap.appendChild(x);
           previewContainer.appendChild(wrap);
         };
         reader.readAsDataURL(file);
@@ -246,6 +651,7 @@
     form.querySelectorAll('.client-error[data-gen="1"]').forEach(e=>e.remove());
     form.querySelectorAll('.invalid').forEach(e=>e.classList.remove('invalid'));
   }
+  
   function addError(groupEl, inputEl, msg){
     inputEl.classList.add('invalid');
     const box = document.createElement('div');
@@ -254,6 +660,7 @@
     box.textContent = msg;
     groupEl.appendChild(box);
   }
+  
   function validateForm(form){
     clearClientErrors(form);
     let firstBad = null;

@@ -2,239 +2,1010 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تسجيل الدخول</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تسجيل الدخول - منصة توثيق</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+
   <style>
-    body {
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-      min-height: 100vh;
+    :root {
+      --primary: #1a56db;
+      --primary-dark: #1e429f;
+      --secondary: #0e9f6e;
+      --accent: #9c4aff;
+      --gold: #f2c94c;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --border: #e2e8f0;
+      --error-bg: #fef2f2;
+      --error-border: #fecaca;
+      --error-text: #dc2626;
+      --radius-lg: 20px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 10px 40px rgba(2, 6, 23, 0.08);
+      --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      --transition: all 0.3s ease;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --card: #1e293b;
+        --text: #f1f5f9;
+        --text-light: #94a3b8;
+        --border: #334155;
+        --error-bg: rgba(220, 38, 38, 0.15);
+        --error-border: rgba(220, 38, 38, 0.4);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
       margin: 0;
-      font-family: 'Tajawal', sans-serif;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Tajawal', system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      line-height: 1.6;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* مؤشر حجم الشاشة لأغراض التطوير */
+    .screen-size-indicator {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      background: var(--primary);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 3px;
+      font-size: 12px;
+      z-index: 1000;
+      display: none; /* يمكن إظهاره لأغراض التطوير */
+    }
+
+    /* العلامة المائية للشعار في الخلفية */
+    .watermark {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      opacity: 0.03;
+      background-image: url("{% static 'img/logo1.png' %}");
+      background-size: 40%;
+      background-repeat: no-repeat;
+      background-position: center;
+      pointer-events: none;
+    }
+
+    /* تصميم الخلفية المتحركة */
+    .bg-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      opacity: 0.5;
+      overflow: hidden;
+    }
+
+    .bg-circle {
+      position: absolute;
+      border-radius: 50%;
+      background: var(--primary);
+      opacity: 0.08;
+      animation: float 20s infinite ease-in-out;
+    }
+
+    .bg-circle:nth-child(1) {
+      width: 300px;
+      height: 300px;
+      top: -100px;
+      left: -100px;
+      animation-delay: 0s;
+    }
+
+    .bg-circle:nth-child(2) {
+      width: 200px;
+      height: 200px;
+      bottom: -50px;
+      right: 20%;
+      background: var(--secondary);
+      animation-delay: -5s;
+    }
+
+    .bg-circle:nth-child(3) {
+      width: 150px;
+      height: 150px;
+      bottom: 20%;
+      left: 10%;
+      background: var(--accent);
+      animation-delay: -10s;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0) rotate(0deg);
+      }
+      33% {
+        transform: translateY(-20px) rotate(120deg);
+      }
+      66% {
+        transform: translateY(20px) rotate(240deg);
+      }
     }
 
     /* الهيدر */
-    .login-header {
-      text-align: center;
-      padding: 20px;
-      color: white;
-    }
-    .login-system-title {
-      font-size: 1.5rem;
-      margin: 0;
-      font-weight: 800;
-    }
-
-    /* الكارت */
-    .login-container {
+    .header {
       display: flex;
       justify-content: center;
-      align-items: center;
-      flex: 1;
-      padding: 20px;
-    }
-    .login-card {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-      padding: 35px;
-      max-width: 420px;
-      width: 100%;
-      text-align: center;
-      animation: fadeInUp 0.7s ease;
-    }
-    @keyframes fadeInUp {
-      from {opacity: 0; transform: translateY(40px);}
-      to {opacity: 1; transform: translateY(0);}
+      padding: 20px 16px;
     }
 
-    /* الشعار */
-    .login-logo img {
-      width: 90px;
-      height: 90px;
-      object-fit: contain;
-      margin-bottom: 20px;
-    }
-
-    .login-title {
-      font-size: 24px;
-      font-weight: 800;
-      margin-bottom: 8px;
-      color: #1f2937;
-    }
-    .login-subtitle {
-      font-size: 14px;
-      color: #64748b;
-      margin-bottom: 20px;
-    }
-
-    /* الرسائل */
-    .messages {
-      margin-bottom: 15px;
-    }
-    .alert {
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 10px;
-      font-weight: 500;
-      transition: opacity 0.5s ease;
-    }
-    .alert-error {
-      background: #fee2e2;
-      color: #b91c1c;
-    }
-    .alert-success {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    /* الفورم */
-    .form-group {
-      margin-top: 15px;
-      text-align: right;
-    }
-    .form-label {
-      font-size: 14px;
-      font-weight: 600;
-      color: #374151;
-      margin-bottom: 6px;
+    .brand {
       display: flex;
       align-items: center;
-      gap: 6px;
-    }
-    .form-input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 10px;
-      font-size: 15px;
-      transition: 0.2s;
-    }
-    .form-input:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-      outline: none;
+      gap: 12px;
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: 999px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
     }
 
-    /* زر الدخول */
-    .btn-login {
+    .brand::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, var(--primary) 0%, transparent 100%);
+      opacity: 0.1;
+      z-index: 0;
+    }
+
+    .brand:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(2, 6, 23, 0.12);
+    }
+
+    .brand .logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .brand .logo img {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+    }
+
+    .brand .name {
+      font-weight: 900;
+      font-size: 1.2rem;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      z-index: 1;
+    }
+
+    .brand .sub {
+      font-weight: 700;
+      color: var(--text-light);
+      font-size: 0.9rem;
+      z-index: 1;
+    }
+
+    /* المحتوى الرئيسي */
+    .wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 460px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 30px;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 5px;
+      background: var(--gradient);
+    }
+
+    .card:hover {
+      box-shadow: 0 15px 50px rgba(2, 6, 23, 0.12);
+    }
+
+    .school-logo {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .school-logo img {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      border-radius: var(--radius-md);
+      background: #fff;
+      border: 1px solid var(--border);
+      padding: 12px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin: 10px 0 5px;
+      text-align: center;
+      font-weight: 800;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .sub {
+      text-align: center;
+      color: var(--text-light);
+      font-weight: 500;
+      margin-bottom: 25px;
+      font-size: 1.05rem;
+    }
+
+    /* حاوية الرسائل */
+    .messages-container {
+      position: relative;
+      margin: 15px 0;
+    }
+
+    /* الرسائل والتنبيهات */
+    .alert {
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      position: relative;
+      overflow: hidden;
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.5s ease, transform 0.5s ease, margin-bottom 0.3s ease;
+    }
+
+    .alert.hiding {
+      opacity: 0;
+      transform: translateY(-10px);
+      margin-bottom: 0;
+      height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+
+    .alert-info {
+      background-color: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+    }
+
+    .alert-error {
+      background-color: var(--error-bg);
+      border: 1px solid var(--error-border);
+      color: var(--error-text);
+    }
+
+    .alert-close {
+      margin-right: auto;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: inherit;
+      opacity: 0.7;
+      transition: opacity 0.2s ease;
+      padding: 0;
+      margin-left: 5px;
+    }
+
+    .alert-close:hover {
+      opacity: 1;
+    }
+
+    /* شريط التقدم للعد التنازلي */
+    .alert-progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .alert-progress::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      background: currentColor;
+      opacity: 0.3;
+      animation: progress 3s linear forwards;
+    }
+
+    @keyframes progress {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(0); }
+    }
+
+    /* حقول الإدخال */
+    .field {
+      margin-top: 20px;
+    }
+
+    .label {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    .control {
+      position: relative;
+    }
+
+    .input {
+      width: 100%;
+      padding: 16px 50px 16px 16px;
+      background: var(--bg);
+      color: var(--text);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 16px;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.2);
+    }
+
+    .input-icon {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-light);
+      font-size: 1.1rem;
+    }
+
+    .toggle {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: none;
+      background: transparent;
+      color: var(--text-light);
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .toggle:hover {
+      color: var(--primary);
+    }
+
+    /* زر التسجيل */
+    .btn {
       margin-top: 25px;
       width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
-      color: #fff;
-      font-size: 16px;
-      font-weight: 700;
+      padding: 16px;
       border: none;
-      border-radius: 10px;
+      border-radius: var(--radius-md);
       cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .btn-login:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 14px rgba(37, 99, 235, 0.4);
+      background: var(--gradient);
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.1rem;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
     }
 
-    /* ملاحظة */
-    .login-footer-text {
-      margin-top: 15px;
-      font-size: 13px;
-      color: #6b7280;
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1));
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(26, 86, 219, 0.3);
+    }
+
+    .btn:hover::before {
+      opacity: 1;
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn i {
+      margin-left: 8px;
+    }
+
+    .hint {
+      margin-top: 20px;
+      color: var(--text-light);
+      font-weight: 500;
+      text-align: center;
+      font-size: 0.95rem;
+      padding: 12px;
+      background: var(--bg);
+      border-radius: var(--radius-md);
     }
 
     /* الفوتر */
-    .login-footer {
-      text-align: center;
-      padding: 15px;
-      font-size: 13px;
-      color: white;
-      background: rgba(0,0,0,0.3);
+    .footer {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      align-items: center;
+      padding: 20px;
+      color: var(--text-light);
+      font-weight: 500;
+      flex-wrap: wrap;
     }
 
+    .foot-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .foot-logo img {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+    }
+
+    .sep {
+      opacity: 0.5;
+    }
+
+    /* استعلامات الوسائط للتجاوب مع جميع الأجهزة */
+
+    /* أجهزة اللاب توب الصغيرة والشاشات حتى 1024px */
+    @media (max-width: 1024px) {
+      .card {
+        max-width: 420px;
+      }
+      
+      .watermark {
+        background-size: 50%;
+      }
+    }
+
+    /* أجهزة اللاب توب الصغيرة حتى 768px */
+    @media (max-width: 768px) {
+      .card {
+        max-width: 400px;
+        padding: 25px;
+      }
+      
+      h1 {
+        font-size: 1.6rem;
+      }
+      
+      .sub {
+        font-size: 1rem;
+      }
+      
+      .watermark {
+        background-size: 60%;
+      }
+    }
+
+    /* الأجهزة اللوحية والهواتف الكبيرة حتى 600px */
+    @media (max-width: 600px) {
+      .card {
+        max-width: 90%;
+        padding: 22px;
+      }
+      
+      .brand {
+        padding: 8px 16px;
+      }
+      
+      .brand .name {
+        font-size: 1.1rem;
+      }
+      
+      h1 {
+        font-size: 1.5rem;
+      }
+      
+      .school-logo img {
+        width: 90px;
+        height: 90px;
+      }
+      
+      .input {
+        padding: 14px 45px 14px 14px;
+        font-size: 15px;
+      }
+      
+      .btn {
+        padding: 15px;
+        font-size: 1rem;
+      }
+      
+      .watermark {
+        background-size: 70%;
+      }
+    }
+
+    /* الهواتف المتوسطة والصغيرة حتى 480px */
     @media (max-width: 480px) {
-      .login-card { padding: 25px 20px; }
-      .login-title { font-size: 20px; }
+      .header {
+        padding: 15px 12px;
+      }
+      
+      .card {
+        padding: 20px;
+        border-radius: 16px;
+      }
+      
+      .brand {
+        padding: 6px 14px;
+      }
+      
+      .brand .logo {
+        width: 34px;
+        height: 34px;
+      }
+      
+      .brand .logo img {
+        width: 20px;
+        height: 20px;
+      }
+      
+      .brand .sub {
+        font-size: 0.8rem;
+      }
+      
+      h1 {
+        font-size: 1.4rem;
+      }
+      
+      .sub {
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+      }
+      
+      .school-logo img {
+        width: 80px;
+        height: 80px;
+      }
+      
+      .field {
+        margin-top: 18px;
+      }
+      
+      .label {
+        font-size: 0.95rem;
+      }
+      
+      .input {
+        padding: 12px 40px 12px 12px;
+      }
+      
+      .input-icon {
+        right: 14px;
+        font-size: 1rem;
+      }
+      
+      .toggle {
+        left: 14px;
+        font-size: 1rem;
+      }
+      
+      .btn {
+        margin-top: 20px;
+        padding: 14px;
+      }
+      
+      .hint {
+        font-size: 0.9rem;
+        padding: 10px;
+      }
+      
+      .footer {
+        padding: 15px;
+        font-size: 0.9rem;
+      }
+      
+      .watermark {
+        background-size: 80%;
+      }
+      
+      .alert {
+        padding: 10px 14px;
+        font-size: 0.9rem;
+      }
+    }
+
+    /* الهواتف الصغيرة جدًا حتى 360px */
+    @media (max-width: 360px) {
+      .card {
+        padding: 18px;
+      }
+      
+      .brand {
+        flex-direction: column;
+        gap: 6px;
+        text-align: center;
+      }
+      
+      h1 {
+        font-size: 1.3rem;
+      }
+      
+      .sub {
+        font-size: 0.9rem;
+      }
+      
+      .school-logo img {
+        width: 70px;
+        height: 70px;
+      }
+      
+      .label {
+        font-size: 0.9rem;
+      }
+      
+      .input {
+        font-size: 14px;
+      }
+      
+      .footer {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+      }
+      
+      .watermark {
+        background-size: 90%;
+      }
+    }
+
+    /* الأجهزة ذات الارتفاع القليل */
+    @media (max-height: 700px) {
+      .wrap {
+        padding: 15px;
+      }
+      
+      .card {
+        margin: 20px 0;
+      }
+      
+      .school-logo {
+        margin-bottom: 15px;
+      }
+      
+      .school-logo img {
+        width: 80px;
+        height: 80px;
+      }
+      
+      h1 {
+        margin: 5px 0;
+      }
+    }
+
+    /* الأجهزة ذات الارتفاع المنخفض جدًا */
+    @media (max-height: 600px) {
+      .header {
+        padding: 10px;
+      }
+      
+      .wrap {
+        align-items: flex-start;
+        padding-top: 5px;
+      }
+      
+      .card {
+        margin: 10px 0;
+      }
+      
+      .school-logo {
+        margin-bottom: 10px;
+      }
+      
+      .school-logo img {
+        width: 70px;
+        height: 70px;
+      }
+      
+      h1 {
+        font-size: 1.3rem;
+      }
+      
+      .sub {
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+      }
+    }
+
+    /* تأثيرات للوضع الداكن */
+    @media (prefers-color-scheme: dark) {
+      .btn:hover {
+        box-shadow: 0 10px 25px rgba(26, 86, 219, 0.5);
+      }
+      
+      .hint {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      
+      .watermark {
+        opacity: 0.05;
+      }
     }
   </style>
 </head>
 <body>
+  <!-- مؤشر حجم الشاشة (يمكن إخفاؤه في الإصدار النهائي) -->
+  <div class="screen-size-indicator" id="sizeIndicator"></div>
+  
+  <!-- العلامة المائية للشعار -->
+  <div class="watermark"></div>
+  
+  <!-- خلفية متحركة -->
+  <div class="bg-animation">
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+  </div>
 
   <!-- الهيدر -->
-  <header class="login-header">
-     <h1 class="login-system-title">📘 Tawtheeq </h1>
+  <header class="header" aria-label="هوية المنصة">
+    <div class="brand">
+      <div class="logo"><img src="{% static 'img/logo1.png' %}" alt="شعار Tawtheeq"></div>
+      <div>
+        <div class="name">Tawtheeq</div>
+        <div class="sub">منصّة توثيق</div>
+      </div>
+    </div>
   </header>
 
-  <!-- الكارت -->
-  <main class="login-container">
-    <div class="login-card">
-      <div class="login-logo">
+  <!-- النموذج -->
+  <main class="wrap">
+    <section class="card" aria-label="تسجيل الدخول">
+      <div class="school-logo">
         <img src="{% static 'img/logo.png' %}" alt="{{ SCHOOL_NAME|default:'شعار المدرسة' }}">
       </div>
-      <h2 class="login-title">تسجيل الدخول</h2>
-      <p class="login-subtitle">مرحباً بك، يرجى إدخال بيانات الدخول الخاصة بك</p>
+      <h1>تسجيل الدخول</h1>
+      <div class="sub">مرحبًا بك، يرجى إدخال بيانات الدخول الخاصة بك</div>
 
-      {% if messages %}
-      <div class="messages">
-        {% for message in messages %}
-          <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
+      <!-- حاوية الرسائل -->
+      <div class="messages-container" aria-live="polite">
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-info" data-autohide="true">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>{{ message }}</span>
+              <button class="alert-close" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
+              <div class="alert-progress"></div>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        {% if form.errors %}
+          <div class="alert alert-error" data-autohide="true">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>رقم الجوال أو كلمة المرور غير صحيحة</span>
+            <button class="alert-close" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
+            <div class="alert-progress"></div>
+          </div>
+        {% endif %}
       </div>
-      {% endif %}
 
-      {% if form.errors %}
-      <div class="alert alert-error">
-        <i class="fas fa-exclamation-circle"></i>
-        رقم الجوال أو كلمة المرور غير صحيحة
-      </div>
-      {% endif %}
-
-      <form method="POST" class="login-form">
+      <form method="POST" autocomplete="on" novalidate>
         {% csrf_token %}
-        
-        <!-- رقم الجوال -->
-        <div class="form-group">
-          <label class="form-label"><i class="fas fa-phone"></i> رقم الجوال</label>
-          <input class="form-input" type="text" name="phone" pattern="0\d{9}" maxlength="10" minlength="10"
-                 inputmode="numeric" autocomplete="username"
-                 placeholder="05" required>
+
+        <div class="field">
+          <label class="label" for="phone">
+            <i class="fa-solid fa-phone"></i> رقم الجوال
+          </label>
+          <div class="control">
+            <input id="phone" class="input" type="text" name="phone" inputmode="numeric"
+                   pattern="0\d{9}" minlength="10" maxlength="10" placeholder="05XXXXXXXX"
+                   autocomplete="username" required aria-required="true">
+            <i class="fa-solid fa-mobile-screen-button input-icon" aria-hidden="true"></i>
+          </div>
         </div>
 
-        <!-- كلمة المرور -->
-        <div class="form-group">
-          <label class="form-label"><i class="fas fa-key"></i> كلمة المرور</label>
-          <input class="form-input" type="password" name="password"
-                 autocomplete="current-password" placeholder="أدخل كلمة المرور" required>
+        <div class="field">
+          <label class="label" for="password">
+            <i class="fa-solid fa-key"></i> كلمة المرور
+          </label>
+          <div class="control">
+            <input id="password" class="input" type="password" name="password"
+                   placeholder="••••••••" autocomplete="current-password" required aria-required="true">
+            <i class="fa-solid fa-lock input-icon" aria-hidden="true"></i>
+            <button type="button" class="toggle" aria-label="إظهار/إخفاء كلمة المرور">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
         </div>
 
-        <button class="btn-login">
-          <i class="fas fa-sign-in-alt"></i> دخول إلى النظام
+        <button class="btn" type="submit">
+          <i class="fa-solid fa-right-to-bracket"></i> دخول
         </button>
-
-        <div class="login-footer-text">
-          🔑 لتغيير كلمة المرور يرجى التواصل مع مدير النظام في ثانوية عبدالعزيز بن باز
+        
+        <div class="hint">
+          <i class="fa-solid fa-key"></i> لتغيير كلمة المرور يرجى التواصل مع مدير النظام في {{ SCHOOL_NAME|default:"المدرسة" }}
         </div>
       </form>
-    </div>
+    </section>
   </main>
 
   <!-- الفوتر -->
-  <footer class="login-footer">
-    <p>© تصميم <strong>MANS</strong> | جميع الحقوق محفوظة</p>
+  <footer class="footer" aria-label="تذييل">
+    <div class="foot-logo"><img src="{% static 'img/logo1.png' %}" alt="Tawtheeq"></div>
+    <b>Tawtheeq</b><span class="sep">|</span><span>توثيق</span>
+    <span class="sep">•</span>
+    <span>© تصميم <strong>MANS</strong></span>
   </footer>
 
-  <!-- 🔔 إخفاء الرسائل بعد 3 ثواني -->
   <script>
-    setTimeout(() => {
-      document.querySelectorAll('.alert').forEach(el => {
-        el.style.opacity = '0';
-        setTimeout(() => el.remove(), 500); // يختفي تدريجياً ثم يحذف
+    (function(){
+      // تبديل رؤية كلمة المرور
+      const btn = document.querySelector('.toggle');
+      const inp = document.getElementById('password');
+      if(btn && inp){
+        btn.addEventListener('click', function(){
+          const isPwd = inp.type === 'password';
+          inp.type = isPwd ? 'text' : 'password';
+          this.innerHTML = isPwd ? '<i class="fa-regular fa-eye-slash"></i>' : '<i class="fa-regular fa-eye"></i>';
+        });
+      }
+      
+      // إخفاء الرسائل تلقائياً بعد 3 ثوانٍ
+      function setupAutoHideMessages() {
+        const alerts = document.querySelectorAll('.alert[data-autohide="true"]');
+        
+        alerts.forEach(alert => {
+          // إعداد مؤقت للإخفاء التلقائي
+          const timer = setTimeout(() => {
+            hideAlert(alert);
+          }, 3000); // 3 ثواني
+          
+          // حفظ المرجع للمؤقت في عنصر التنبيه
+          alert.dataset.timerId = timer;
+          
+          // إضافة إمكانية الإخفاء manual بالنقر على الزر
+          const closeBtn = alert.querySelector('.alert-close');
+          if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+              clearTimeout(parseInt(alert.dataset.timerId));
+              hideAlert(alert);
+            });
+          }
+        });
+      }
+      
+      // وظيفة لإخفاء التنبيه مع تأثير
+      function hideAlert(alert) {
+        alert.classList.add('hiding');
+        
+        // إزالة العنصر من DOM بعد انتهاء الانتقال
+        setTimeout(() => {
+          if (alert.parentNode) {
+            alert.parentNode.removeChild(alert);
+          }
+        }, 500);
+      }
+      
+      // تأثيرات عند تحميل الصفحة
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelector('.card').style.opacity = '0';
+        document.querySelector('.card').style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          document.querySelector('.card').style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+          document.querySelector('.card').style.opacity = '1';
+          document.querySelector('.card').style.transform = 'translateY(0)';
+        }, 100);
+        
+        // إعداد إخفاء الرسائل التلقائي
+        setupAutoHideMessages();
+        
+        // عرض حجم الشاشة الحالي (لأغراض التطوير)
+        function updateSizeIndicator() {
+          const indicator = document.getElementById('sizeIndicator');
+          if (indicator) {
+            const width = window.innerWidth;
+            let size = 'غير محدد';
+            
+            if (width >= 1024) size = 'شاشة كبيرة (1024px+)';
+            else if (width >= 768) size = 'جهاز لوحي (768px - 1023px)';
+            else if (width >= 600) size = 'هاتف كبير (600px - 767px)';
+            else if (width >= 480) size = 'هاتف متوسط (480px - 599px)';
+            else if (width >= 360) size = 'هاتف صغير (360px - 479px)';
+            else size = 'هاتف صغير جداً (<360px)';
+            
+            indicator.textContent = `${width}px - ${size}`;
+          }
+        }
+        
+        window.addEventListener('resize', updateSizeIndicator);
+        updateSizeIndicator();
       });
-    }, 3000);
+    })();
   </script>
-
 </body>
 </html>

@@ -4,29 +4,342 @@
 
 {% block head %}
 <style>
-  .page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
-  .page-header h1{margin:0;font-size:1.35rem;font-weight:900;color:var(--ink)}
-  .cards-grid{display:grid;gap:14px}
-  @media(min-width:880px){.cards-grid{grid-template-columns:1fr 1fr}}
+  :root {
+    --primary: #4361ee;
+    --primary-dark: #3a56d4;
+    --secondary: #7209b7;
+    --accent: #f72585;
+    --success: #4cc9f0;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #1e293b;
+    --text-light: #64748b;
+    --border: #e2e8f0;
+    --radius-lg: 20px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 10px 40px rgba(2, 6, 23, 0.08);
+    --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    --transition: all 0.3s ease;
+  }
 
-  .notif-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 14px 12px;box-shadow:var(--shadow);transition:transform .18s ease, box-shadow .18s ease}
-  .notif-card:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(2,6,23,.12)}
-  .notif-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-  .notif-title{font-weight:900;margin:0;color:#0b1b3a;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--line);background:#f8fbff;color:#0b1b3a;border-radius:999px;font-weight:800;font-size:.86rem}
-  .pill.important{background:#fff5f5;border-color:#ffe0e0;color:#b91c1c}
-  .pill.blue{background:#eef2ff;border-color:#e5e7eb;color:#1e40af}
-  .notif-time{color:#64748b;font-weight:800;font-size:.9rem;white-space:nowrap}
-  .notif-body{color:#334155;margin:10px 0 8px;white-space:pre-wrap;line-height:1.9;font-weight:700}
-  .meta{display:flex;flex-wrap:wrap;gap:8px;color:#475569;font-weight:800;margin-top:6px}
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f1f5f9;
+      --text-light: #94a3b8;
+      --border: #334155;
+    }
+  }
 
-  .progress{margin-top:10px;height:10px;border-radius:999px;background:var(--line-2);overflow:hidden;border:1px solid var(--line)}
-  .progress .bar{height:100%;width:0%;background:linear-gradient(90deg,var(--brand),#10b981);transition:width .35s ease}
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  
+  .page-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 900;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+    padding-bottom: 8px;
+  }
+  
+  .page-header h1::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 60px;
+    height: 4px;
+    background: var(--gradient);
+    border-radius: 2px;
+  }
+  
+  .create-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    background: var(--gradient);
+    color: #fff;
+    font-weight: 800;
+    font-size: 1rem;
+    transition: var(--transition);
+    text-decoration: none;
+    box-shadow: 0 8px 25px rgba(67, 97, 238, 0.3);
+  }
+  
+  .create-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(67, 97, 238, 0.4);
+  }
+  
+  .cards-grid {
+    display: grid;
+    gap: 20px;
+  }
+  
+  @media (min-width: 768px) {
+    .cards-grid {
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    }
+  }
+  
+  @media (max-width: 767px) {
+    .cards-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .page-header h1 {
+      font-size: 1.5rem;
+    }
+  }
 
-  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
-  .btn-sm{padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:800;text-decoration:none;color:#1e293b}
-  .btn-sm.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
-  .btn-sm.danger{background:#fff0f0;color:#b91c1c;border-color:#fecaca}
+  .notif-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .notif-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 5px;
+    background: var(--gradient);
+  }
+  
+  .notif-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 50px rgba(2, 6, 23, 0.12);
+  }
+  
+  .notif-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .notif-title {
+    font-weight: 900;
+    margin: 0;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 1.2rem;
+  }
+  
+  .badges-container {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.85rem;
+  }
+  
+  .pill.important {
+    background: #fff5f5;
+    border: 1px solid #ffe0e0;
+    color: #b91c1c;
+  }
+  
+  .pill.blue {
+    background: #eef2ff;
+    border: 1px solid #e5e7eb;
+    color: #1e40af;
+  }
+  
+  .notif-time {
+    color: var(--text-light);
+    font-weight: 700;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .notif-body {
+    color: var(--text);
+    margin: 16px 0;
+    white-space: pre-wrap;
+    line-height: 1.8;
+    font-weight: 500;
+    background: var(--bg);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    border-left: 4px solid var(--primary);
+  }
+  
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: var(--text-light);
+    font-weight: 700;
+    margin-top: 12px;
+    font-size: 0.9rem;
+  }
+  
+  .progress-container {
+    margin-top: 16px;
+  }
+  
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-weight: 700;
+  }
+  
+  .progress {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--bg);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    position: relative;
+  }
+  
+  .progress .bar {
+    height: 100%;
+    width: 0%;
+    background: var(--gradient);
+    transition: width 1s ease;
+    border-radius: 999px;
+  }
+  
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+    align-items: center;
+  }
+  
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--card);
+    font-weight: 800;
+    text-decoration: none;
+    color: var(--text);
+    transition: var(--transition);
+    font-size: 0.9rem;
+  }
+  
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .btn.primary {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+  
+  .btn.danger {
+    background: #fff0f0;
+    color: #b91c1c;
+    border-color: #fecaca;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-light);
+  }
+  
+  .empty-state i {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+  
+  .empty-state h3 {
+    margin: 0 0 8px 0;
+    color: var(--text);
+    font-weight: 800;
+  }
+  
+  .pager {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 30px;
+    flex-wrap: wrap;
+  }
+  
+  .pager .btn {
+    padding: 10px 18px;
+  }
+  
+  .pager .current {
+    background: var(--gradient);
+    color: #fff;
+    border: none;
+  }
+  
+  /* تأثيرات للوضع الداكن */
+  @media (prefers-color-scheme: dark) {
+    .pill.important {
+      background: rgba(185, 28, 28, 0.15);
+      border-color: rgba(185, 28, 28, 0.4);
+    }
+    
+    .pill.blue {
+      background: rgba(30, 64, 175, 0.15);
+      border-color: rgba(30, 64, 175, 0.4);
+    }
+    
+    .btn.danger {
+      background: rgba(185, 28, 28, 0.15);
+      border-color: rgba(185, 28, 28, 0.4);
+    }
+  }
 </style>
 {% endblock %}
 
@@ -34,7 +347,9 @@
 <div class="container" dir="rtl">
   <div class="page-header">
     <h1>الإشعارات المرسلة</h1>
-    <a class="btn btn-primary" href="{% url 'reports:notifications_create' %}">+ إنشاء إشعار</a>
+    <a class="create-btn" href="{% url 'reports:notifications_create' %}">
+      <i class="fa-solid fa-plus"></i> إنشاء إشعار جديد
+    </a>
   </div>
 
   {% if page_obj and page_obj.object_list %}
@@ -42,12 +357,18 @@
       {% for n in page_obj %}
         <article class="notif-card" data-id="{{ n.id }}">
           <div class="notif-head">
-            <h3 class="notif-title">
-              <span>{{ n.title|default:"رسالة" }}</span>
-              {% if n.is_important %}<span class="pill important">هام</span>{% endif %}
-              {% if n.is_broadcast %}<span class="pill blue">للجميع</span>{% endif %}
-            </h3>
-            <time class="notif-time" datetime="{{ n.created_at|date:'c' }}">{{ n.created_at|date:"Y-m-d H:i" }}</time>
+            <div>
+              <h3 class="notif-title">
+                <span>{{ n.title|default:"رسالة" }}</span>
+              </h3>
+              <div class="badges-container">
+                {% if n.is_important %}<span class="pill important"><i class="fa-solid fa-exclamation-circle"></i> هام</span>{% endif %}
+                {% if n.is_broadcast %}<span class="pill blue"><i class="fa-solid fa-bullhorn"></i> للجميع</span>{% endif %}
+              </div>
+            </div>
+            <time class="notif-time" datetime="{{ n.created_at|date:'c' }}">
+              <i class="fa-regular fa-clock"></i> {{ n.created_at|date:"Y-m-d H:i" }}
+            </time>
           </div>
 
           {% with body=None %}
@@ -56,22 +377,40 @@
           {% endwith %}
 
           <div class="meta">
-            {% if n.expires_at %}<span class="pill">ينتهي: {{ n.expires_at|date:"Y-m-d H:i" }}</span>{% endif %}
-            {% if n.created_by and n.created_by.name %}<span class="pill">مرسِل: {{ n.created_by.name }}</span>{% endif %}
+            {% if n.expires_at %}
+              <span><i class="fa-regular fa-calendar-times"></i> ينتهي: {{ n.expires_at|date:"Y-m-d H:i" }}</span>
+            {% endif %}
+            {% if n.created_by and n.created_by.name %}
+              <span><i class="fa-regular fa-user"></i> مرسِل: {{ n.created_by.name }}</span>
+            {% endif %}
           </div>
 
-          <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-            <div class="bar"></div>
+          <div class="progress-container">
+            <div class="progress-info">
+              <span>معدل القراءة</span>
+              <span id="rate-{{ n.id }}">0%</span>
+            </div>
+            <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="bar"></div>
+            </div>
           </div>
 
           <div class="actions">
-            <a class="btn-sm" href="{% url 'reports:notification_detail' n.id %}">عرض التفاصيل</a>
-            {% if n.action_url %}<a class="btn-sm primary" href="{{ n.action_url }}" rel="noopener">فتح الرابط</a>{% endif %}
+            <a class="btn" href="{% url 'reports:notification_detail' n.id %}">
+              <i class="fa-regular fa-eye"></i> عرض التفاصيل
+            </a>
+            {% if n.action_url %}
+              <a class="btn primary" href="{{ n.action_url }}" rel="noopener">
+                <i class="fa-solid fa-link"></i> فتح الرابط
+              </a>
+            {% endif %}
             {% url 'reports:notification_delete' n.id as del_url %}
             {% if del_url %}
               <form method="post" action="{{ del_url }}" style="display:inline" onsubmit="return confirm('هل تريد حذف هذا الإشعار نهائيًا؟');">
                 {% csrf_token %}
-                <button class="btn-sm danger" type="submit">حذف</button>
+                <button class="btn danger" type="submit">
+                  <i class="fa-regular fa-trash-can"></i> حذف
+                </button>
               </form>
             {% endif %}
           </div>
@@ -80,14 +419,28 @@
     </div>
 
     {% if page_obj.paginator.num_pages > 1 %}
-      <nav class="pager" aria-label="pagination" style="display:flex;gap:10px;justify-content:center;margin-top:14px">
-        {% if page_obj.has_previous %}<a class="btn-sm" href="?page={{ page_obj.previous_page_number }}">السابق</a>{% endif %}
-        <span class="btn-sm" style="background:var(--brand-ghost);color:var(--brand)">صفحة {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-        {% if page_obj.has_next %}<a class="btn-sm" href="?page={{ page_obj.next_page_number }}">التالي</a>{% endif %}
+      <nav class="pager" aria-label="التنقل بين الصفحات">
+        {% if page_obj.has_previous %}
+          <a class="btn" href="?page={{ page_obj.previous_page_number }}">
+            <i class="fa-solid fa-arrow-right"></i> السابق
+          </a>
+        {% endif %}
+        
+        <span class="btn current">صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span>
+        
+        {% if page_obj.has_next %}
+          <a class="btn" href="?page={{ page_obj.next_page_number }}">
+            التالي <i class="fa-solid fa-arrow-left"></i>
+          </a>
+        {% endif %}
       </nav>
     {% endif %}
   {% else %}
-    <div class="empty">لا توجد إشعارات مرسلة حتى الآن.</div>
+    <div class="empty-state">
+      <i class="fa-regular fa-bell"></i>
+      <h3>لا توجد إشعارات مرسلة حتى الآن</h3>
+      <p>يمكنك إنشاء أول إشعار بالنقر على زر "إنشاء إشعار جديد"</p>
+    </div>
   {% endif %}
 </div>
 
@@ -101,16 +454,38 @@
     let stats = {};
     if(script){ try{ stats = JSON.parse(script.textContent||"{}"); }catch(e){} }
 
-    document.querySelectorAll('.notif-card').forEach(card=>{
+    document.querySelectorAll('.notif-card').forEach(card => {
       const id = card.getAttribute('data-id');
       const bucket = stats[id] || {};
       const total = Number(bucket.total||0);
       const read  = Number(bucket.read ||0);
       const rate  = total ? Math.round((read/total)*100) : 0;
+      
       const bar = card.querySelector('.progress .bar');
-      const prog = card.querySelector('.progress');
-      if(bar){ bar.style.width = rate + '%'; }
-      if(prog){ prog.setAttribute('aria-valuenow', String(rate)); prog.setAttribute('title', 'نسبة القراءة: ' + rate + '%'); }
+      const rateElement = card.querySelector(`#rate-${id}`);
+      
+      if (bar) {
+        // تأثير تحريك شريط التقدم
+        setTimeout(() => {
+          bar.style.width = rate + '%';
+        }, 100);
+      }
+      
+      if (rateElement) {
+        // تأثير عداد العد
+        let current = 0;
+        const duration = 1500;
+        const steps = 60;
+        const increment = rate / steps;
+        const timer = setInterval(() => {
+          current += increment;
+          if (current >= rate) {
+            current = rate;
+            clearInterval(timer);
+          }
+          rateElement.textContent = Math.round(current) + '%';
+        }, duration / steps);
+      }
     });
   })();
 </script>

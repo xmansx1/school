@@ -108,15 +108,20 @@
     .menu .mi:hover{background:var(--line-2)}
     .menu .meta{color:var(--muted);font-size:.9rem}
 
-    /* رسائل Django */
+    /* رسائل Django - محسنة مع إمكانية الإخفاء */
     .messages{margin:16px 0}
-    .msg{padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#f8fbff;color:#0b1b3a;box-shadow:var(--shadow);margin-bottom:10px;animation:fadeIn .3s ease both}
+    .msg{position:relative;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#f8fbff;color:#0b1b3a;box-shadow:var(--shadow);margin-bottom:10px;animation:fadeIn .3s ease both;overflow:hidden;transition:opacity 0.5s ease, transform 0.5s ease, margin-bottom 0.3s ease}
+    .msg.hiding{opacity:0;transform:translateY(-10px);margin-bottom:0;height:0;padding-top:0;padding-bottom:0}
     .msg.success{background:#f0fff6;border-color:#c8f3d6;color:#064e3b}
     .msg.error{background:#fff0f0;border-color:#ffd4d4;color:#7f1d1d}
     .msg.warning{background:#fffbeb;border-color:#fed7aa;color:#7c2d12}
+    .msg-close{position:absolute;top:8px;left:8px;background:none;border:none;cursor:pointer;color:inherit;opacity:0.7;transition:opacity 0.2s ease;padding:0;font-size:14px}
+    .msg-close:hover{opacity:1}
+    .msg-progress{position:absolute;bottom:0;left:0;height:3px;width:100%;background:rgba(0,0,0,0.1);overflow:hidden}
+    .msg-progress::after{content:'';position:absolute;bottom:0;left:0;height:100%;width:100%;background:currentColor;opacity:0.3;animation:progress 3s linear forwards}
     @media (prefers-color-scheme: dark){.msg{background:#0e1b35;color:#d8e3ff}}
 
-    /* نافذة الإشعار المنبثقة (كما هي) */
+    /* نافذة الإشعار المنبثقة (محسنة) */
     .notify-overlay{position:fixed;inset:0;z-index:170;display:grid;place-items:center;padding:10px;padding-top:calc(10px + var(--safe-top));padding-bottom:calc(10px + var(--safe-bottom))}
     .notify-overlay::before{content:"";position:absolute;inset:0;background:radial-gradient(1200px 800px at 50% 20%, rgba(37,99,235,.20), rgba(2,6,23,.65));backdrop-filter:blur(4px)}
     .notify-card{position:relative;width:min(720px,92vw);max-height:86vh;overflow:auto;background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%);border:1px solid #e5edff;border-radius:20px;box-shadow:0 30px 80px rgba(2,6,23,.35);padding:20px 20px 16px;animation:popIn .25s ease both}
@@ -163,6 +168,90 @@
     @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
     @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
     @keyframes popIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+    @keyframes progress{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+
+    /* تحسينات التجاوب */
+    @media (max-width: 768px) {
+      .topbar {
+        min-height: 56px;
+      }
+      
+      .nav-desktop {
+        gap: 4px;
+      }
+      
+      .nav-desktop a {
+        padding: 0 10px;
+        font-size: 0.9rem;
+      }
+      
+      .brand span {
+        font-size: 1rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 0 12px;
+      }
+      
+      .topbar {
+        gap: 8px;
+        padding: 6px 0;
+      }
+      
+      .brand {
+        gap: 8px;
+      }
+      
+      .brand img {
+        width: 30px;
+        height: 30px;
+      }
+      
+      .brand span {
+        font-size: 0.95rem;
+      }
+      
+      .hamburger {
+        width: 42px;
+        height: 42px;
+      }
+      
+      .msg {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+      }
+      
+      .notify-card {
+        padding: 16px;
+      }
+      
+      .notify-head {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+      }
+      
+      .notify-actions {
+        flex-direction: column;
+      }
+      
+      .notify-actions .btn {
+        width: 100%;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .brand span {
+        display: none;
+      }
+      
+      .drawer {
+        width: 82vw;
+      }
+    }
   </style>
 
   {% block head %}{% endblock %}
@@ -325,7 +414,11 @@
     {% if messages %}
       <div class="messages" id="messages-container">
         {% for message in messages %}
-          <div class="msg {{ message.tags }}">{{ message }}</div>
+          <div class="msg {{ message.tags }}" data-autohide="true">
+            <button class="msg-close" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
+            {{ message }}
+            <div class="msg-progress"></div>
+          </div>
         {% endfor %}
       </div>
     {% endif %}
@@ -399,10 +492,44 @@
       };
       window.addEventListener('scroll', onScroll, {passive:true}); onScroll();
 
-      // إخفاء رسائل Django تلقائياً
-      document.querySelectorAll('.msg').forEach(el=>{
-        setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(-6px)'; setTimeout(()=>el.remove(), 300); }, 3000);
-      });
+      // إخفاء رسائل Django تلقائياً بعد 3 ثوانٍ
+      function setupAutoHideMessages() {
+        const messages = document.querySelectorAll('.msg[data-autohide="true"]');
+        
+        messages.forEach(msg => {
+          // إعداد مؤقت للإخفاء التلقائي
+          const timer = setTimeout(() => {
+            hideMessage(msg);
+          }, 3000); // 3 ثواني
+          
+          // حفظ المرجع للمؤقت في عنصر الرسالة
+          msg.dataset.timerId = timer;
+          
+          // إضافة إمكانية الإخفاء manual بالنقر على الزر
+          const closeBtn = msg.querySelector('.msg-close');
+          if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+              clearTimeout(parseInt(msg.dataset.timerId));
+              hideMessage(msg);
+            });
+          }
+        });
+      }
+      
+      // وظيفة لإخفاء الرسالة مع تأثير
+      function hideMessage(msg) {
+        msg.classList.add('hiding');
+        
+        // إزالة العنصر من DOM بعد انتهاء الانتقال
+        setTimeout(() => {
+          if (msg.parentNode) {
+            msg.parentNode.removeChild(msg);
+          }
+        }, 500);
+      }
+      
+      // استدعاء وظيفة إخفاء الرسائل
+      setupAutoHideMessages();
 
       // ===== دروَر الجوال =====
       const body = document.body;
