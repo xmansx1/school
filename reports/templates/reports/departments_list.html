@@ -6,7 +6,7 @@
   :root{
     --ink:#0f172a;--muted:#6b7280;--line:#e5e7eb;--line2:#f1f5f9;--card:#fff;
     --brand:#2563eb;--accent:#10b981;--danger:#ef4444;--danger-bg:#fee2e2;--danger-border:#fecaca;
-    --radius:14px;--shadow:0 6px 20px rgba(2,6,23,.06);
+    --radius:14px;--shadow:0 6px 20px rgba(2,6,23,.06);--tap:48px;
   }
   @media (prefers-color-scheme:dark){
     :root{
@@ -15,13 +15,13 @@
     }
   }
 
-  .wrap{max-width:1100px;margin:0 auto;padding:clamp(8px,2vw,12px)}
+  .wrap{max-width:1100px;margin:0 auto;padding:clamp(10px,2.2vw,14px)}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:clamp(12px,2vw,16px)}
-  .title{margin:0 0 12px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:8px}
+  .title{margin:0 0 12px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .title .hint{font-size:.95rem;color:var(--muted);font-weight:700}
 
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}
-  .btn{--tap:46px;min-height:var(--tap);display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-weight:800;text-decoration:none;color:var(--ink);transition:transform .18s ease, box-shadow .18s ease}
+  .btn{min-height:var(--tap);display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-weight:800;text-decoration:none;color:var(--ink);transition:transform .18s ease, box-shadow .18s ease}
   .btn:hover{transform:translateY(-1px)}
   .btn:focus-visible{outline:2px solid var(--brand);outline-offset:2px;box-shadow:0 0 0 3px rgba(37,99,235,.25)}
   .btn-primary{background:linear-gradient(135deg,#2563eb,#3b82f6);border-color:transparent;color:#fff}
@@ -33,6 +33,7 @@
   @media (prefers-color-scheme:dark){.count-badge{background:#0e1b36;border-color:#1e2e59;color:#cdd9ff}}
 
   .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+  .table-wrap{-webkit-overflow-scrolling:touch}
   .table-wrap::-webkit-scrollbar{height:10px}
   .table-wrap::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}
   @media (prefers-color-scheme:dark){.table-wrap::-webkit-scrollbar-thumb{background:#374b7a}}
@@ -42,9 +43,10 @@
   th,td{padding:12px 10px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
   thead th{background:#f8fafc;text-align:right;font-weight:900;position:sticky;top:0;z-index:1}
   @media (prefers-color-scheme:dark){thead th{background:#0e1b35}}
+  td code{direction:ltr;unicode-bidi:embed}
 
   .muted{color:var(--muted)}
-  .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#f8fafc;font-weight:800}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#f8fafc;font-weight:800;white-space:nowrap}
   .pill.on{background:linear-gradient(180deg,#ecfdf5,#ffffff);border-color:#c7f3e3;color:#065f46}
   .pill.off{background:#fff7ed;border-color:#fed7aa;color:#7c2d12}
   @media (prefers-color-scheme:dark){
@@ -53,25 +55,31 @@
     .pill.off{background:#2b1b0f;border-color:#4a2e14;color:#fed7aa}
   }
 
-  .actions{display:flex;gap:6px;flex-wrap:wrap}
+  .actions{display:flex;gap:8px;flex-wrap:wrap}
   .actions .btn{padding:8px 12px}
 
-  /* ===== تخطيط بطاقات للجوال (Stacked Table) ===== */
-  @media (max-width: 760px){
-    .table-wrap{border:none}
-    table, thead, tbody, th, td, tr{display:block}
+  /* ===== الجوال: تحويل لبطاقات (≤820px) ===== */
+  @media (max-width: 820px){
+    .table-wrap{border:none;padding:0}
+    table, thead, tbody, th, td, tr{display:block;width:100%}
     thead{display:none}
     tbody{display:grid;gap:12px}
     tr{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
-    td{display:grid;grid-template-columns:9.5em 1fr;gap:8px;border:0;border-bottom:1px solid var(--line);padding:10px 12px;white-space:normal}
-    td:last-child{border-bottom:0}
-    td::before{
-      content:attr(data-th);
-      font-weight:900;color:var(--muted)
+    td{
+      display:grid;grid-template-columns:9.5em 1fr;gap:8px;
+      border:0;border-bottom:1px solid var(--line);
+      padding:12px 14px;white-space:normal;word-break:break-word
     }
-    /* أزرار الإجراءات تمتد بعرض البطاقة */
+    td:last-child{border-bottom:0}
+    td::before{content:attr(data-th);font-weight:900;color:var(--muted)}
+    /* الإجراءات بعرض البطاقة */
     .actions{padding:10px;border-top:1px dashed var(--line)}
     .actions .btn{flex:1 1 auto;justify-content:center}
+  }
+
+  /* شاشة صغيرة جدًا: تقليل مسميات الأعمدة */
+  @media (max-width:420px){
+    td{grid-template-columns:7.5em 1fr}
   }
 </style>
 {% endblock %}
@@ -90,7 +98,7 @@
     </div>
 
     <div class="table-headnote">
-      <span class="muted">مرر أفقيًا لعرض كل الأعمدة على الشاشات الصغيرة أو شاهد كبطاقات.</span>
+      <span class="muted">على الجوال ستظهر كبطاقات. على الشاشات الواسعة يبقى جدولًا ويمكنك التمرير أفقيًا إذا لزم.</span>
     </div>
 
     <div class="table-wrap" tabindex="0" aria-label="جدول الأقسام — قابل للتمرير">
@@ -112,9 +120,7 @@
           <tr>
             <td data-th="#" aria-label="الترتيب">{{ forloop.counter }}</td>
 
-            <td data-th="المعرّف/الكود">
-              <code>{{ d.code|default:"—" }}</code>
-            </td>
+            <td data-th="المعرّف/الكود"><code>{{ d.code|default:"—" }}</code></td>
 
             <td data-th="الاسم">{{ d.name|default:"—" }}</td>
 
@@ -126,9 +132,7 @@
               {% endif %}
             </td>
 
-            <td data-th="عدد الأعضاء">
-              {{ d.members_count|default:"0" }}
-            </td>
+            <td data-th="عدد الأعضاء">{{ d.members_count|default:"0" }}</td>
 
             <td data-th="حالة التذاكر" class="muted">
               {{ d.stats.open|default:"0" }} /
@@ -140,10 +144,7 @@
               <div class="actions" role="group" aria-label="إجراءات القسم">
                 <a class="btn" href="{% url 'reports:department_members' code=d.code %}">👥 الأعضاء</a>
                 <a class="btn" href="{% url 'reports:department_edit' code=d.code %}">✏️ تعديل</a>
-
-                <form action="{% url 'reports:department_delete' code=d.code %}"
-                      method="post" style="display:inline"
-                      onsubmit="return confirm('حذف هذا القسم؟');">
+                <form action="{% url 'reports:department_delete' code=d.code %}" method="post" style="display:inline" onsubmit="return confirm('حذف هذا القسم؟');">
                   {% csrf_token %}
                   <button class="btn btn-danger" type="submit">🗑 حذف</button>
                 </form>
@@ -151,9 +152,9 @@
             </td>
           </tr>
           {% empty %}
-            <tr>
-              <td data-th="ملاحظة" colspan="7" class="muted" style="text-align:center">لا توجد أقسام.</td>
-            </tr>
+          <tr>
+            <td data-th="ملاحظة" colspan="7" class="muted" style="text-align:center">لا توجد أقسام.</td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>

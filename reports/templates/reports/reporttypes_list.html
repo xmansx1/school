@@ -1,19 +1,49 @@
 {% extends "base.html" %}
 {% block title %}أنواع التقارير{% endblock %}
+
 {% block head %}
 <style>
+  :root{
+    --ink:#0f172a; --muted:#6b7280; --line:#e5e7eb; --card:#fff;
+    --brand:#2563eb; --accent:#10b981; --radius:12px; --shadow:0 8px 24px rgba(2,6,23,.06)
+  }
   .wrap{max-width:1000px;margin:24px auto;padding:0 16px}
-  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-  .btn{padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;font-weight:700}
-  .btn-primary{background:linear-gradient(135deg,#2563eb,#3b82f6);border-color:transparent;color:#fff}
-  table{width:100%;border-collapse:separate;border-spacing:0 10px}
-  th{font-weight:800;text-align:right;color:#6b7280}
-  td,th{padding:10px 12px}
-  .row{background:#fff;border:1px solid #e5e7eb;border-radius:12px}
-  .badge{border-radius:999px;background:#eef2ff;color:#1f2937;padding:4px 10px;font-size:.85rem}
-  .muted{color:#6b7280}
+
+  .top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .top h1{margin:0;font-size:clamp(1.1rem,2.4vw,1.4rem)}
+
+  .btn{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-weight:800;cursor:pointer;text-decoration:none;color:var(--ink)}
+  .btn-primary{background:linear-gradient(135deg,var(--brand),#3b82f6);border-color:transparent;color:#fff}
+  .btn.danger{background:#b91c1c;color:#fff;border-color:transparent}
   .actions a,.actions form{display:inline-block;margin-inline-start:6px}
-  .danger{background:#b91c1c;color:#fff;border-color:transparent}
+  .actions{display:flex;flex-wrap:wrap;gap:6px}
+
+  /* غلاف الجدول لتمرير أفقي عند الحاجة */
+  .table-wrap{background:transparent;border-radius:var(--radius);overflow:auto;border:1px solid var(--line)}
+  table{width:100%;border-collapse:separate;border-spacing:0;border:0}
+  thead th{position:sticky;top:0;background:#f8fafc;color:var(--muted);font-weight:900;text-align:right;border-bottom:1px solid var(--line)}
+  th,td{padding:12px 14px}
+  tbody tr{background:var(--card)}
+  tbody tr+tr td{border-top:1px solid #f3f4f6}
+  td .badge{display:inline-block;border-radius:999px;background:#eef2ff;color:#1f2937;padding:4px 10px;font-size:.85rem}
+
+  /* بطاقات للجوال (stacked) */
+  @media (max-width: 640px){
+    .table-wrap{border:0}
+    table, thead, tbody, th, tr{display:block}
+    thead{display:none}
+    tbody{display:grid;gap:10px}
+    tbody tr{border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+    tbody tr td{display:grid;grid-template-columns:8.5em 1fr;gap:8px;align-items:center;padding:10px 12px;border:0;border-bottom:1px solid #f1f5f9}
+    tbody tr td:last-child{border-bottom:0}
+    /* تسميات الحقول تُسحب من data-label */
+    td::before{content:attr(data-label);font-weight:900;color:var(--muted)}
+    /* أعمدة الإجراءات تتحول لصف أزرار */
+    td.actions{grid-template-columns:1fr;gap:8px}
+    td.actions .btn{width:100%;text-align:center}
+  }
+
+  .muted{color:var(--muted)}
 </style>
 {% endblock head %}
 
@@ -30,39 +60,43 @@
     <p class="muted">تعذّر استخدام الإدارة الكاملة لأن موديل <code>ReportType</code> غير مفعّل. تُعرض القائمة أدناه مرجعية فقط من الحقل الحالي.</p>
   {% endif %}
 
-  <table>
-    <thead>
-      <tr>
-        <th>الترتيب</th>
-        <th>الرمز (code)</th>
-        <th>الاسم</th>
-        <th>نشط</th>
-        <th>تقارير مرتبطة</th>
-        {% if db_backed %}<th>إجراءات</th>{% endif %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for it in items %}
-        <tr class="row">
-          <td>{{ it.order|default:"—" }}</td>
-          <td><span class="badge">{{ it.code }}</span></td>
-          <td>{{ it.name }}</td>
-          <td>{% if it.is_active %}✅{% else %}⛔{% endif %}</td>
-          <td>{{ it.count }}</td>
-          {% if db_backed %}
-          <td class="actions">
-            <a class="btn" href="{% url 'reports:reporttype_update' it.obj.pk %}">✏️ تعديل</a>
-            <form method="post" action="{% url 'reports:reporttype_delete' it.obj.pk %}" onsubmit="return confirm('حذف هذا النوع؟ لن يُسمح بالحذف إن كان مستخدمًا.');">
-              {% csrf_token %}
-              <button class="btn danger" type="submit">🗑 حذف</button>
-            </form>
-          </td>
-          {% endif %}
+  <div class="table-wrap" role="region" aria-label="جدول أنواع التقارير">
+    <table>
+      <thead>
+        <tr>
+          <th>الترتيب</th>
+          <th>الرمز (code)</th>
+          <th>الاسم</th>
+          <th>نشط</th>
+          <th>تقارير مرتبطة</th>
+          {% if db_backed %}<th>إجراءات</th>{% endif %}
         </tr>
-      {% empty %}
-        <tr class="row"><td colspan="6">لا توجد أنواع بعد.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        {% for it in items %}
+          <tr class="row">
+            <td data-label="الترتيب">{{ it.order|default:"—" }}</td>
+            <td data-label="الرمز"><span class="badge">{{ it.code }}</span></td>
+            <td data-label="الاسم">{{ it.name }}</td>
+            <td data-label="نشط">{% if it.is_active %}✅{% else %}⛔{% endif %}</td>
+            <td data-label="تقارير مرتبطة">{{ it.count }}</td>
+
+            {% if db_backed %}
+            <td class="actions" data-label="إجراءات">
+              <a class="btn" href="{% url 'reports:reporttype_update' it.obj.pk %}">✏️ تعديل</a>
+              <form method="post" action="{% url 'reports:reporttype_delete' it.obj.pk %}"
+                    onsubmit="return confirm('حذف هذا النوع؟ لن يُسمح بالحذف إن كان مستخدمًا.');">
+                {% csrf_token %}
+                <button class="btn danger" type="submit">🗑 حذف</button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+        {% empty %}
+          <tr class="row"><td data-label="" colspan="6">لا توجد أنواع بعد.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endblock content %}
