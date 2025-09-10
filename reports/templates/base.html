@@ -222,6 +222,14 @@
             </a>
           {% endif %}
 
+          {# ✅ أيقونة إرسال إشعار — للمدير/المسؤول فقط #}
+          {% if CAN_SEND_NOTIFICATIONS and SEND_NOTIFICATION_URL %}
+            <a class="{% if active == 'notifications_create' or active == 'send_notification' %}active{% endif %}"
+               href="{{ SEND_NOTIFICATION_URL }}" aria-label="إرسال إشعار" title="إرسال إشعار">
+              <i class="fa-solid fa-bullhorn"></i>
+            </a>
+          {% endif %}
+
           <!-- حساب -->
           <div class="userbox">
             {% firstof request.user.name request.user.phone request.user.national_id "حسابي" as display_name %}
@@ -279,6 +287,14 @@
         {% if my_notifications_url %}
           <a class="{% if active == 'my_notifications' %}active{% endif %}" href="{{ my_notifications_url }}">
             إشعاراتي{% if NAV_NOTIFICATIONS_UNREAD|default:0 > 0 %} <span class="badge">{{ NAV_NOTIFICATIONS_UNREAD }}</span>{% endif %}
+          </a>
+        {% endif %}
+
+        {# ✅ رابط إرسال إشعار في الجوال #}
+        {% if CAN_SEND_NOTIFICATIONS and SEND_NOTIFICATION_URL %}
+          <a class="{% if active == 'notifications_create' or active == 'send_notification' %}active{% endif %}"
+             href="{{ SEND_NOTIFICATION_URL }}">
+            <i class="fa-solid fa-bullhorn"></i> إرسال إشعار
           </a>
         {% endif %}
 
