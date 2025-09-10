@@ -1,469 +1,394 @@
+{# templates/reports/admin_reports.html #}
 {% extends "base.html" %}
 {% block title %}لوحة المدير - التقارير{% endblock %}
 
-{% block content %}
-<div class="admin-container">
-  <!-- العنوان -->
-  <div class="admin-header">
-    <h1 class="admin-title"><i class="fas fa-chart-bar"></i> جـديدة</h1>
-    <p class="admin-subtitle">إدارة وعرض جميع التقارير المقدمة من المعلمين</p>
-  </div>
-
-  <div class="admin-card">
-    <!-- ✅ فلاتر البحث -->
-    <form method="GET" class="filters-form">
-      <div class="filters-grid">
-        <div class="filter-group">
-          <label>📅 من تاريخ</label>
-          <input type="date" name="start_date" value="{{ start_date }}" class="filter-input">
-        </div>
-        <div class="filter-group">
-          <label>📅 إلى تاريخ</label>
-          <input type="date" name="end_date" value="{{ end_date }}" class="filter-input">
-        </div>
-        <div class="filter-group">
-          <label>👨‍🏫 اسم المعلم</label>
-          <input type="text" name="teacher_name" value="{{ teacher_name }}" placeholder="اكتب اسم المعلم أو جزء منه" class="filter-input"/>
-        </div>
-
-        {% if categories %}
-        <div class="filter-group">
-          <label>🏷️ التصنيف</label>
-          <select name="category" class="filter-input">
-            <option value="">كل التصنيفات</option>
-            {% for c_val, c_label in categories %}
-              <option value="{{ c_val }}" {% if category == c_val %}selected{% endif %}>{{ c_label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        {% endif %}
-      </div>
-
-      <div class="filter-actions">
-        <button class="btn btn-primary" type="submit"><i class="fas fa-check"></i> تطبيق الفلاتر</button>
-        {% if start_date or end_date or teacher_national_id or category %}
-          <a href="{% url 'reports:admin_reports' %}" class="btn btn-outline"><i class="fas fa-times"></i> مسح الفلاتر</a>
-        {% endif %}
-      </div>
-    </form>
-
-    <!-- ✅ جدول (ديسكتوب) -->
-    <div class="table-responsive desktop-only">
-      <table class="reports-table">
-        <thead>
-          <tr>
-            <th>📅 التاريخ</th>
-            <th>👨‍🏫 المعلم</th>
-            <th>📖 العنوان</th>
-            <th>🏷️ التصنيف</th>
-            <th>👥 المستفيدون</th>
-            <th>💡 الفكرة</th>
-            <th>🖼 الصور</th>
-            <th>⚙️ الإجراءات</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in reports %}
-          <tr>
-            <td>
-              {{ r.report_date|date:"Y-m-d" }}<br>
-              <small class="text-muted">{{ r.day_name }}</small>
-            </td>
-            <td>{{ r.teacher_display_name }}</td>
-            <td>{{ r.title }}</td>
-
-            <!-- ✅ التصنيف كبادج ملوّن -->
-            <td>
-              <span class="cat-pill" title="{{ r.category.name|default_if_none:'-' }}" data-code="{{ r.category.code|default_if_none:'' }}">
-                <i class="fas fa-tag"></i>
-                {{ r.category.name|default_if_none:'-' }}
-              </span>
-            </td>
-
-            <td class="text-center">{{ r.beneficiaries_count }}</td>
-
-            <td>
-              <textarea id="idea-{{ r.pk }}" style="display:none;">{{ r.idea|default_if_none:''|escape }}</textarea>
-              {{ r.idea|truncatewords:12 }}
-            </td>
-
-            <td>
-              <div class="table-images">
-                {% if r.image1 %}<img src="{{ r.image1.url }}" alt="صورة 1">{% endif %}
-                {% if r.image2 %}<img src="{{ r.image2.url }}" alt="صورة 2">{% endif %}
-                {% if r.image3 %}<img src="{{ r.image3.url }}" alt="صورة 3">{% endif %}
-                {% if r.image4 %}<img src="{{ r.image4.url }}" alt="صورة 4">{% endif %}
-              </div>
-            </td>
-            <td>
-              <div class="action-buttons">
-                <button class="btn btn-show-idea"
-                        data-idea-id="idea-{{ r.pk }}"
-                        data-teacher="{{ r.teacher.name|escapejs }}"
-                        data-program="{{ r.title|escapejs }}"
-                        data-date="{{ r.report_date|date:'Y-m-d' }} - {{ r.day_name|default_if_none:''|escapejs }}"
-                        data-category="{{ r.category.name|default_if_none:''|escapejs }}"
-                        data-images="{% if r.image1 %}{{ r.image1.url }}{% endif %}|{% if r.image2 %}{{ r.image2.url }}{% endif %}|{% if r.image3 %}{{ r.image3.url }}{% endif %}|{% if r.image4 %}{{ r.image4.url }}{% endif %}">
-                  <i class="fas fa-eye"></i>
-                </button>
-                <a href="{% url 'reports:report_print' r.pk %}" target="_blank" class="btn btn-print"><i class="fas fa-print"></i></a>
-                <form method="POST" action="{% url 'reports:admin_delete_report' r.pk %}">
-                  {% csrf_token %}
-                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                  <button class="btn btn-danger" type="submit" onclick="return confirm('هل أنت متأكد من الحذف؟')"><i class="fas fa-trash"></i></button>
-                </form>
-              </div>
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="8" class="text-center">لا توجد تقارير</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <!-- ✅ عرض كبطاقات (موبايل) -->
-    <div class="cards-view mobile-only">
-      {% for r in reports %}
-      <div class="report-card">
-        <div class="report-header">
-          <span>📅 {{ r.report_date|date:"Y-m-d" }} – {{ r.day_name }}</span>
-          <span>👨‍🏫 {{ r.teacher_display_name }}</span>
-        </div>
-        <p class="report-program">
-          📖 {{ r.title }}
-          • <span class="cat-pill" data-code="{{ r.category.code|default_if_none:'' }}">
-              <i class="fas fa-tag"></i>{{ r.category.name|default_if_none:'-' }}
-            </span>
-          • 👥 {{ r.beneficiaries_count }}
-        </p>
-
-        <textarea id="idea-m-{{ r.pk }}" style="display:none;">{{ r.idea|default_if_none:''|escape }}</textarea>
-        <p class="report-idea">{{ r.idea|truncatewords:20 }}</p>
-
-        <div class="report-images">
-          {% if r.image1 %}<img src="{{ r.image1.url }}" alt="img">{% endif %}
-          {% if r.image2 %}<img src="{{ r.image2.url }}" alt="img">{% endif %}
-          {% if r.image3 %}<img src="{{ r.image3.url }}" alt="img">{% endif %}
-          {% if r.image4 %}<img src="{{ r.image4.url }}" alt="img">{% endif %}
-        </div>
-        <div class="card-actions">
-          <button class="btn btn-show-idea"
-                  data-idea-id="idea-m-{{ r.pk }}"
-                  data-teacher="{{ r.teacher.name|escapejs }}"
-                  data-program="{{ r.title|escapejs }}"
-                  data-date="{{ r.report_date|date:'Y-m-d' }} - {{ r.day_name|default_if_none:''|escapejs }}"
-                  data-category="{{ r.category.name|default_if_none:''|escapejs }}"
-                  data-images="{% if r.image1 %}{{ r.image1.url }}{% endif %}|{% if r.image2 %}{{ r.image2.url }}{% endif %}|{% if r.image3 %}{{ r.image3.url }}{% endif %}|{% if r.image4 %}{{ r.image4.url }}{% endif %}">
-            👁 عرض
-          </button>
-          <a href="{% url 'reports:report_print' r.pk %}" target="_blank" class="btn btn-print">🖨 طباعة</a>
-          <form method="POST" action="{% url 'reports:admin_delete_report' r.pk %}">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button class="btn btn-danger" type="submit" onclick="return confirm('هل أنت متأكد من الحذف؟')">🗑 حذف</button>
-          </form>
-        </div>
-      </div>
-      {% empty %}
-      <p class="text-center">لا توجد تقارير</p>
-      {% endfor %}
-    </div>
-
-    <!-- ✅ ترقيم الصفحات -->
-    {% if reports.paginator.num_pages > 1 %}
-    <div class="pagination">
-      {% if reports.has_previous %}
-        <a class="page-btn" href="?page={{ reports.previous_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if teacher_national_id %}&teacher_national_id={{ teacher_national_id }}{% endif %}{% if category %}&category={{ category }}{% endif %}">السابق</a>
-      {% endif %}
-      <span class="page-current">صفحة {{ reports.number }} من {{ reports.paginator.num_pages }}</span>
-      {% if reports.has_next %}
-        <a class="page-btn" href="?page={{ reports.next_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if teacher_national_id %}&teacher_national_id={{ teacher_national_id }}{% endif %}{% if category %}&category={{ category }}{% endif %}">التالي</a>
-      {% endif %}
-    </div>
-    {% endif %}
-  </div>
-</div>
-
-<!-- ✅ المودال (Side/Bottom Sheet مدمج) -->
-<div id="ideaModal" class="modern-modal" aria-hidden="true">
-  <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <header class="sheet-head">
-      <h2 id="modalTitle">💡 التقرير</h2>
-      <button class="sheet-close" aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
-    </header>
-
-    <section class="sheet-body">
-      <div id="modalIdea" class="modal-idea"></div>
-
-      <div class="modal-meta">
-        <p>👨‍🏫 <b>المعلم:</b> <span id="modalTeacher"></span></p>
-        <p>📖 <b>العنوان:</b> <span id="modalProgram"></span></p>
-        <p>🏷️ <b>التصنيف:</b> <span id="modalCategory"></span></p>
-        <p>📅 <b>التاريخ:</b> <span id="modalDate"></span></p>
-      </div>
-
-      <div id="modalImages" class="modal-images"></div>
-    </section>
-  </div>
-</div>
-
+{% block head %}
 <style>
-/* ============ إطار عام ============ */
-.admin-container { padding:20px; max-width:1400px; margin:auto; }
-.admin-title { font-size:24px; font-weight:800; display:flex; gap:8px; color:#1e293b; align-items:center }
-.admin-subtitle { color:#64748b; margin-top:4px; }
-.admin-card { background:#fff; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.08); padding:20px; }
-
-/* ============ الفلاتر ============ */
-.filters-form { margin-bottom:20px; }
-.filters-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:12px; }
-.filter-input { padding:10px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; }
-.filter-actions { margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; }
-
-/* ============ الجدول ============ */
-.reports-table { width:100%; border-collapse:collapse; font-size:14px; }
-.reports-table th, .reports-table td { padding:12px; border-bottom:1px solid #e5e7eb; text-align:right }
-.reports-table th { background:#f9fafb; }
-.reports-table tr:hover { background:#f3f4f6; }
-
-/* ============ الصور ============ */
-.table-images img, .report-images img { width:44px; height:44px; object-fit:cover; border-radius:6px; }
-
-/* ============ الأزرار ============ */
-.btn { padding:6px 12px; border-radius:6px; font-size:13px; cursor:pointer; border:none; }
-.btn-primary { background:#3b82f6; color:#fff; }
-.btn-outline { background:#fff; color:#1f2937; border:1px solid #cbd5e1; }
-.btn-show-idea { background:#3b82f6; color:#fff; }
-.btn-print { background:#10b981; color:#fff; }
-.btn-danger { background:#ef4444; color:#fff; }
-.btn:hover { opacity:0.9; }
-.action-buttons { display:flex; gap:6px; }
-
-/* ============ بادج التصنيف ============ */
-.cat-pill{
-  display:inline-flex; align-items:center; gap:6px;
-  padding:5px 9px; border-radius:999px; font-weight:800; font-size:.82rem;
-  border:1px solid; background:#f1f5f9; color:#334155; border-color:#e2e8f0;
+/* ========= تصميم عام (مُحاط بفئة admin-v3 لعدم تعارض الأنماط) ========= */
+.admin-v3{ --ink:#0f172a; --muted:#64748b; --line:#e5e7eb; --card:#fff; --bg:#f8fafc;
+          --brand:#2563eb; --radius:16px; --shadow:0 10px 30px rgba(2,6,23,.08); --t:.22s ease; }
+@media (prefers-color-scheme:dark){
+  .admin-v3{ --ink:#e6ebff; --muted:#9fb0d9; --line:#1b2744; --card:#0f1629; --bg:#0b1220; }
 }
-.tone-blue    { background:#e0f2fe; color:#075985; border-color:#bae6fd; }
-.tone-amber   { background:#fef3c7; color:#92400e; border-color:#fde68a; }
-.tone-red     { background:#fee2e2; color:#7f1d1d; border-color:#fecaca; }
-.tone-violet  { background:#ede9fe; color:#5b21b6; border-color:#ddd6fe; }
-.tone-slate   { background:#e2e8f0; color:#1e293b; border-color:#cbd5e1; }
-.tone-green   { background:#dcfce7; color:#065f46; border-color:#bbf7d0; }
-.tone-fuchsia { background:#fae8ff; color:#86198f; border-color:#f5d0fe; }
-.tone-rose    { background:#ffe4e6; color:#be123c; border-color:#fecdd3; }
-.tone-teal    { background:#ccfbf1; color:#134e4a; border-color:#99f6e4; }
-.tone-emerald { background:#d1fae5; color:#065f46; border-color:#a7f3d0; }
-.tone-orange  { background:#ffedd5; color:#9a3412; border-color:#fed7aa; }
-.tone-gray    { background:#f1f5f9; color:#334155; border-color:#e2e8f0; }
+.admin-v3 .admin-container{ padding:20px; max-width:1400px; margin:auto; }
+.admin-v3 .admin-header{ margin-bottom:14px; }
+.admin-v3 .admin-title{ margin:0; color:var(--ink); font-weight:900; font-size:clamp(1.1rem,2.2vw,1.35rem); display:flex; gap:8px; align-items:center }
+.admin-v3 .admin-subtitle{ color:var(--muted); margin:6px 0 0; font-weight:800 }
+.admin-v3 .admin-card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; }
 
-/* ============ بطاقات الموبايل ============ */
-.cards-view { display:grid; gap:15px; }
-.report-card { background:#fff; padding:12px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
-.report-header { display:flex; justify-content:space-between; font-size:13px; color:#334155; margin-bottom:6px; gap:10px; flex-wrap:wrap }
-.report-program { font-size:13px; margin:4px 0; color:#475569; }
-.report-idea { font-size:14px; margin:6px 0; color:#1e293b; }
-.report-images { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
-.card-actions { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+/* ========= فلاتر ========= */
+.admin-v3 .filters-form{ margin-bottom:16px; display:grid; gap:10px; }
+.admin-v3 .filters-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+.admin-v3 .filter-input{ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font:inherit }
+.admin-v3 .filter-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.admin-v3 .btn{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; border:1px solid var(--line);
+                background:var(--card); color:var(--ink); font-weight:800; cursor:pointer; text-decoration:none; transition:transform var(--t) }
+.admin-v3 .btn:hover{ transform:translateY(-1px) }
+.admin-v3 .btn-primary{ background:var(--brand); border-color:var(--brand); color:#fff }
+.admin-v3 .btn-outline{ background:transparent }
 
-/* ============ المودال (Side/Bottom Sheet مدمج وصغير) ============ */
-.modern-modal{
+/* ========= جدول ديسكتوب ========= */
+.admin-v3 .desktop-only{ display:block }
+.admin-v3 .mobile-only{ display:none }
+@media (max-width: 768px){ .admin-v3 .desktop-only{display:none} .admin-v3 .mobile-only{display:block} }
+
+.admin-v3 .reports-table{ width:100%; border-collapse:collapse; font-size:14px }
+.admin-v3 .reports-table th,.admin-v3 .reports-table td{ padding:12px; border-bottom:1px solid var(--line); text-align:right }
+.admin-v3 .reports-table thead th{ background:rgba(37,99,235,.06); font-weight:900 }
+.admin-v3 .reports-table tbody tr:hover{ background:rgba(37,99,235,.04) }
+
+/* صور مصغرة بالجدول */
+.admin-v3 .table-images{ display:flex; gap:6px; flex-wrap:wrap }
+.admin-v3 .table-images img{ width:44px; height:44px; object-fit:cover; border-radius:8px; border:1px solid var(--line) }
+
+/* ========= بطاقات موبايل ========= */
+.admin-v3 .cards-view{ display:grid; gap:12px }
+.admin-v3 .report-card{ background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:12px }
+.admin-v3 .report-header{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; font-size:13px; color:var(--muted) }
+.admin-v3 .report-program{ margin:6px 0; color:var(--ink); font-weight:800; font-size:13px }
+.admin-v3 .report-idea{ margin:6px 0; color:var(--ink); font-size:14px }
+.admin-v3 .report-images{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px }
+.admin-v3 .report-images img{ width:72px; height:72px; object-fit:cover; border-radius:10px; border:1px solid var(--line) }
+.admin-v3 .card-actions{ display:flex; gap:6px; flex-wrap:wrap; margin-top:8px }
+
+/* ========= أزرار الإجراءات ========= */
+.admin-v3 .action-buttons{ display:flex; gap:6px; align-items:center; flex-wrap:wrap }
+.admin-v3 .btn-show-idea{ background:#3b82f6; color:#fff; border-color:#3b82f6 }
+.admin-v3 .btn-print{ background:#10b981; color:#fff; border-color:#10b981 }
+.admin-v3 .btn-danger{ background:#ef4444; color:#fff; border-color:#ef4444 }
+
+/* ========= بادج التصنيف بالألوان ========= */
+.admin-v3 .cat-pill{ display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; border:1px solid #e2e8f0;
+                     background:#f1f5f9; color:#334155; font-weight:800; font-size:.85rem }
+.admin-v3 .tone-blue{    background:#e0f2fe; color:#075985; border-color:#bae6fd }
+.admin-v3 .tone-amber{   background:#fef3c7; color:#92400e; border-color:#fde68a }
+.admin-v3 .tone-red{     background:#fee2e2; color:#7f1d1d; border-color:#fecaca }
+.admin-v3 .tone-violet{  background:#ede9fe; color:#5b21b6; border-color:#ddd6fe }
+.admin-v3 .tone-slate{   background:#e2e8f0; color:#1e293b; border-color:#cbd5e1 }
+.admin-v3 .tone-green{   background:#dcfce7; color:#065f46; border-color:#bbf7d0 }
+.admin-v3 .tone-fuchsia{ background:#fae8ff; color:#86198f; border-color:#f5d0fe }
+.admin-v3 .tone-rose{    background:#ffe4e6; color:#be123c; border-color:#fecdd3 }
+.admin-v3 .tone-teal{    background:#ccfbf1; color:#134e4a; border-color:#99f6e4 }
+.admin-v3 .tone-emerald{ background:#d1fae5; color:#065f46; border-color:#a7f3d0 }
+.admin-v3 .tone-orange{  background:#ffedd5; color:#9a3412; border-color:#fed7aa }
+.admin-v3 .tone-gray{    background:#f1f5f9; color:#334155; border-color:#e2e8f0 }
+
+/* ========= المودال المتمركز بحجم ذكي ========= */
+.admin-v3 .modern-modal{
   position:fixed; inset:0; background:rgba(2,6,23,.40);
   z-index:2000; opacity:0; visibility:hidden; transition:opacity .18s ease, visibility .18s ease;
+  display:grid; place-items:center;
+  padding:
+    max(12px, env(safe-area-inset-top))
+    max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
 }
-.modern-modal.open{ opacity:1; visibility:visible; }
+.admin-v3 .modern-modal.open{ opacity:1; visibility:visible; }
 
-/* مقاسات مضغوطة */
-:root{
-  --sheet-w: 460px;
-  --sheet-w-lg: 520px;
-  --sheet-radius: 14px;
-  --sheet-v-gap: 14px; /* هامش علوي/سفلي لتخفيف الهيمنة */
+/* اللوحة الداخلية */
+.admin-v3 .modal-sheet{
+  width:clamp(320px, 92vw, 560px);
+  max-height:min(84svh, 640px);
+  background:var(--card); color:var(--ink);
+  border:1px solid var(--line); border-radius:14px;
+  box-shadow:0 22px 60px rgba(2,6,23,.18);
+  transform:scale(.98); transition:transform .18s ease;
+  display:flex; flex-direction:column; overflow:hidden;
 }
+.admin-v3 .modern-modal.open .modal-sheet{ transform:scale(1) }
 
-.modal-sheet{
-  position:fixed;
-  top:var(--sheet-v-gap);
-  bottom:var(--sheet-v-gap);
-  inset-inline-end:var(--sheet-v-gap);
-  width:min(var(--sheet-w), 92vw);
-  max-width:var(--sheet-w-lg);
-  background:#fff;
-  border:1px solid #e5e7eb;
-  border-radius:var(--sheet-radius);
-  box-shadow:-18px 0 50px rgba(2,6,23,.10);
-  transform:translateX(110%);
-  transition:transform .22s ease;
-  display:flex; flex-direction:column;
-  overflow:hidden; /* لكي يكون السكول داخل الجسم فقط */
-}
-.modern-modal.open .modal-sheet{ transform:translateX(0); }
-
-@media (min-width:1280px){
-  .modal-sheet{ width:var(--sheet-w); max-width:var(--sheet-w-lg); }
-}
-@media (max-width: 768px){
-  .modal-sheet{
-    inset:auto 0 0 0;
-    height:72dvh; /* أصغر على الجوال */
-    width:100%;
-    border-radius:12px 12px 0 0;
-    border-top:1px solid #e5e7eb;
-    transform:translateY(110%);
-    box-shadow:0 -18px 40px rgba(2,6,23,.10);
-  }
-  .modern-modal.open .modal-sheet{ transform:translateY(0); }
-}
-
-/* رأس وجسم اللوح (كثافة أقل) */
-.sheet-head{
-  position:sticky; top:0;
+/* رأس وجسم */
+.admin-v3 .sheet-head{
+  position:sticky; top:0; z-index:1; background:var(--card);
   display:flex; align-items:center; justify-content:space-between; gap:8px;
-  padding:10px 12px; border-bottom:1px solid #e5e7eb; background:#fff; z-index:1;
+  padding:10px 12px; border-bottom:1px solid var(--line);
 }
-.sheet-head h2{ margin:0; font-weight:800; color:#0f172a; font-size:.98rem }
-.sheet-close{
-  background:#ef4444; color:#fff; border:none;
-  width:28px; height:28px; border-radius:999px; cursor:pointer; display:grid; place-items:center; font-size:.9rem
-}
-.sheet-close:hover{ opacity:.92 }
-.sheet-body{ padding:10px 12px; overflow:auto }
+.admin-v3 .sheet-head h2{ margin:0; font-weight:900; font-size:.98rem }
+.admin-v3 .sheet-close{ background:#ef4444; color:#fff; border:0; width:28px; height:28px; border-radius:999px; cursor:pointer; display:grid; place-items:center }
+.admin-v3 .sheet-close:hover{ opacity:.92 }
+.admin-v3 .sheet-body{ padding:10px 12px; overflow:auto }
 
-/* نص التقرير داخل المودال */
-.modal-idea{
-  white-space:pre-line; margin:8px 0; font-size:14px; line-height:1.7; color:#1e293b;
-  padding:10px; background:#f9fafb; border-radius:10px; border:1px solid #e5e7eb;
+/* محتوى داخل المودال */
+.admin-v3 .modal-idea{
+  white-space:pre-line; margin:8px 0; font-size:14px; line-height:1.7;
+  padding:10px; background:#f9fafb; border:1px solid var(--line); border-radius:10px;
 }
-.modal-meta p{ margin:3px 0; font-size:13px; color:#475569; }
+.admin-v3 .modal-meta p{ margin:3px 0; font-size:13px; color:var(--muted) }
+.admin-v3 .modal-images{ margin-top:10px; display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px }
+.admin-v3 .modal-images img{ width:100%; height:110px; object-fit:cover; border-radius:10px; border:1px solid var(--line); box-shadow:0 3px 10px rgba(0,0,0,.12); cursor:pointer; transition:transform .2s, box-shadow .2s }
+.admin-v3 .modal-images img:hover{ transform:scale(1.04); box-shadow:0 6px 16px rgba(0,0,0,.18) }
 
-/* صور المودال (مضغوطة) */
-.modal-images{
-  margin-top:10px; display:grid; grid-template-columns:repeat(auto-fill, minmax(110px,1fr)); gap:8px;
-}
-.modal-images img{
-  width:100%; height:110px; object-fit:cover; border-radius:10px; box-shadow:0 3px 10px rgba(0,0,0,0.12);
-  cursor:pointer; transition:transform .2s, box-shadow .2s;
-}
-.modal-images img:hover{ transform:scale(1.04); box-shadow:0 6px 16px rgba(0,0,0,0.18); }
-
-/* الترقيم */
-.pagination { display:flex; gap:10px; align-items:center; justify-content:center; margin-top:16px; }
-.page-btn { padding:6px 12px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; color:#111827; text-decoration:none; }
-.page-current { color:#374151; font-size:13px; }
-
-/* التجاوب */
-.desktop-only { display:block; }
-.mobile-only { display:none; }
-@media (max-width: 768px){
-  .desktop-only { display:none; }
-  .mobile-only { display:block; }
+@media (max-width:420px){
+  .admin-v3 .modal-sheet{ width:96vw; max-height:78svh }
+  .admin-v3 .modal-images{ grid-template-columns:repeat(2,1fr) }
 }
 @media (prefers-reduced-motion:reduce){
-  .modern-modal, .modal-sheet, .modal-images img{ transition:none !important; }
+  .admin-v3 .modern-modal, .admin-v3 .modal-sheet, .admin-v3 .modal-images img{ transition:none !important; }
 }
 </style>
+{% endblock %}
 
+{% block content %}
+<div class="admin-v3">
+  <div class="admin-container">
+    <!-- العنوان -->
+    <div class="admin-header">
+      <h1 class="admin-title"><i class="fa-solid fa-chart-bar"></i> لوحة التقارير</h1>
+      <p class="admin-subtitle">إدارة وعرض جميع التقارير المقدمة من المعلمين</p>
+    </div>
+
+    <div class="admin-card">
+      <!-- ✅ فلاتر -->
+      <form method="GET" class="filters-form" novalidate>
+        <div class="filters-grid">
+          <div>
+            <label class="admin-subtitle" style="font-size:.9rem">📅 من تاريخ</label>
+            <input type="date" name="start_date" value="{{ start_date }}" class="filter-input">
+          </div>
+          <div>
+            <label class="admin-subtitle" style="font-size:.9rem">📅 إلى تاريخ</label>
+            <input type="date" name="end_date" value="{{ end_date }}" class="filter-input">
+          </div>
+          <div>
+            <label class="admin-subtitle" style="font-size:.9rem">👨‍🏫 اسم المعلم</label>
+            <input type="text" name="teacher_name" value="{{ teacher_name }}" class="filter-input" placeholder="اكتب اسم المعلم أو جزء منه">
+          </div>
+          {% if categories %}
+          <div>
+            <label class="admin-subtitle" style="font-size:.9rem">🏷️ التصنيف</label>
+            <select name="category" class="filter-input">
+              <option value="">كل التصنيفات</option>
+              {% for c_val, c_label in categories %}
+                <option value="{{ c_val }}" {% if category == c_val %}selected{% endif %}>{{ c_label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+        </div>
+        <div class="filter-actions">
+          <button class="btn btn-primary" type="submit"><i class="fa-solid fa-check"></i> تطبيق</button>
+          {% if start_date or end_date or teacher_name or category %}
+            <a href="{% url 'reports:admin_reports' %}" class="btn btn-outline"><i class="fa-solid fa-rotate-left"></i> مسح</a>
+          {% endif %}
+        </div>
+      </form>
+
+      <!-- ✅ جدول ديسكتوب -->
+      <div class="table-responsive desktop-only">
+        <table class="reports-table">
+          <thead>
+            <tr>
+              <th>📅 التاريخ</th>
+              <th>👨‍🏫 المعلم</th>
+              <th>📖 العنوان</th>
+              <th>🏷️ التصنيف</th>
+              <th>👥 المستفيدون</th>
+              <th>💡 الفكرة</th>
+              <th>🖼 الصور</th>
+              <th>⚙️ الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in reports %}
+            <tr>
+              <td>
+                {{ r.report_date|date:"Y-m-d" }}<br>
+                <small class="admin-subtitle" style="font-weight:800">{{ r.day_name }}</small>
+              </td>
+              <td>{{ r.teacher_display_name }}</td>
+              <td>{{ r.title }}</td>
+              <td>
+                <span class="cat-pill" data-code="{{ r.category.code|default_if_none:'' }}">
+                  <i class="fa-solid fa-tag"></i>{{ r.category.name|default_if_none:'-' }}
+                </span>
+              </td>
+              <td class="text-center">{{ r.beneficiaries_count }}</td>
+              <td>
+                <textarea id="idea-{{ r.pk }}" style="display:none;">{{ r.idea|default_if_none:''|escape }}</textarea>
+                {{ r.idea|truncatewords:12 }}
+              </td>
+              <td>
+                <div class="table-images">
+                  {% if r.image1 %}<img src="{{ r.image1.url }}" alt="صورة 1">{% endif %}
+                  {% if r.image2 %}<img src="{{ r.image2.url }}" alt="صورة 2">{% endif %}
+                  {% if r.image3 %}<img src="{{ r.image3.url }}" alt="صورة 3">{% endif %}
+                  {% if r.image4 %}<img src="{{ r.image4.url }}" alt="صورة 4">{% endif %}
+                </div>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn btn-show-idea"
+                          data-idea-id="idea-{{ r.pk }}"
+                          data-teacher="{{ r.teacher.name|escapejs }}"
+                          data-program="{{ r.title|escapejs }}"
+                          data-date="{{ r.report_date|date:'Y-m-d' }} - {{ r.day_name|default_if_none:''|escapejs }}"
+                          data-category="{{ r.category.name|default_if_none:''|escapejs }}"
+                          data-images="{% if r.image1 %}{{ r.image1.url }}{% endif %}|{% if r.image2 %}{{ r.image2.url }}{% endif %}|{% if r.image3 %}{{ r.image3.url }}{% endif %}|{% if r.image4 %}{{ r.image4.url }}{% endif %}">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                  <a class="btn btn-print" href="{% url 'reports:report_print' r.pk %}" target="_blank" rel="noopener"><i class="fa-solid fa-print"></i></a>
+                  <form method="POST" action="{% url 'reports:admin_delete_report' r.pk %}" style="display:inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button class="btn btn-danger" type="submit" onclick="return confirm('هل أنت متأكد من الحذف؟')"><i class="fa-solid fa-trash"></i></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" style="text-align:center;padding:14px;color:var(--muted)">لا توجد تقارير</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ✅ بطاقات موبايل -->
+      <div class="cards-view mobile-only">
+        {% for r in reports %}
+        <div class="report-card">
+          <div class="report-header">
+            <span>📅 {{ r.report_date|date:"Y-m-d" }} – {{ r.day_name }}</span>
+            <span>👨‍🏫 {{ r.teacher_display_name }}</span>
+          </div>
+          <p class="report-program">
+            📖 {{ r.title }} •
+            <span class="cat-pill" data-code="{{ r.category.code|default_if_none:'' }}"><i class="fa-solid fa-tag"></i>{{ r.category.name|default_if_none:'-' }}</span>
+            • 👥 {{ r.beneficiaries_count }}
+          </p>
+          <textarea id="idea-m-{{ r.pk }}" style="display:none;">{{ r.idea|default_if_none:''|escape }}</textarea>
+          <p class="report-idea">{{ r.idea|truncatewords:20 }}</p>
+          <div class="report-images">
+            {% if r.image1 %}<img src="{{ r.image1.url }}" alt="img">{% endif %}
+            {% if r.image2 %}<img src="{{ r.image2.url }}" alt="img">{% endif %}
+            {% if r.image3 %}<img src="{{ r.image3.url }}" alt="img">{% endif %}
+            {% if r.image4 %}<img src="{{ r.image4.url }}" alt="img">{% endif %}
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-show-idea"
+                    data-idea-id="idea-m-{{ r.pk }}"
+                    data-teacher="{{ r.teacher.name|escapejs }}"
+                    data-program="{{ r.title|escapejs }}"
+                    data-date="{{ r.report_date|date:'Y-m-d' }} - {{ r.day_name|default_if_none:''|escapejs }}"
+                    data-category="{{ r.category.name|default_if_none:''|escapejs }}"
+                    data-images="{% if r.image1 %}{{ r.image1.url }}{% endif %}|{% if r.image2 %}{{ r.image2.url }}{% endif %}|{% if r.image3 %}{{ r.image3.url }}{% endif %}|{% if r.image4 %}{{ r.image4.url }}{% endif %}">
+              👁 عرض
+            </button>
+            <a class="btn btn-print" href="{% url 'reports:report_print' r.pk %}" target="_blank" rel="noopener">🖨 طباعة</a>
+            <form method="POST" action="{% url 'reports:admin_delete_report' r.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button class="btn btn-danger" type="submit" onclick="return confirm('هل أنت متأكد من الحذف؟')">🗑 حذف</button>
+            </form>
+          </div>
+        </div>
+        {% empty %}
+        <p style="text-align:center;color:var(--muted)">لا توجد تقارير</p>
+        {% endfor %}
+      </div>
+
+      <!-- ✅ ترقيم صفحات -->
+      {% if reports.paginator.num_pages > 1 %}
+      <div style="display:flex;gap:10px;align-items:center;justify-content:center;margin-top:12px">
+        {% if reports.has_previous %}
+          <a class="btn" href="?page={{ reports.previous_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if teacher_name %}&teacher_name={{ teacher_name }}{% endif %}{% if category %}&category={{ category }}{% endif %}">السابق</a>
+        {% endif %}
+        <span class="admin-subtitle" style="font-weight:800">صفحة {{ reports.number }} من {{ reports.paginator.num_pages }}</span>
+        {% if reports.has_next %}
+          <a class="btn" href="?page={{ reports.next_page_number }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if teacher_name %}&teacher_name={{ teacher_name }}{% endif %}{% if category %}&category={{ category }}{% endif %}">التالي</a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ✅ المودال المتمركز -->
+  <div id="ideaModal" class="modern-modal" aria-hidden="true">
+    <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <header class="sheet-head">
+        <h2 id="modalTitle">💡 التقرير</h2>
+        <button class="sheet-close" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <section class="sheet-body">
+        <div id="modalIdea" class="modal-idea"></div>
+        <div class="modal-meta">
+          <p>👨‍🏫 <b>المعلم:</b> <span id="modalTeacher"></span></p>
+          <p>📖 <b>العنوان:</b> <span id="modalProgram"></span></p>
+          <p>🏷️ <b>التصنيف:</b> <span id="modalCategory"></span></p>
+          <p>📅 <b>التاريخ:</b> <span id="modalDate"></span></p>
+        </div>
+        <div id="modalImages" class="modal-images"></div>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-  const modal = document.getElementById("ideaModal");
-  const sheet = modal.querySelector(".modal-sheet");
-  const closeBtn = modal.querySelector(".sheet-close");
-
-  const modalIdea = document.getElementById("modalIdea");
-  const modalTeacher = document.getElementById("modalTeacher");
-  const modalProgram = document.getElementById("modalProgram");
-  const modalDate = document.getElementById("modalDate");
-  const modalCategory = document.getElementById("modalCategory");
-  const modalImages = document.getElementById("modalImages");
-
-  // تلوين البادجات حسب كود التصنيف
-  const toneMap = {
-    activity:"blue", volunteer:"amber", affairs:"violet", admin:"red", manager:"slate",
-    sports:"green", cultural:"fuchsia", culture:"fuchsia", social:"rose", scientific:"teal",
-    science:"teal", health:"emerald", safety:"orange", other:"gray", general:"gray"
-  };
-  document.querySelectorAll(".cat-pill").forEach(el=>{
+(function(){
+  // خريطة ألوان البادج حسب كود التصنيف
+  const toneMap={activity:"blue",volunteer:"amber",affairs:"violet",admin:"red",manager:"slate",
+                 sports:"green",cultural:"fuchsia",culture:"fuchsia",social:"rose",
+                 scientific:"teal",science:"teal",health:"emerald",safety:"orange",
+                 other:"gray",general:"gray"};
+  document.querySelectorAll(".admin-v3 .cat-pill").forEach(el=>{
     const code=(el.dataset.code||"").toLowerCase().trim();
-    const tone=toneMap[code]||"gray";
-    el.classList.add("tone-"+tone);
+    el.classList.add("tone-"+(toneMap[code]||"gray"));
   });
 
-  // قفل تمرير الصفحة عند فتح المودال
-  function lockScroll(on){
-    document.documentElement.style.overflow = on ? "hidden" : "";
-  }
+  const modal=document.getElementById("ideaModal");
+  const ideaEl=document.getElementById("modalIdea");
+  const tEl=document.getElementById("modalTeacher");
+  const pEl=document.getElementById("modalProgram");
+  const dEl=document.getElementById("modalDate");
+  const cEl=document.getElementById("modalCategory");
+  const imgs=document.getElementById("modalImages");
+  const closeBtn=modal.querySelector(".sheet-close");
 
-  function openModalFromBtn(btn){
-    const ideaId = btn.dataset.ideaId;
-    const ta = ideaId ? document.getElementById(ideaId) : null;
-    const idea = (ta ? ta.value : "").replace(/\r/g,"");
-    modalIdea.innerText = idea;                // آمن ضد XSS
-    modalTeacher.innerText = btn.dataset.teacher || "";
-    modalProgram.innerText = btn.dataset.program || "";
-    modalDate.innerText = btn.dataset.date || "";
-    modalCategory.innerText = btn.dataset.category || "";
+  function lockScroll(on){ document.documentElement.style.overflow = on ? "hidden" : ""; }
 
-    // الصور
-    modalImages.innerHTML = "";
-    (btn.dataset.images || "")
-      .split("|").map(s=>s.trim()).filter(Boolean)
-      .forEach(url => {
-        const img = document.createElement("img");
-        img.src = url;
-        img.alt = "صورة التقرير";
-        modalImages.appendChild(img);
+  function openFrom(btn){
+    const taId=btn.dataset.ideaId;
+    const ta=taId ? document.getElementById(taId) : null;
+    const idea=(ta?ta.value:"").replace(/\r/g,"");
+    ideaEl.innerText=idea; // آمن ضد XSS
+    tEl.innerText=btn.dataset.teacher||"";
+    pEl.innerText=btn.dataset.program||"";
+    dEl.innerText=btn.dataset.date||"";
+    cEl.innerText=btn.dataset.category||"";
+
+    imgs.innerHTML="";
+    (btn.dataset.images||"").split("|").map(s=>s.trim()).filter(Boolean).forEach(url=>{
+      const img=new Image(); img.src=url; img.alt="صورة التقرير";
+      img.addEventListener("click",()=>{ // تكبير بسيط
+        const o=document.createElement("div");
+        o.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:3000";
+        o.innerHTML=`<img src="${url}" alt="" style="max-width:90%;max-height:90%;border-radius:12px;box-shadow:0 6px 30px rgba(0,0,0,.5)">`;
+        o.addEventListener("click",()=>o.remove());
+        document.body.appendChild(o);
       });
+      imgs.appendChild(img);
+    });
 
     modal.classList.add("open");
     modal.setAttribute("aria-hidden","false");
     lockScroll(true);
-    setTimeout(()=>closeBtn.focus(), 40);
+    setTimeout(()=>closeBtn.focus(),40);
   }
 
-  // فتح من كل الأزرار
-  document.querySelectorAll(".btn-show-idea").forEach(btn=>{
-    btn.addEventListener("click", ()=> openModalFromBtn(btn));
+  document.querySelectorAll(".admin-v3 .btn-show-idea").forEach(btn=>{
+    btn.addEventListener("click",()=>openFrom(btn));
   });
 
-  // إغلاق
-  const closeModal = ()=>{
+  function close(){
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden","true");
     lockScroll(false);
-  };
-  closeBtn.addEventListener("click", closeModal);
-
-  // إغلاق بالنقر خارج اللوح
-  modal.addEventListener("click", (e)=>{
-    if(e.target === modal) closeModal();
-  });
-
-  // إغلاق بـ ESC
-  document.addEventListener("keydown", (e)=>{
-    if(e.key === "Escape" && modal.classList.contains("open")) closeModal();
-  });
-
-  // Lightbox بسيط للصورة داخل المودال
-  document.addEventListener("click", function(e) {
-    if (e.target.matches(".modal-images img")) {
-      const img = e.target;
-      const overlay = document.createElement("div");
-      overlay.style.position = "fixed";
-      overlay.style.inset = 0;
-      overlay.style.background = "rgba(0,0,0,0.85)";
-      overlay.style.display = "flex";
-      overlay.style.alignItems = "center";
-      overlay.style.justifyContent = "center";
-      overlay.style.zIndex = 3000;
-      overlay.innerHTML = `<img src="${img.src}" style="max-width:90%; max-height:90%; border-radius:12px; box-shadow:0 6px 30px rgba(0,0,0,0.5);" alt="صورة مكبرة">`;
-      overlay.addEventListener("click", () => overlay.remove());
-      document.body.appendChild(overlay);
-    }
-  });
-});
+  }
+  closeBtn.addEventListener("click",close);
+  modal.addEventListener("click",(e)=>{ if(e.target===modal) close(); });
+  document.addEventListener("keydown",(e)=>{ if(e.key==="Escape" && modal.classList.contains("open")) close(); });
+})();
 </script>
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 {% endblock %}
