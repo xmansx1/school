@@ -122,7 +122,7 @@
         <div class="row"><div class="k">المحتوى</div><div class="content-pre">{{ t.body|default_if_none:"—"|linebreaksbr }}</div></div>
       </div>
       {% if is_owner and not can_act %}
-        <div class="sticky-hint"><span class="help">أضِف ملاحظة للتواصل — ستتحوّل الحالة تلقائيًا إلى <b>قيد المعالجة</b>.</span></div>
+        <div class="sticky-hint"><span class="help">أضِف ملاحظة للتواصل — ستتحوّل الحالة تلقائيًا إلى <b>جــديد </b>.</span></div>
       {% endif %}
     </article>
 
@@ -180,7 +180,7 @@
         <form method="post" class="form" novalidate>
           {% csrf_token %}
           <div>
-            <label class="help">ستظهر ملاحظتك في السجل، وتتحوّل الحالة تلقائياً إلى <b>قيد المعالجة</b>.</label>
+            <label class="help">ستظهر ملاحظتك في السجل، وتتحوّل الحالة تلقائياً إلى <b>جديد</b>.</label>
             <textarea name="note" class="textarea" rows="3" placeholder="اكتب ملاحظتك هنا…"></textarea>
           </div>
           <div class="btns">

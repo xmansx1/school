@@ -2,14 +2,56 @@
 {% extends "base.html" %}
 {% block title %}صندوق الطلبات{% endblock %}
 
+{% block head %}
+<style>
+  .inbox-wrap{max-width:1200px;margin-inline:auto}
+  .card{
+    background:#fff;border:1px solid #e5e7eb;border-radius:14px;
+    box-shadow:0 4px 16px rgba(2,6,23,.06);padding:18px
+  }
+  .title{margin:0 0 12px;font-weight:900;color:#1f2937}
+
+  /* شارات الحالة */
+  .status-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:.8rem;font-weight:900;white-space:nowrap}
+  .s-open,.s-new{background:#dcfce7;color:#166534}
+  .s-in_progress,.s-pending{background:#ede9fe;color:#5b21b6}
+  .s-done{background:#e0f2fe;color:#075985}
+  .s-rejected,.s-cancelled{background:#fee2e2;color:#991b1b}
+
+  /* شارة القسم */
+  .dept-chip{display:inline-block;background:#eef2ff;color:#1e40af;border:1px solid #dbeafe;border-radius:999px;padding:3px 10px;font-weight:800;font-size:.8rem}
+
+  /* الجدول */
+  .tbl{width:100%;border-collapse:collapse;font-size:14px}
+  .tbl th,.tbl td{padding:10px;border-bottom:1px solid #f1f5f9;text-align:right}
+  .tbl thead th{background:#f9fafb;border-bottom:1px solid #e5e7eb;color:#0f172a;font-weight:900}
+  .actions .btn-open{padding:6px 10px;border-radius:8px;background:#10b981;color:#fff;text-decoration:none;display:inline-block}
+
+  /* استجابة الموبايل: نقلب الجدول إلى بطاقات */
+  @media(max-width:860px){
+    .tbl thead{display:none}
+    .tbl, .tbl tbody, .tbl tr, .tbl td{display:block;width:100%}
+    .tbl tr{border:1px solid #e5e7eb;border-radius:12px;margin:10px 0;background:#fff}
+    .tbl td{border-bottom:1px dashed #e5e7eb}
+    .tbl td:last-child{border-bottom:0}
+    .tbl td[data-label]::before{
+      content:attr(data-label);
+      font-weight:900;color:#1f2937;display:inline-block;margin-inline-start:6px
+    }
+    .actions{display:flex;justify-content:flex-start}
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container" style="max-width:1200px;">
-  <div class="admin-card" style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.06);padding:18px;">
-    <h2 style="margin:0 0 12px;font-weight:900;color:#1f2937;">📥 صندوق الطلبات</h2>
+<div class="container inbox-wrap">
+  <div class="card">
+    <h2 class="title">📥 صندوق الطلبات</h2>
 
     <form method="get" class="filters" style="display:grid;gap:10px;margin:8px 0 14px;">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
-        <input type="text" name="q" value="{{ q }}" class="filter-input" placeholder="بحث في العنوان/التفاصيل"
+        <input type="text" name="q" value="{{ q }}" class="filter-input"
+               placeholder="بحث في العنوان/التفاصيل"
                style="padding:10px;border:1px solid #d1d5db;border-radius:10px;">
         <select name="status" class="filter-input" style="padding:10px;border:1px solid #d1d5db;border-radius:10px;">
           <option value="">كل الحالات</option>
@@ -31,31 +73,47 @@
     </form>
 
     <div class="table-responsive" style="overflow:auto;">
-      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      <table class="tbl">
         <thead>
-          <tr style="background:#f9fafb;">
-            <th style="text-align:right;padding:10px;border-bottom:1px solid #e5e7eb;">#</th>
-            <th style="text-align:right;padding:10px;border-bottom:1px solid #e5e7eb;">التاريخ</th>
-            <th style="text-align:right;padding:10px;border-bottom:1px solid #e5e7eb;">المرسل</th>
-            <th style="text-align:right;padding:10px;border-bottom:1px solid #e5e7eb;">القسم</th>
-            <th style="text-align:right;padding:10px;border-bottom:1px solid #e5e7eb;">المستلم</th>
-            <th style="text-align:right;padding:10px;border-bottom:1px solid #e5e7eb;">العنوان</th>
-            <th style="text-align:right;padding:10px;border-bottom:1px solid #e5e7eb;">الحالة</th>
-            <th style="text-align:right;padding:10px;border-bottom:1px solid #e5e7eb;">إجراءات</th>
+          <tr>
+            <th>#</th>
+            <th>التاريخ</th>
+            <th>المرسل</th>
+            <th>القسم</th>
+            <th>المستلم</th>
+            <th>العنوان</th>
+            <th>الحالة</th>
+            <th>إجراءات</th>
           </tr>
         </thead>
         <tbody>
           {% for t in tickets %}
             <tr>
-              <td style="padding:10px;border-bottom:1px solid #f1f5f9;">{{ t.pk }}</td>
-              <td style="padding:10px;border-bottom:1px solid #f1f5f9;">{{ t.created_at|date:"Y-m-d H:i" }}</td>
-              <td style="padding:10px;border-bottom:1px solid #f1f5f9;">{{ t.creator.name }}</td>
-              <td style="padding:10px;border-bottom:1px solid #f1f5f9;">{{ t.get_department_display }}</td>
-              <td style="padding:10px;border-bottom:1px solid #f1f5f9;">{{ t.assignee.name|default:"—" }}</td>
-              <td style="padding:10px;border-bottom:1px solid #f1f5f9;">{{ t.title }}</td>
-              <td style="padding:10px;border-bottom:1px solid #f1f5f9;">{{ t.get_status_display }}</td>
-              <td style="padding:10px;border-bottom:1px solid #f1f5f9;">
-                <a href="{% url 'reports:ticket_detail' t.pk %}" class="btn" style="padding:6px 10px;border-radius:8px;background:#10b981;color:#fff;text-decoration:none;">فتح</a>
+              <td data-label="#"> {{ t.pk }} </td>
+              <td data-label="التاريخ"> {{ t.created_at|date:"Y-m-d H:i" }} </td>
+              <td data-label="المرسل"> {{ t.creator.name|default:"—" }} </td>
+
+              {# ✅ القسم: يدعم ForeignKey أو choices مع بديل آمن #}
+              <td data-label="القسم">
+                {% if t.department %}
+                  <span class="dept-chip">{{ t.department.name|default:t.department }}</span>
+                {% else %}
+                  <span class="dept-chip">{{ t.get_department_display|default:"—" }}</span>
+                {% endif %}
+              </td>
+
+              <td data-label="المستلم"> {{ t.assignee.name|default:"—" }} </td>
+              <td data-label="العنوان"> {{ t.title }} </td>
+
+              {# ✅ شارة الحالة الملونة #}
+              <td data-label="الحالة">
+                <span class="status-badge s-{{ t.status|default:'open' }}">
+                  {{ t.get_status_display|default:t.status }}
+                </span>
+              </td>
+
+              <td data-label="إجراءات" class="actions">
+                <a href="{% url 'reports:ticket_detail' t.pk %}" class="btn-open">فتح</a>
               </td>
             </tr>
           {% empty %}

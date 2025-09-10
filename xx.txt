@@ -14,7 +14,7 @@ python manage.py runserver
 
 
 git add . 
-git commit -m "الرفع42ريندر"
+git commit -m "الرفع44ريندر"
 git push origin main
 
 

@@ -10,13 +10,9 @@
   <link rel="preload" href="{% static 'css/app.css' %}" as="style">
   <link rel="stylesheet" href="{% static 'css/app.css' %}" />
 
-  <!-- الخط والأيقونات -->
+  <!-- الخط والأيقونات (نبقي الأيقونات للجرس وبعض العناصر الثانوية فقط) -->
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-  <!-- ألوان شريط المتصفح -->
-  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 
   <style>
     :root{
@@ -47,23 +43,29 @@
     img{max-width:100%;display:block}
     .container{width:100%;max-width:1240px;margin-inline:auto;padding:0 clamp(12px,3vw,24px)}
     .page-main{flex:1;padding:clamp(12px,2.5vw,24px) 0;animation:fadeUp .5s ease both}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
-    /* شريط التقدم */
-    .progress-bar{position:fixed;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,#60a5fa,var(--brand));transform-origin:0 50%;transform:scaleX(0);z-index:200;box-shadow:0 2px 8px rgba(37,99,235,.25)}
+    /* ===== شريط التقدم ===== */
+    .progress-bar{position:fixed;top:0;right:0;height:3px;width:0;background:linear-gradient(90deg,#2563eb,#10b981);z-index:9999;transition:width .2s ease}
 
     /* ===== الهيدر ===== */
-    .site-header{position:sticky;top:0;z-index:190;background:rgba(255,255,255,.88);border-bottom:1px solid var(--line);backdrop-filter:saturate(140%) blur(8px);transition:box-shadow .22s ease,background .22s ease,border-color .22s ease;padding-top:var(--safe-top)}
+    .site-header{
+      position:sticky;top:0;inset-inline:0;z-index:900;background:rgba(255,255,255,.82);
+      border-bottom:1px solid var(--line-2);backdrop-filter:saturate(180%) blur(12px);
+      transition:box-shadow .25s ease, background .25s ease, border-color .25s ease;
+    }
     @media (prefers-color-scheme: dark){.site-header{background:rgba(7,11,22,.75)}}
     .site-header.scrolled{box-shadow:0 10px 30px rgba(2,6,23,.10);background:rgba(255,255,255,.92);border-color:#dfe7ff}
     @media (prefers-color-scheme: dark){.site-header.scrolled{background:rgba(7,11,22,.85);border-color:#1a294f}}
     .topbar{display:flex;align-items:center;gap:10px;min-height:64px;padding:8px 0}
 
-    .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink-soft);font-weight:900;font-size:clamp(1.02rem,1.5vw,1.15rem);white-space:nowrap}
+    .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+    .brand span{font-weight:900;font-size:clamp(1.02rem,1.5vw,1.15rem);white-space:nowrap}
     .brand img{width:40px;height:40px;object-fit:contain}
     @media(max-width:480px){.brand img{width:32px;height:32px}}
 
     /* زر الهمبرجر */
-    .hamburger{display:none;width:var(--tap);height:var(--tap);border:1px solid var(--line);border-radius:12px;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:var(--card)}
+    .hamburger{display:none;width:var(--tap);height:var(--tap);border-radius:12px;border:1px solid var(--line);align-items:center;justify-content:center;gap:4px;cursor:pointer;background:var(--card)}
     .hamburger span{display:block;width:18px;height:2px;background:#334155;border-radius:2px;transition:var(--t)}
     @media (prefers-color-scheme: dark){.hamburger span{background:#c7d2fe}}
     .hamburger.active span:nth-child(1){transform:translateY(4px) rotate(45deg)}
@@ -71,36 +73,50 @@
     .hamburger.active span:nth-child(3){transform:translateY(-4px) rotate(-45deg)}
     @media(max-width:1024px){.hamburger{display:flex}}
 
-    /* قائمة سطح المكتب */
+    /* قائمة سطح المكتب — نصية بدون أيقونات لتفادي التكرار مع الصفحة الرئيسية */
     .nav-desktop{margin-inline-start:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-    .nav-desktop a{--h:40px;position:relative;display:inline-flex;align-items:center;gap:8px;justify-content:center;min-height:var(--tap);height:var(--h);padding:0 14px;border-radius:12px;color:var(--muted);text-decoration:none;font-weight:800;transition:var(--t);white-space:nowrap}
+    .nav-desktop a{--h:40px;position:relative;display:inline-flex;align-items:center;gap:8px;height:var(--h);padding:0 12px;border-radius:10px;border:1px solid transparent;color:var(--ink);text-decoration:none;font-weight:800;transition:var(--t);white-space:nowrap}
     .nav-desktop a:hover{color:var(--brand)}
-    .nav-desktop a::after{content:"";position:absolute;inset:auto 12px 6px 12px;height:3px;background:var(--brand);border-radius:2px;transform:scaleX(0);transform-origin:50% 50%;transition:transform .25s ease}
+    .nav-desktop a::after{content:"";position:absolute;inset:auto 10px 6px 10px;height:2px;background:currentColor;transform:scaleX(0);transform-origin:50% 50%;transition:transform .25s ease}
     .nav-desktop a:hover::after{transform:scaleX(1)}
     .nav-desktop a.active{color:var(--brand);background:var(--brand-ghost)}
     .nav-desktop a.active::after{transform:scaleX(1)}
-    .nav-desktop .with-badge{display:inline-flex;align-items:center;gap:8px}
-    .badge{min-width:20px;height:20px;padding:0 6px;border-radius:999px;display:inline-grid;place-items:center;font-size:12px;font-weight:900;color:#fff;background:#ef4444;transform:translateY(0);transition:transform .2s ease}
-    .nav-desktop .with-badge:hover .badge{transform:translateY(-2px)}
     @media(max-width:1024px){.nav-desktop{display:none}}
 
-    /* ===== الدروَر (الجوال) ===== */
-    .drawer-overlay{position:fixed;inset:0;z-index:180;background:rgba(2,6,23,.45);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:var(--t)}
-    .drawer{position:fixed;inset:0 auto 0 0;width:min(86vw,360px);max-width:420px;background:var(--card);border-inline-end:1px solid var(--line);box-shadow:20px 0 60px rgba(2,6,23,.25);transform:translateX(-102%);transition:var(--t);z-index:181;display:flex;flex-direction:column;padding-top:var(--safe-top);padding-bottom:var(--safe-bottom)}
+    /* شارة */
+    .badge{min-width:20px;height:20px;padding:0 6px;border-radius:999px;display:inline-grid;place-items:center;font-size:.78rem;color:#fff;background:#ef4444}
+
+    /* ===== الدروَر للجوال (RTL: من اليمين) ===== */
+    .drawer-overlay{
+      position:fixed;inset:0;background:rgba(2,6,23,.45);
+      backdrop-filter:blur(6px);z-index:980;display:none;
+    }
+    .drawer{
+      position:fixed;
+      inset:0 0 0 auto;                /* أعلى-يمين-أسفل-يسار: نثبته يمين الشاشة */
+      width:min(320px,86vw);
+      background:var(--card);
+      border-inline-start:1px solid var(--line);
+      z-index:990;
+      transform:translateX(110%);       /* خارج الشاشة يمينًا */
+      transition:var(--t);
+      display:flex;flex-direction:column;
+      max-height:100vh;overflow:auto;
+      padding-bottom:var(--safe-bottom);
+    }
     .drawer.open{transform:translateX(0)}
-    .drawer-overlay.open{opacity:1;pointer-events:auto}
-    .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
-    .drawer-title{font-weight:900;color:var(--ink)}
-    .drawer-close{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--card);cursor:pointer}
-    .drawer-nav{padding:10px}
-    .drawer-nav a{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;color:var(--ink);text-decoration:none;font-weight:800;border:1px solid transparent}
-    .drawer-nav a:active{transform:scale(.99)}
-    .drawer-nav a.active{background:var(--brand-ghost);border-color:#dbeafe;color:var(--brand)}
+    .drawer-overlay.show{display:block}
+    .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:12px;border-bottom:1px solid var(--line)}
+    .drawer-title{font-weight:900}
+    .drawer-nav{display:grid;padding:12px;gap:10px}
+    .drawer-nav a{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;text-decoration:none;color:var(--ink);font-weight:800;background:linear-gradient(180deg,#fff,#fbfdff)}
+    @media (prefers-color-scheme:dark){.drawer-nav a{background:linear-gradient(180deg,#0f1629,#0c1530)}}
+    .drawer-nav a:hover{background:var(--line-2)}
     .drawer-footer{margin-top:auto;padding:12px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap}
 
-    /* صندوق المستخدم */
+    /* صندوق المستخدم (نبقي الأفاتار فقط؛ لا نكرر الأيقونات الكبيرة) */
     .userbox{position:relative}
-    .avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--accent));color:#fff;font-weight:900;box-shadow:var(--shadow);cursor:pointer;border:0;transition:transform .18s ease}
+    .avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,#eef2ff,#fff);color:#1e40af;font-weight:900;border:1px solid #dbeafe;box-shadow:var(--shadow);cursor:pointer;border:0;transition:transform .18s ease}
     .avatar:hover{transform:translateY(-2px)}
     .menu{position:absolute;inset:calc(100% + 10px) 0 auto auto;min-width:220px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 20px 40px rgba(2,6,23,.12);padding:8px;opacity:0;transform:translateY(-6px) scale(.98);pointer-events:none;transition:var(--t);z-index:185}
     .menu.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
@@ -110,113 +126,51 @@
 
     /* رسائل Django */
     .messages{margin:16px 0}
-    .msg{position:relative;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#f8fbff;color:#0b1b3a;box-shadow:var(--shadow);margin-bottom:10px;animation:fadeIn .3s ease both;overflow:hidden;transition:opacity 0.5s ease, transform 0.5s ease, margin-bottom 0.3s ease}
-    .msg.hiding{opacity:0;transform:translateY(-10px);margin-bottom:0;height:0;padding-top:0;padding-bottom:0}
+    .msg{position:relative;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#f8fbff;color:#0b1b3a;box-shadow:var(--shadow);margin-bottom:10px;animation:fadeUp .5s ease both}
     .msg.success{background:#f0fff6;border-color:#c8f3d6;color:#064e3b}
     .msg.error{background:#fff0f0;border-color:#ffd4d4;color:#7f1d1d}
     .msg.warning{background:#fffbeb;border-color:#fed7aa;color:#7c2d12}
-    .msg-close{position:absolute;top:8px;left:8px;background:none;border:none;cursor:pointer;color:inherit;opacity:0.7;transition:opacity 0.2s ease;padding:0;font-size:14px}
+    .msg-close{position:absolute;top:8px;left:8px;background:none;border:0;cursor:pointer;opacity:0.7;transition:opacity 0.2s ease;padding:0;font-size:14px}
     .msg-close:hover{opacity:1}
     .msg-progress{position:absolute;bottom:0;left:0;height:3px;width:100%;background:rgba(0,0,0,0.1);overflow:hidden}
-    .msg-progress::after{content:'';position:absolute;bottom:0;left:0;height:100%;width:100%;background:currentColor;opacity:0.3;animation:progress 3s linear forwards}
+    .msg-progress::after{content:'';position:absolute;bottom:0;left:0;height:3px;width:100%;background:currentColor;opacity:0.3;animation:progress 3s linear forwards}
     @media (prefers-color-scheme: dark){.msg{background:#0e1b35;color:#d8e3ff}}
+    @keyframes progress{from{transform:translateX(-100%)}to{transform:none}}
 
-    /* ===== نافذة الإشعار المنبثقة (Overlay) ===== */
-    .notify-overlay{
-      position:fixed; inset:0; z-index:10000;
-      display:grid; place-items:center;
-      padding:10px; padding-top:calc(10px + var(--safe-top)); padding-bottom:calc(10px + var(--safe-bottom));
-    }
-    .notify-overlay::before{
-      content:""; position:absolute; inset:0;
-      background:radial-gradient(1200px 800px at 50% 20%, rgba(37,99,235,.20), rgba(2,6,23,.65));
-      backdrop-filter:blur(4px);
-    }
+    /* ===== نافذة الإشعار المنبثقة (Hero) ===== */
+    .notify-overlay{position:fixed; inset:0; z-index:10000; display:grid; place-items:center; padding:10px; padding-top:calc(10px + var(--safe-top)); padding-bottom:calc(10px + var(--safe-bottom));}
+    .notify-overlay[hidden]{display:none}
     .notify-card{
-      position:relative; width:min(720px,92vw); max-height:86vh; overflow:auto;
-      background:linear-gradient(180deg,#ffffff 0%, #fbfdff 100%); border:1px solid #e5edff; border-radius:20px;
-      box-shadow:0 30px 80px rgba(2,6,23,.35); padding:20px 20px 16px; animation:popIn .25s ease both;
+      position:relative; width:min(520px,92vw); max-height:min(80vh,520px); overflow:auto;
+      border:1px solid #dbeafe; border-radius:16px; background:linear-gradient(135deg,#ffffff 0%, #f7fbff 100%);
+      box-shadow:0 30px 60px rgba(2,6,23,.20); padding:16px;
     }
-    @media (prefers-color-scheme: dark){.notify-card{background:linear-gradient(180deg,#0f1629 0%, #0b1326 100%);border-color:#1e2e59}}
-    .notify-close{position:absolute;inset:12px 12px auto auto;width:38px;height:38px;border-radius:50%;border:0;background:#ef4444;color:#fff;font-size:20px;cursor:pointer;box-shadow:0 6px 18px rgba(239,68,68,.4)}
+    @media (prefers-color-scheme: dark){
+      .notify-card{ background:linear-gradient(135deg,#0f1b35,#0d1830); border-color:#1e2e59; }
+    }
     .notify-head{display:flex;align-items:center;gap:14px}
-    .notify-icon{font-size:2.1rem;width:54px;height:54px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(135deg,#e9f0ff, #ffffff);border:1px solid #e7efff;box-shadow:0 8px 20px rgba(37,99,235,.10)}
+    .notify-icon{font-size:2.1rem;width:54px;height:54px;display:grid;place-items:center;border-radius:16px;background:linear-gradient(135deg,#eef2ff,#ffffff);color:#1e40af;border:1px solid #e7efff;box-shadow:0 8px 20px rgba(37,99,235,.10)}
     @media (prefers-color-scheme: dark){.notify-icon{background:linear-gradient(135deg,#0f1b36,#111f3d);border-color:#1e2e59}}
     .notify-title{margin:0;font-weight:900;color:#0b1b3a;font-size:clamp(1.05rem,2.5vw,1.35rem)}
     .notify-sub{color:#475569;font-weight:800;font-size:.95rem;margin-top:2px}
     @media (prefers-color-scheme: dark){.notify-title{color:#e6ebff}.notify-sub{color:#9fb0d9}}
-    .notify-content{margin-top:12px;color:#1f2937;font-weight:800;line-height:1.95;white-space:pre-wrap;overflow-wrap:anywhere;direction:rtl;unicode-bidi:plaintext;background:linear-gradient(180deg,#f8fbff 0%, #ffffff 100%);border:1px dashed #dbeafe;border-radius:14px;padding:12px 14px}
-    @media (prefers-color-scheme: dark){.notify-content{background:linear-gradient(180deg,#0f1b35 0%, #0d1830 100%);border-color:#28407b;color:#d9e5ff}}
+    .notify-content{margin-top:12px;color:#1f2937;font-weight:800;background:linear-gradient(180deg,#ffffff,#fbfdff);border:1px dashed #dbeafe;border-radius:14px;padding:12px 14px;white-space:pre-line}
+    @media (prefers-color-scheme: dark){.notify-content{background:linear-gradient(180deg,#0f1b35,#0d1830);border-color:#28407b;color:#d9e5ff}}
     .notify-meta{margin-top:10px;color:#475569;font-weight:800;display:flex;align-items:center;gap:8px}
     @media (prefers-color-scheme: dark){.notify-meta{color:#a9b8de}}
     .notify-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
     .notify-actions .btn{border-radius:999px;padding:10px 16px;min-height:var(--tap)}
-    .btn{padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-weight:800;text-decoration:none;color:#1e293b}
+    .btn{padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);cursor:pointer;font-weight:800;text-decoration:none;color:#1e293b}
     .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
     .btn-ghost{background:#eef2ff;border-color:#e5e7eb;color:#1e40af}
     .btn:hover{transform:translateY(-1px)}
     .notify-confetti{pointer-events:none; position:absolute; inset:0; overflow:hidden; border-radius:inherit}
-    .notify-confetti .piece{position:absolute;width:8px;height:14px;border-radius:2px;opacity:.9;transform:translateY(-20px) rotate(0deg);animation:confettiFall 1800ms ease-out forwards, confettiSpin 1000ms linear infinite}
-    @keyframes confettiFall{to { transform:translateY(110%) rotate(var(--rot)); opacity:1; }}
-    @keyframes confettiSpin{from { filter:hue-rotate(0deg);} to { filter:hue-rotate(360deg);} }
+    .notify-card.is-anchored{ position:fixed; width:min(520px,92vw); max-height:min(80vh,520px);}
+    .notify-card.is-anchored::after{content:""; position:absolute; width:14px; height:14px; rotate:45deg; background:inherit; border:inherit; border-left:none; border-top:none;}
 
-    /* === نمط الإلتحام بالكرت (تموضع ثابت على الشاشة) === */
-    .notify-card.is-anchored{
-      position:fixed;
-      width:min(520px,92vw);
-      max-height:min(80vh,520px);
-    }
-    .notify-card.is-anchored::after{
-      content:""; position:absolute; width:14px; height:14px; rotate:45deg;
-      background:inherit; border:inherit; border-left:none; border-top:none;
-      /* يتم ضبط (top/left) عبر JS */
-    }
-
-    /* ===== الفوتر ===== */
-    .site-footer{background:linear-gradient(135deg,#0f1b30 0%, #0c1830 40%, #0b1630 100%);color:#dbe6ff;margin-top:16px;padding-bottom:var(--safe-bottom)}
-    .site-footer .wrap{padding:26px 16px}
-    .foot-grid{display:grid;gap:18px}
-    @media(min-width:900px){.foot-grid{grid-template-columns:1.1fr .9fr .9fr}}
-    .foot-title{font-weight:900;font-size:clamp(1rem,1.2rem,1.15rem);color:#eef3ff}
-    .foot-links ul{list-style:none;display:grid;gap:8px;padding:0;margin:0}
-    .foot-links a{color:#cfe0ff;text-decoration:none;font-weight:700}
-    .foot-links a:hover{color:#fff;text-decoration:underline}
-    .foot-bottom{border-top:1px solid rgba(255,255,255,.1);padding:12px 0;display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;font-size:.9rem}
-
-    /* وصول/حركة */
-    a:focus-visible,button:focus-visible{outline:2px solid var(--brand);outline-offset:2px;box-shadow:var(--ring)}
-    @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
-
-    /* أنيميشن عام */
-    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-    @keyframes popIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
-    @keyframes progress{from{transform:translateX(-100%)}to{transform:translateX(0)}}
-
-    /* تحسينات التجاوب */
-    @media (max-width: 768px) {
-      .topbar { min-height: 56px; }
-      .nav-desktop { gap: 4px; }
-      .nav-desktop a { padding: 0 10px; font-size: 0.9rem; }
-      .brand span { font-size: 1rem; }
-    }
-    @media (max-width: 480px) {
-      .container { padding: 0 12px; }
-      .topbar { gap: 8px; padding: 6px 0; }
-      .brand { gap: 8px; }
-      .brand img { width: 30px; height: 30px; }
-      .brand span { font-size: 0.95rem; }
-      .hamburger { width: 42px; height: 42px; }
-      .msg { padding: 10px 12px; font-size: 0.9rem; }
-      .notify-card { padding: 16px; }
-      .notify-head { flex-direction: column; text-align: center; gap: 10px; }
-      .notify-actions { flex-direction: column; }
-      .notify-actions .btn { width: 100%; text-align: center; }
-    }
-    @media (max-width: 360px) {
-      .brand span { display: none; }
-      .drawer { width: 82vw; }
-    }
+    /* زر العودة للأعلى */
+    .to-top{position:fixed;left:16px;bottom:16px;z-index:880;display:none;width:40px;height:40px;border-radius:999px;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;box-shadow:var(--shadow);cursor:pointer}
+    .to-top:hover{transform:translateY(-2px)}
   </style>
 
   {% block head %}{% endblock %}
@@ -238,51 +192,31 @@
         <span>{% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}نظام التقارير{% endif %}</span>
       </a>
 
-      <!-- قائمة سطح المكتب -->
+      <!-- قائمة سطح المكتب (نصية بدون أيقونات لتجنّب التكرار) -->
       {% with active=request.resolver_match.url_name %}
       <nav class="nav-desktop" aria-label="روابط أساسية">
         {% if request.user.is_authenticated %}
-          <a class="{% if active == 'home' %}active{% endif %}" href="{% url 'reports:home' %}"><i class="fa-solid fa-house"></i> الرئيسية</a>
+          <a class="{% if active == 'home' %}active{% endif %}" href="{% url 'reports:home' %}">الرئيسية</a>
 
           {% url 'reports:assigned_to_me' as inbox_url %}
           {% if inbox_url %}
-            <a class="with-badge {% if active == 'assigned_to_me' %}active{% endif %}" href="{{ inbox_url }}">
-              <i class="fa-solid fa-inbox"></i> صندوق الوارد
-              {% if NAV_ASSIGNED_TO_ME|default:0 > 0 %}<span class="badge">{{ NAV_ASSIGNED_TO_ME }}</span>{% endif %}
+            <a class="{% if active == 'assigned_to_me' %}active{% endif %}" href="{{ inbox_url }}">
+              الوارد{% if NAV_ASSIGNED_TO_ME|default:0 > 0 %} <span class="badge">{{ NAV_ASSIGNED_TO_ME }}</span>{% endif %}
             </a>
           {% endif %}
 
-          {% url 'reports:officer_reports' as officer_reports_url %}
-          {% if officer_reports_url and SHOW_OFFICER_REPORTS_LINK %}
-            <a class="with-badge {% if active == 'officer_reports' %}active{% endif %}" href="{{ officer_reports_url }}">
-              <i class="fas fa-clipboard-list"></i> تقارير قسمي
-              {% if NAV_OFFICER_REPORTS|default:0 > 0 %}<span class="badge">{{ NAV_OFFICER_REPORTS }}</span>{% endif %}
-            </a>
+          {% if SHOW_OFFICER_REPORTS_LINK %}
+            <a class="{% if active == 'officer_reports' %}active{% endif %}" href="{% url 'reports:officer_reports' %}">تقارير قسمي</a>
           {% endif %}
 
           {% if SHOW_ADMIN_DASHBOARD_LINK %}
-            <a class="{% if active in 'admin_dashboard departments_list reporttypes_list manage_teachers admin_reports tickets_inbox' %}active{% endif %}" href="{% url 'reports:admin_dashboard' %}">
-              <i class="fa-solid fa-gauge-high"></i> لوحة المدير
-            </a>
+            <a class="{% if active == 'admin_dashboard' %}active{% endif %}" href="{% url 'reports:admin_dashboard' %}">لوحة المدير</a>
           {% endif %}
-
-          {% with send_url=SEND_NOTIFICATION_URL %}
-            {% if not send_url %}{% url 'reports:notifications_create' as send_url %}{% endif %}
-            {% if not send_url %}{% url 'reports:send_notification' as send_url %}{% endif %}
-            {% if not send_url %}{% url 'reports:notification_create' as send_url %}{% endif %}
-            {% if not send_url %}{% url 'reports:announcement_create' as send_url %}{% endif %}
-            {% if not send_url %}{% url 'reports:admin_message_create' as send_url %}{% endif %}
-            {% if not send_url %}{% url 'reports:notifications_send' as send_url %}{% endif %}
-            {% if CAN_SEND_NOTIFICATIONS and send_url %}
-              <a class="{% if active in 'notifications_create send_notification notification_create' %}active{% endif %}" href="{{ send_url }}">
-                <i class="fa-solid fa-bullhorn"></i> إرسال إشعار
-              </a>
-            {% endif %}
-          {% endwith %}
 
           {% url 'reports:my_notifications' as my_notifications_url %}
           {% if my_notifications_url %}
-            <a class="with-badge {% if active == 'my_notifications' %}active{% endif %}" href="{{ my_notifications_url }}" aria-label="إشعاراتي" title="إشعاراتي">
+            <!-- نُبقي أيقونة الجرس فقط (ليست مكررة في الصفحة الرئيسية) -->
+            <a class="{% if active == 'my_notifications' %}active{% endif %}" href="{{ my_notifications_url }}" aria-label="إشعاراتي">
               <i class="fa-solid fa-bell"></i>
               {% if NAV_NOTIFICATIONS_UNREAD|default:0 > 0 %}<span class="badge">{{ NAV_NOTIFICATIONS_UNREAD }}</span>{% endif %}
             </a>
@@ -301,12 +235,12 @@
                   <div class="meta">مرحباً 👋</div>
                 </div>
               </div>
-              <a href="{% url 'reports:logout' %}" class="mi" role="menuitem">🚪 تسجيل الخروج</a>
+              <a href="{% url 'reports:logout' %}" class="mi" role="menuitem">تسجيل الخروج</a>
             </div>
           </div>
         {% else %}
           <a class="{% if active == 'login' %}active{% endif %}" href="{% url 'reports:login' %}">
-            <i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول
+            تسجيل الدخول
           </a>
         {% endif %}
       </nav>
@@ -314,62 +248,45 @@
     </div>
   </header>
 
-  <!-- ===== الدروَر للجوال ===== -->
+  <!-- ===== الدروَر للجوال (من اليمين) ===== -->
   <div class="drawer-overlay" id="drawerOverlay" hidden></div>
   <aside class="drawer" id="mobile-drawer" aria-hidden="true" aria-labelledby="drawerTitle">
     <div class="drawer-head">
-      <div class="drawer-title" id="drawerTitle">{% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}نظام التقارير{% endif %}</div>
-      <button class="drawer-close" id="drawerClose" aria-label="إغلاق القائمة"><i class="fa-solid fa-xmark"></i></button>
+      <div id="drawerTitle" class="drawer-title">القائمة</div>
+      <button class="btn" id="drawerClose" aria-label="إغلاق">إغلاق</button>
     </div>
     {% with active=request.resolver_match.url_name %}
-    <nav class="drawer-nav" aria-label="قائمة جوال">
+    <nav class="drawer-nav" aria-label="القائمة الجانبية">
       {% if request.user.is_authenticated %}
-        <a class="{% if active == 'home' %}active{% endif %}" href="{% url 'reports:home' %}"><i class="fa-solid fa-house"></i> الرئيسية</a>
+        <a class="{% if active == 'home' %}active{% endif %}" href="{% url 'reports:home' %}">الرئيسية</a>
 
         {% url 'reports:assigned_to_me' as inbox_url %}
         {% if inbox_url %}
-          <a class="{% if active == 'assigned_to_me' %}active{% endif %}" href="{{ inbox_url }}"><i class="fa-solid fa-inbox"></i> صندوق الوارد
-            {% if NAV_ASSIGNED_TO_ME|default:0 > 0 %}&nbsp;<span class="badge">{{ NAV_ASSIGNED_TO_ME }}</span>{% endif %}
+          <a class="{% if active == 'assigned_to_me' %}active{% endif %}" href="{{ inbox_url }}">
+            الوارد{% if NAV_ASSIGNED_TO_ME|default:0 > 0 %} <span class="badge">{{ NAV_ASSIGNED_TO_ME }}</span>{% endif %}
           </a>
         {% endif %}
 
-        {% url 'reports:officer_reports' as officer_reports_url %}
-        {% if officer_reports_url and SHOW_OFFICER_REPORTS_LINK %}
-          <a class="{% if active == 'officer_reports' %}active{% endif %}" href="{{ officer_reports_url }}"><i class="fas fa-clipboard-list"></i> تقارير قسمي
-            {% if NAV_OFFICER_REPORTS|default:0 > 0 %}&nbsp;<span class="badge">{{ NAV_OFFICER_REPORTS }}</span>{% endif %}
-          </a>
+        {% if SHOW_OFFICER_REPORTS_LINK %}
+          <a class="{% if active == 'officer_reports' %}active{% endif %}" href="{% url 'reports:officer_reports' %}">تقارير قسمي</a>
         {% endif %}
 
         {% if SHOW_ADMIN_DASHBOARD_LINK %}
-          <a class="{% if active in 'admin_dashboard departments_list reporttypes_list manage_teachers admin_reports tickets_inbox' %}active{% endif %}" href="{% url 'reports:admin_dashboard' %}">
-            <i class="fa-solid fa-gauge-high"></i> لوحة المدير
-          </a>
+          <a class="{% if active == 'admin_dashboard' %}active{% endif %}" href="{% url 'reports:admin_dashboard' %}">لوحة المدير</a>
         {% endif %}
-
-        {% with send_url=SEND_NOTIFICATION_URL %}
-          {% if not send_url %}{% url 'reports:notifications_create' as send_url %}{% endif %}
-          {% if not send_url %}{% url 'reports:send_notification' as send_url %}{% endif %}
-          {% if not send_url %}{% url 'reports:notification_create' as send_url %}{% endif %}
-          {% if not send_url %}{% url 'reports:announcement_create' as send_url %}{% endif %}
-          {% if not send_url %}{% url 'reports:admin_message_create' as send_url %}{% endif %}
-          {% if not send_url %}{% url 'reports:notifications_send' as send_url %}{% endif %}
-          {% if CAN_SEND_NOTIFICATIONS and send_url %}
-            <a class="{% if active in 'notifications_create send_notification notification_create' %}active{% endif %}" href="{{ send_url }}"><i class="fa-solid fa-bullhorn"></i> إرسال إشعار</a>
-          {% endif %}
-        {% endwith %}
 
         {% url 'reports:my_notifications' as my_notifications_url %}
         {% if my_notifications_url %}
-          <a class="{% if active == 'my_notifications' %}active{% endif %}" href="{{ my_notifications_url }}"><i class="fa-solid fa-bell"></i> إشعاراتي
-            {% if NAV_NOTIFICATIONS_UNREAD|default:0 > 0 %}&nbsp;<span class="badge">{{ NAV_NOTIFICATIONS_UNREAD }}</span>{% endif %}
+          <a class="{% if active == 'my_notifications' %}active{% endif %}" href="{{ my_notifications_url }}">
+            إشعاراتي{% if NAV_NOTIFICATIONS_UNREAD|default:0 > 0 %} <span class="badge">{{ NAV_NOTIFICATIONS_UNREAD }}</span>{% endif %}
           </a>
         {% endif %}
 
         <div class="drawer-footer">
-          <a class="btn" href="{% url 'reports:logout' %}">🚪 تسجيل الخروج</a>
+          <a class="btn" href="{% url 'reports:logout' %}">تسجيل الخروج</a>
         </div>
       {% else %}
-        <a class="{% if active == 'login' %}active{% endif %}" href="{% url 'reports:login' %}"><i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول</a>
+        <a class="{% if active == 'login' %}active{% endif %}" href="{% url 'reports:login' %}">تسجيل الدخول</a>
       {% endif %}
     </nav>
     {% endwith %}
@@ -391,286 +308,200 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="site-footer">
-    <div class="container wrap">
-      <div class="foot-grid">
-        <div>
-          <div class="foot-title">{% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}ثانوية عبدالعزيز بن باز{% endif %}</div>
-          <p>Tawtheeq</p>
-          <p>نظام توثيق أعمال المعلمين والطلبات — التواصل الداخلي.</p>
-        </div>
-        <nav class="foot-links" aria-label="روابط"></nav>
-        <div>
-          <div class="foot-title" style="font-size:1rem;">تواصل</div>
-          <p>{% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}ثانوية عبدالعزيز بن باز{% endif %}</p>
-          <p>لتغيير كلمة السر تواصل مع مدير النظام.</p>
-        </div>
-      </div>
-      <div class="foot-bottom">
-        <span>© {% now "Y" %} تصميم <b>MANS</b> — جميع الحقوق محفوظة</span>
-      </div>
-    </div>
-  </footer>
+  <!-- زر العودة للأعلى -->
+  <button class="to-top" id="toTop" aria-label="العودة للأعلى">
+    <i class="fa-solid fa-arrow-left-long" style="transform:rotate(90deg)"></i>
+  </button>
 
-  <!-- ===== نافذة الإشعار (موضوعة خارج main لضمان التمركز على الشاشة) ===== -->
-  {% with active=request.resolver_match.url_name %}
-  {% if NAV_NOTIFICATION_HERO and active == 'home' %}
-    {% url 'reports:my_notifications' as my_notifications_url %}
-    <div class="notify-overlay" id="notifyOverlay" role="dialog" aria-modal="true" aria-labelledby="notifyTitle" style="display:none">
-      <div class="notify-card" data-notif-id="{{ NAV_NOTIFICATION_HERO.id }}">
-        <button class="notify-close" id="notifyClose" aria-label="إغلاق">×</button>
-        <div class="notify-head">
-          <div class="notify-icon" aria-hidden="true">🎉</div>
-          <div>
-            <h3 class="notify-title" id="notifyTitle">{{ NAV_NOTIFICATION_HERO.title|default:"إشعار تحفيزي" }}</h3>
-            <div class="notify-sub">دفعة حماس صغيرة لبدء يومك بقوة 💪</div>
-          </div>
+  <!-- ===== نافذة الإشعار التحفيزية (تظهر تلقائياً في الرئيسية إن وُجد NAV_NOTIFICATION_HERO) ===== -->
+  {% if NAV_NOTIFICATION_HERO %}
+  <div class="notify-overlay" id="notifyOverlay" hidden>
+    <div class="notify-card" id="notifyCard" role="dialog" aria-modal="true" aria-labelledby="notifyTitle" aria-describedby="notifyBody" data-notif-id="{{ NAV_NOTIFICATION_HERO.id }}">
+      <div class="notify-head">
+        <div class="notify-icon"><i class="fa-solid fa-bullhorn"></i></div>
+        <div>
+          <h3 class="notify-title" id="notifyTitle">{{ NAV_NOTIFICATION_HERO.title }}</h3>
+          <div class="notify-sub">من: {{ NAV_NOTIFICATION_HERO.sender_name|default:"الإدارة" }}</div>
         </div>
-        <div class="notify-content">{{ NAV_NOTIFICATION_HERO.body|default:"نؤمن بقدرتك على الإنجاز — خذ خطوة الآن، مهما كانت صغيرة." }}</div>
-        <div class="notify-meta"><i class="fa-solid fa-user-tie"></i><span>من: {{ NAV_NOTIFICATION_HERO.sender_name|default:"الإدارة" }}</span></div>
+      </div>
+      <div class="notify-content" id="notifyBody">{{ NAV_NOTIFICATION_HERO.body }}</div>
+      {% if NAV_NOTIFICATION_HERO.action_url %}
         <div class="notify-actions">
-          {% if NAV_NOTIFICATION_HERO.action_url %}<a class="btn btn-primary" href="{{ NAV_NOTIFICATION_HERO.action_url }}" rel="noopener">ابدأ الآن <i class="fa-solid fa-arrow-left-long"></i></a>{% endif %}
-          {% if my_notifications_url %}<a class="btn btn-ghost" href="{{ my_notifications_url }}"><i class="fa-solid fa-bell"></i> صفحة الإشعارات</a>{% endif %}
-          <button class="btn" id="notifyLater">إغلاق</button>
+          <a class="btn btn-primary" href="{{ NAV_NOTIFICATION_HERO.action_url }}" rel="noopener">فتح الرابط</a>
         </div>
-        <div class="notify-confetti" aria-hidden="true"></div>
+      {% endif %}
+      <div class="notify-meta">
+        <small>يمكنك إغلاق الرسالة ولن تظهر مرة أخرى تلقائيًا.</small>
       </div>
+      <div class="notify-confetti" id="notifyConfetti"></div>
+      <button class="btn" id="notifyClose" style="position:absolute;top:10px;left:10px" aria-label="إغلاق">إغلاق</button>
     </div>
+  </div>
   {% endif %}
-  {% endwith %}
-
-  <button id="toTop" title="العودة للأعلى" aria-label="العودة للأعلى" style="display:none;position:fixed;inset:auto calc(18px + var(--safe-right)) calc(24px + var(--safe-bottom)) auto;width:46px;height:46px;border:0;border-radius:50%;background:linear-gradient(135deg,var(--brand),#10b981);color:#fff;cursor:pointer;box-shadow:0 10px 28px rgba(37,99,235,.35);">↑</button>
 
   <script>
-    // ===== CSRF (للطلبيات الداخلية) =====
-    (function(){function g(n){const v=`; ${document.cookie}`.split(`; ${n}=`);if(v.length===2)return decodeURIComponent(v.pop().split(';').shift())}window.csrfToken=g('csrftoken')})();
-
-    document.addEventListener('DOMContentLoaded', function(){
+    // شريط تقدّم التمرير + ظل الهيدر
+    (function(){
+      const bar = document.getElementById('scrollProgress');
       const header = document.getElementById('siteHeader');
-      const progress = document.getElementById('scrollProgress');
-      const onScroll = () => {
-        const y = window.scrollY || document.documentElement.scrollTop;
-        header.classList.toggle('scrolled', y > 6);
-        const h = document.documentElement.scrollHeight - window.innerHeight;
-        progress.style.transform = `scaleX(${h>0?(y/h):0})`;
+      const onScroll = ()=>{
+        const h = document.documentElement; const sc = h.scrollTop; const max = h.scrollHeight - h.clientHeight;
+        bar.style.width = (max ? (sc/max)*100 : 0) + '%';
+        header.classList.toggle('scrolled', window.scrollY > 4);
       };
-      window.addEventListener('scroll', onScroll, {passive:true}); onScroll();
+      window.addEventListener('scroll', onScroll, {passive:true});
+      onScroll();
+    })();
 
-      // إخفاء رسائل Django تلقائياً بعد 3 ثوانٍ
-      function setupAutoHideMessages() {
-        const messages = document.querySelectorAll('.msg[data-autohide="true"]');
-        messages.forEach(msg => {
-          const timer = setTimeout(() => hideMessage(msg), 3000);
-          msg.dataset.timerId = timer;
-          const closeBtn = msg.querySelector('.msg-close');
-          if (closeBtn) closeBtn.addEventListener('click', () => { clearTimeout(parseInt(msg.dataset.timerId)); hideMessage(msg); });
-        });
-      }
-      function hideMessage(msg) {
-        msg.classList.add('hiding');
-        setTimeout(() => { if (msg.parentNode) msg.parentNode.removeChild(msg); }, 500);
-      }
-      setupAutoHideMessages();
+    // رسائل Django (إغلاق تلقائي + زر إغلاق)
+    (function(){
+      const container = document.getElementById('messages-container');
+      if(!container) return;
+      container.querySelectorAll('.msg').forEach((el)=>{
+        const closeBtn = el.querySelector('.msg-close');
+        closeBtn && closeBtn.addEventListener('click', ()=> el.remove());
+        if(el.dataset.autohide === 'true'){
+          setTimeout(()=>{ if (el && el.parentNode){ el.remove(); } }, 3200);
+        }
+      });
+    })();
 
-      // ===== دروَر الجوال =====
-      const body = document.body;
-      const burger = document.getElementById('hamburger');
-      const drawer = document.getElementById('mobile-drawer');
-      const overlay = document.getElementById('drawerOverlay');
-      const btnClose = document.getElementById('drawerClose');
+    // دروَر الجوال (RTL: يفتح من اليمين ويُغلق بذكاء)
+    (function(){
+      const drawer   = document.getElementById('mobile-drawer');
+      const overlay  = document.getElementById('drawerOverlay');
+      const hamburger= document.getElementById('hamburger');
+      const closeBtn = document.getElementById('drawerClose');
+      if(!(drawer && overlay && hamburger)) return;
 
-      let lastFocus = null;
-      const focusableSel = 'a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])';
+      const lockScroll = (on)=>{ document.documentElement.style.overflow = on ? 'hidden' : ''; };
 
-      function openDrawer(){
-        lastFocus = document.activeElement;
-        overlay.hidden = false;
-        requestAnimationFrame(()=>{
-          overlay.classList.add('open');
-          drawer.classList.add('open');
-          drawer.setAttribute('aria-hidden','false');
-          burger.classList.add('active'); burger.setAttribute('aria-expanded','true');
-          body.style.overflow='hidden';
-          const f = drawer.querySelector(focusableSel);
-          f && f.focus({preventScroll:true});
-        });
-      }
-      function closeDrawer(){
-        overlay.classList.remove('open');
+      const open = ()=>{
+        drawer.classList.add('open');
+        overlay.classList.add('show'); overlay.hidden=false;
+        hamburger.classList.add('active'); hamburger.setAttribute('aria-expanded','true');
+        drawer.setAttribute('aria-hidden','false');
+        lockScroll(true);
+      };
+      const close = ()=>{
         drawer.classList.remove('open');
+        overlay.classList.remove('show'); overlay.hidden=true;
+        hamburger.classList.remove('active'); hamburger.setAttribute('aria-expanded','false');
         drawer.setAttribute('aria-hidden','true');
-        burger.classList.remove('active'); burger.setAttribute('aria-expanded','false');
-        body.style.overflow='';
-        setTimeout(()=>{ overlay.hidden = true; }, 220);
-        if(lastFocus) lastFocus.focus({preventScroll:true});
-      }
-      if(burger) burger.addEventListener('click', ()=> (drawer.classList.contains('open') ? closeDrawer() : openDrawer()));
-      if(btnClose) btnClose.addEventListener('click', closeDrawer);
-      if(overlay) overlay.addEventListener('click', closeDrawer);
-      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && drawer.classList.contains('open')) closeDrawer(); });
-      let startX=null;
-      drawer.addEventListener('touchstart', (e)=>{ startX = e.touches[0].clientX; }, {passive:true});
-      drawer.addEventListener('touchmove', (e)=>{ if(startX===null) return; const dx = e.touches[0].clientX - startX; if(dx < -40) closeDrawer(); }, {passive:true});
-      drawer.addEventListener('touchend', ()=>{ startX=null; });
-      matchMedia('(min-width:1025px)').addEventListener('change', (e)=>{ if(e.matches) closeDrawer(); });
+        lockScroll(false);
+      };
 
-      // قائمة المستخدم
+      hamburger.addEventListener('click', ()=> drawer.classList.contains('open') ? close() : open());
+      closeBtn && closeBtn.addEventListener('click', close);
+      overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+
+      // إغلاق عند تغيير المقاس إلى سطح مكتب
+      matchMedia('(min-width:1025px)').addEventListener('change', (e)=>{ if(e.matches) close(); });
+
+      // إغلاق عند الضغط على أي رابط داخل الدروَر
+      drawer.addEventListener('click', (e)=>{
+        const a = e.target.closest('a');
+        if(a && a.href) close();
+      });
+
+      // عند الرجوع/تحديث الصفحة
+      window.addEventListener('pageshow', ()=> close());
+    })();
+
+    // قائمة المستخدم
+    (function(){
       const avatar = document.getElementById('userAvatar');
       const menu = document.getElementById('userMenu');
-      if(avatar && menu){
-        const close = ()=>{ menu.classList.remove('open'); avatar.setAttribute('aria-expanded','false'); };
-        avatar.addEventListener('click', ()=>{ const open = menu.classList.toggle('open'); avatar.setAttribute('aria-expanded', open ? 'true' : 'false'); });
-        document.addEventListener('click', (e)=>{ if(!e.target.closest('#userMenu') && !e.target.closest('#userAvatar')) close(); });
-        document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
-      }
+      if(!(avatar && menu)) return;
+      const close = ()=>{ menu.classList.remove('open'); avatar.setAttribute('aria-expanded','false'); };
+      avatar.addEventListener('click', ()=>{ const isOpen = menu.classList.toggle('open'); avatar.setAttribute('aria-expanded', isOpen ? 'true' : 'false');});
+      document.addEventListener('click', (e)=>{ if(!e.target.closest('#userMenu') && !e.target.closest('#userAvatar')) close(); });
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+    })();
 
-      // زر العودة للأعلى
+    // زر العودة للأعلى
+    (function(){
       const toTop = document.getElementById('toTop');
-      if(toTop){
-        const toggle = ()=>{ window.scrollY > 260 ? (toTop.style.display='grid') : (toTop.style.display='none'); };
-        window.addEventListener('scroll', toggle, {passive:true}); toggle();
-        toTop.addEventListener('click', ()=>window.scrollTo({top:0, behavior:'smooth'}));
-      }
+      if(!toTop) return;
+      const toggle = ()=>{ window.scrollY > 260 ? (toTop.style.display='grid') : (toTop.style.display='none'); };
+      window.addEventListener('scroll', toggle, {passive:true}); toggle();
+      toTop.addEventListener('click', ()=>window.scrollTo({top:0, behavior:'smooth'}));
+    })();
 
-      // ===== نافذة الإشعار: منتصف الشاشة + إمكانية الإلتحام بالكرت =====
+    // ===== نافذة الإشعار: منتصف الشاشة + إمكانية الإلتحام بالكرت =====
+    (function(){
       const overlayN = document.getElementById('notifyOverlay');
-      if(overlayN){
-        const card = overlayN.querySelector('.notify-card');
-        const confettiBox = overlayN.querySelector('.notify-confetti');
-        const id = card ? card.getAttribute('data-notif-id') : null;
+      if(!overlayN) return;
+      const card = document.getElementById('notifyCard');
+      const confettiBox = document.getElementById('notifyConfetti');
+      const id = card ? card.getAttribute('data-notif-id') : null;
 
-        // لا نعرض إذا سبق إخفاؤه
-        const dismissed = id && document.cookie.includes(`notif_dismissed_${id}=1`);
-        if(dismissed){ overlayN.remove(); return; }
+      // لا نعرض إذا سبق إخفاؤه
+      const dismissed = id && document.cookie.includes(`notif_dismissed_${id}=1`);
+      if(dismissed){ overlayN.remove(); return; }
 
-        // عناصر لتجميد الخلفية
-        const root = document.documentElement;
-        const main = document.querySelector('.page-main');
-        const headerEl = document.getElementById('siteHeader');
-        const footerEl = document.querySelector('.site-footer');
-        const setInert = (el, v)=>{ if(!el) return; v ? el.setAttribute('inert','') : el.removeAttribute('inert'); };
-        const lockScroll = ()=>{ root.style.overflow='hidden'; };
-        const unlockScroll = ()=>{ root.style.overflow=''; };
-
-        // كونفيتي بسيط
-        (function launchConfetti(box){
-          if(!box) return; const count=40;
-          for(let i=0;i<count;i++){
-            const s=document.createElement('span'); s.className='piece'; s.style.left=(Math.random()*100)+'%';
-            const hue=Math.floor(Math.random()*360);
-            s.style.background=`hsl(${hue}deg,85%,60%)`; s.style.animationDelay=(Math.random()*0.35)+'s'; s.style.setProperty('--rot',(Math.random()*360-180)+'deg');
-            box.appendChild(s); setTimeout(()=>s.remove(),2200);
+      const openModal = ()=>{
+        overlayN.hidden = false;
+        // نثر بسيط للأداء
+        try{
+          confettiBox.innerHTML = '';
+          const n = 18;
+          for(let i=0;i<n;i++){
+            const piece = document.createElement('div');
+            piece.className = 'piece';
+            piece.style.position='absolute';
+            piece.style.width='8px'; piece.style.height='12px';
+            piece.style.left = (Math.random()*100)+'%';
+            piece.style.top = '-10%';
+            piece.style.background = `hsl(${Math.random()*360},85%,60%)`;
+            piece.style.transform = `rotate(${(Math.random()*160-80)}deg)`;
+            piece.style.animation = 'confettiFall 1200ms ease-out forwards';
+            confettiBox.appendChild(piece);
           }
-        })(confettiBox);
+        }catch(e){}
+      };
 
-        // تعليم كمقروء (غير حاسم)
-        function getCookie(name){ const v=`; ${document.cookie}`.split(`; ${name}=`); if(v.length===2) return decodeURIComponent(v.pop().split(';').shift()); }
-        async function markReadByNotification(notifId){
-          if(!notifId) return;
-          try{
-            await fetch(`/notifications/${notifId}/read-by-notification/`, {
-              method:'POST',
-              headers:{'X-CSRFToken': (window.csrfToken || getCookie('csrftoken')),'X-Requested-With':'XMLHttpRequest'},
-              credentials:'same-origin'
-            });
-          }catch(e){}
+      const closeModal = ()=>{
+        overlayN.hidden = true;
+        if(id){
+          const ex = new Date(Date.now()+1000*60*60*24*7).toUTCString();
+          document.cookie = `notif_dismissed_${id}=1; path=/; expires=${ex}; SameSite=Lax`;
         }
+      };
 
-        // حساب موضع ملتحم بكرت (إن زُوّد مرجع anchor)
-        function positionAnchored(anchorEl){
+      document.getElementById('notifyClose')?.addEventListener('click', closeModal);
+      overlayN.addEventListener('click', (e)=>{ if(e.target === overlayN) closeModal(); });
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
+
+      // تموضع ملتصق بعنصر (إذا تم استدعاؤها من الهوم)
+      const positionAnchored = (anchorEl)=>{
+        try{
           if(!anchorEl || !card) return false;
-
           const r = anchorEl.getBoundingClientRect();
-          const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-          const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
-
-          // تفعيل النمط وقياسات أولية
+          const cx = r.left + r.width/2;
+          const top = Math.max(r.top - 14 - card.offsetHeight, 12);
+          const left = Math.min(Math.max(cx - card.offsetWidth/2, 12), window.innerWidth - card.offsetWidth - 12);
           card.classList.add('is-anchored');
-          card.style.left = '-9999px'; card.style.top = '-9999px';
-          card.style.transform = 'none';
-          const w = Math.min(card.offsetWidth || 520, vw - 24);
-          const h = Math.min(card.offsetHeight || 380, vh - 24);
-
-          const spaceBelow = vh - (r.bottom + 12);
-          const spaceAbove = r.top - 12;
-
-          let top; let arrowSide;
-          if(spaceBelow >= h){
-            top = r.bottom + 12; arrowSide = 'top';
-          }else if(spaceAbove >= h){
-            top = r.top - h - 12; arrowSide = 'bottom';
-          }else{
-            card.classList.remove('is-anchored');
-            return false;
-          }
-
-          let left = r.left + (r.width/2) - (w/2);
-          left = Math.max(12, Math.min(left, vw - w - 12));
-
-          card.style.left = `${Math.round(left)}px`;
-          card.style.top  = `${Math.round(top)}px`;
-          card.style.width = `${Math.round(w)}px`;
-
-          // سهم بسيط — نحقن CSS ديناميكيًا
-          const arrowOffset = Math.max(18, Math.min((r.left + r.width/2) - left - 7, w - 18));
-          const styleEl = document.getElementById('notify-arrow-style') || (()=> {
-            const s = document.createElement('style'); s.id = 'notify-arrow-style'; document.head.appendChild(s); return s;
-          })();
-          styleEl.textContent = `
-            .notify-card.is-anchored::after{
-              ${arrowSide==='top' ? `top:-7px;` : `bottom:-7px;`}
-              left:${arrowOffset}px;
-            }`;
-
+          card.style.top = top+'px';
+          card.style.left = left+'px';
           return true;
-        }
+        }catch(e){ return false; }
+      };
 
-        // قفل/فتح الخلفية + فخ التركيز
-        function openModal(){
-          lockScroll();
-          setInert(main, true); setInert(headerEl, true); setInert(footerEl, true);
-          card && card.setAttribute('tabindex','-1');
-          card && card.focus({preventScroll:true});
-        }
-        function closeModal(){
-          if(id) document.cookie = `notif_dismissed_${id}=1; path=/; max-age=2592000; SameSite=Lax`;
-          overlayN.style.display = 'none';
-          setInert(main, false); setInert(headerEl, false); setInert(footerEl, false);
-          unlockScroll();
-        }
-
-        // نقاط الخروج
-        const closeBtn = document.getElementById('notifyClose');
-        const laterBtn = document.getElementById('notifyLater');
-        const dismiss = () => {
-          Promise.resolve(markReadByNotification(id)).finally(closeModal);
-        };
-        closeBtn && closeBtn.addEventListener('click', dismiss);
-        laterBtn && laterBtn.addEventListener('click', dismiss);
-        overlayN.addEventListener('click', (e)=>{ if(e.target===overlayN) dismiss(); });
-        document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') dismiss(); });
-
-        // فخ التركيز داخل النافذة
-        const focusables = overlayN.querySelectorAll('a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])');
-        const first = focusables[0], last = focusables[focusables.length - 1];
-        overlayN.addEventListener('keydown', (e)=>{
-          if(e.key !== 'Tab') return;
-          if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
-          else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
-        });
-
-        // API: افتح الإشعار في منتصف الشاشة أو ملتحمًا بكرت
-        window.showNotification = function(anchorEl){
-          overlayN.style.display = 'grid';
+      // API عالمي: allow home to call window.showNotification(anchor)
+      window.showNotification = (anchorEl=null)=>{
+        if(!anchorEl){ card && card.classList.remove('is-anchored'); card && (card.style.left = card.style.top = ''); }
+        else{
           const ok = positionAnchored(anchorEl);
           if(!ok){ card && card.classList.remove('is-anchored'); card && (card.style.left = card.style.top = ''); }
-          openModal();
-        };
+        }
+        openModal();
+      };
 
-        // سياسة العرض التلقائي في الرئيسية — وسط الشاشة
-        window.showNotification(null);
-      }
-    });
+      // سياسة العرض التلقائي في الرئيسية — وسط الشاشة
+      window.showNotification(null);
+    })();
   </script>
 
   {% block scripts %}{% endblock %}

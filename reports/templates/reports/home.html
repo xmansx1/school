@@ -1,318 +1,233 @@
+{# reports/templates/reports/home.html #}
 {% extends "base.html" %}
 {% load static %}
-{% block title %}الرئيسية{% endblock %}
+
+{% block title %}مرحبا {{ request.user.name|default:"" }}{% endblock %}
 
 {% block head %}
 <style>
-  :root{
-    --ink:#0f172a; --ink-soft:#1f2937; --muted:#64748b; --line:#e5e7eb;
-    --brand:#2563eb; --brand-2:#1e40af; --accent:#10b981;
-    --card:#ffffff; --bg:#f8fafc; --shadow:0 12px 28px rgba(2,6,23,.08);
-    --radius:18px; --radius-lg:22px; --t:all .22s ease;
+  /* ===== متغيرات الصفحة ===== */
+  .home {
+    --ink:#0f172a; --muted:#64748b; --line:#e5e7eb; --line2:#f1f5f9;
+    --card:#fff; --brand:#2563eb; --accent:#10b981; --warn:#f59e0b; --danger:#ef4444;
+    --radius:16px; --shadow:0 10px 30px rgba(2,6,23,.08); --t:all .22s ease;
   }
-  @media (prefers-color-scheme: dark) {
-    :root{
-      --ink:#e6ebff; --ink-soft:#d7e0ff; --muted:#9fb0d9; --line:#1b2744;
-      --brand:#93c5fd; --brand-2:#60a5fa; --accent:#34d399;
-      --card:#0f1629; --bg:#0b1220; --shadow:0 12px 28px rgba(2,6,23,.45);
-    }
+  @media (prefers-color-scheme:dark){
+    .home { --ink:#e6ebff; --muted:#9fb0d9; --line:#1b2744; --line2:#142349; --card:#0f1629; }
   }
 
-  .wrap{max-width:1200px;margin-inline:auto;padding:clamp(14px,2.5vw,22px)}
-
-  /* ========= HERO ========= */
-  .hero{
-    position:relative; overflow:hidden;
-    background:
-      radial-gradient(800px 220px at 100% 0, rgba(99,102,241,.08), transparent 60%),
-      linear-gradient(180deg,#fff, #f6f8ff);
-    border:1px solid var(--line); border-radius:var(--radius-lg);
-    box-shadow:var(--shadow); padding:clamp(16px,2.8vw,26px);
+  /* ===== القسم الترحيبي (Hero) ===== */
+  .hero-home{
+    display:grid; gap:20px; padding:30px clamp(16px,4vw,30px);
+    border-radius:var(--radius);
+    background:linear-gradient(135deg,#2563eb,#1e40af); color:#fff;
+    box-shadow:var(--shadow); position:relative; overflow:hidden;
   }
-  @media (prefers-color-scheme: dark){
-    .hero{background:
-      radial-gradient(800px 220px at 100% 0, rgba(99,102,241,.14), transparent 60%),
-      linear-gradient(180deg,#0f1629, #0b1326);}
+  .hero-home::before{
+    content:""; position:absolute; inset:0;
+    background:url("{% static 'img/pattern.svg' %}") no-repeat right 30px bottom -20px;
+    background-size:200px; opacity:.15; transform:rotate(180deg);
   }
-  .hero-top{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-  .hello{font-size:clamp(1.15rem,2.2vw,1.6rem);font-weight:900;color:var(--brand-2)}
-  .sub{color:var(--muted);font-weight:800}
-  .hero-actions{display:flex;gap:10px;flex-wrap:wrap}
-  .btn{padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none;font-weight:800}
-  .btn:hover{transform:translateY(-2px)}
-  .btn-primary{background:var(--brand);border-color:var(--brand);color:#fff}
-  .btn-ghost{background:#eef2ff;border-color:#e5e7eb;color:#1e3a8a}
-  @media (prefers-color-scheme: dark){.btn-ghost{background:#0f1c3a;border-color:#1b2b56;color:#cfe0ff}}
+  .hero-home .content{ position:relative; z-index:10 }
+  .hero-home h1{ margin:0; font-size:clamp(1.4rem,4vw,2.2rem); font-weight:900; line-height:1.3; letter-spacing:-.5px; color:#e6ebff }
+  .hero-home p{ margin:8px 0 0; font-size:clamp(1rem,2vw,1.15rem); font-weight:800; opacity:.9; max-width:700px }
+  .hero-actions{ display:flex; flex-wrap:wrap; gap:12px; margin-top:18px }
+  .hero-actions .btn{ border-radius:999px; padding:10px 18px; font-size:1rem; font-weight:800 }
 
-  /* ========= GRID ========= */
-  .grid{display:grid;gap:18px;margin-top:18px}
-  @media(min-width:1000px){.grid{grid-template-columns:1.05fr .95fr}}
-
-  /* ========= KPIs ========= */
-  .kpis{display:grid;gap:12px;margin-top:14px}
-  @media(min-width:660px){.kpis{grid-template-columns:repeat(3,1fr)}}
-  .kpi{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
-  .kpi .lbl{color:var(--muted);font-weight:800}
-  .kpi .num{font-size:1.9rem;font-weight:900;color:var(--brand)}
-  .kpi .trend{font-size:.9rem;font-weight:800;color:var(--accent)}
-
-  /* ========= Quick Actions ========= */
-  .actions{display:grid;gap:12px;margin-top:14px}
-  @media(min-width:700px){.actions{grid-template-columns:repeat(2,1fr)}}
-  .tile{display:flex;gap:14px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:var(--t)}
-  .tile:hover{transform:translateY(-3px)}
-  .ico{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;color:#fff;font-size:1.2rem}
-  .ico.add{background:linear-gradient(135deg,#38bdf8,#2563eb)}
-  .ico.list{background:linear-gradient(135deg,#818cf8,#3b82f6)}
-  .ico.req{background:linear-gradient(135deg,#10b981,#34d399)}
-  .ico.mgr{background:linear-gradient(135deg,#7c3aed,#8b5cf6)}
-  .tile-title{font-weight:900;color:var(--ink-soft)}
-  .tile-desc{color:var(--muted);font-size:.92rem}
-
-  /* ========= Cards ========= */
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
-  .card-hd{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .card-title{margin:0;font-size:1.02rem;font-weight:900;color:var(--ink-soft)}
-  .list{display:grid;gap:10px;padding:14px}
-  .item{display:grid;grid-template-columns:1fr auto;gap:12px;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--card);transition:var(--t)}
-  .item:hover{border-color:#c7d2fe;box-shadow:0 14px 28px rgba(30,58,138,.10)}
-  .name{font-weight:900;color:var(--ink-soft);line-height:1.35}
-  .meta{color:var(--muted);font-size:.92rem}
-  .btns{display:flex;gap:8px;align-items:center}
-  .chip-id{background:#eff6ff;color:#1e40af;padding:6px 10px;border-radius:999px;font-weight:800;font-size:.85rem}
-  .btn-xs{padding:8px 11px;border-radius:10px;background:#eef2ff;color:#1e3a8a;font-weight:800;text-decoration:none;line-height:1}
-  .btn-xs:hover{background:#e0e7ff}
-  @media (prefers-color-scheme:dark){.chip-id{background:#0f1c3a;color:#cfe0ff}.btn-xs{background:#0f1c3a;color:#cfe0ff}.btn-xs:hover{background:#142754}}
-
-  /* حالة الطلب */
-  .status{padding:6px 12px;border-radius:999px;font-weight:900;font-size:.85rem;display:inline-flex;align-items:center;gap:8px}
-  .dot{width:8px;height:8px;border-radius:50%}
-  .s-new{background:#dcfce7;color:#166534}.s-new .dot{background:#16a34a}
-  .s-in{background:#ede9fe;color:#5b21b6}.s-in .dot{background:#7c3aed}
-  .s-done{background:#e0f2fe;color:#075985}.s-done .dot{background:#0ea5e9}
-  .s-rej{background:#fee2e2;color:#991b1b}.s-rej .dot{background:#ef4444}
-
-  .empty{display:flex;gap:10px;align-items:center;color:var(--muted)}
-
-  /* تجاوب صغير */
-  @media (max-width:520px){
-    .tile{padding:12px}
-    .ico{width:42px;height:42px}
-    .item{grid-template-columns:1fr}
-    .btns{justify-content:space-between}
+  /* ===== الأزرار ===== */
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; padding:10px 14px;
+    border-radius:12px; border:1px solid var(--line); background:var(--card);
+    color:var(--ink); text-decoration:none; font-weight:800; transition:var(--t);
   }
+  .btn:hover{ transform:translateY(-2px); box-shadow:0 4px 12px rgba(2,6,23,.05) }
+  .btn-primary{ background:var(--brand); border-color:var(--brand); color:#fff }
+  .btn-primary:hover{ background:#1e40af; border-color:#1e40af }
+  .btn-accent{ background:var(--accent); border-color:var(--accent); color:#003322 }
+  .btn-accent:hover{ background:#0d9465; border-color:#0d9465 }
+  .btn-ghost{ background:#eef2ff; color:#1e40af; border-color:#dbeafe }
+  @media(prefers-color-scheme:dark){ .btn-ghost{ background:#142349; color:#cfe0ff; border-color:#1c2f5d } }
+  .btn.outline{ background:transparent } .btn.outline:hover{ background:var(--line2) }
+
+  /* ===== الشبكات ===== */
+  .grid{ display:grid; gap:14px }
+  @media(min-width:900px){ .grid-3{ grid-template-columns:1.3fr .7fr } }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:16px; transition:var(--t);
+  }
+  .card:hover{ transform:translateY(-3px); box-shadow:0 15px 40px rgba(2,6,23,.08) }
+  .card h3{ margin:0 0 10px; font-size:1.05rem; font-weight:900; display:flex; align-items:center; gap:8px }
+  .card h3 i{ opacity:.8 }
+  .meta{ color:var(--muted); font-weight:800; font-size:.95rem }
+
+  /* ===== بطاقات الإحصاءات ===== */
+  .stats{ display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)) }
+  .stat{
+    position:relative; overflow:hidden; border-radius:14px; padding:14px;
+    border:1px solid var(--line);
+    background:linear-gradient(180deg,var(--line2),var(--card)); transition:var(--t);
+  }
+  .stat:hover{ transform:translateY(-2px); box-shadow:0 4px 12px rgba(2,6,23,.05) }
+  @media(prefers-color-scheme:dark){ .stat{ background:linear-gradient(180deg,#122043,#0f1629) } }
+  .stat .k{ font-size:clamp(1.2rem,2.2vw,1.5rem); font-weight:900; color:var(--ink) }
+  .stat .t{ color:var(--muted); font-weight:800 }
+  .stat .ico{ position:absolute; inset:auto 10px 10px auto; font-size:22px; opacity:.22 }
+
+  /* ===== القوائم الحديثة ===== */
+  .list{ display:grid; gap:10px }
+  .row{
+    display:grid; gap:10px; padding:12px; border:1px solid var(--line); border-radius:12px;
+    grid-template-columns:1fr auto; background:var(--line2); transition:var(--t);
+  }
+  .row:hover{ background:#dbeafe } @media(prefers-color-scheme:dark){ .row:hover{ background:#1a2c53 } }
+  .row strong{ font-weight:900; color:var(--ink) }
+  .row .badge{
+    align-self:center; justify-self:end; border-radius:999px; padding:4px 10px;
+    font-size:.85rem; font-weight:900; color:#fff; white-space:nowrap;
+  }
+  .b-gray{ background:#64748b } .b-brand{ background:#2563eb } .b-accent{ background:#10b981 }
+  .b-warn{ background:#f59e0b } .b-danger{ background:#ef4444 }
+
+  /* ===== زر التحفيز (يفتح النافذة) ===== */
+  .motivate{ display:inline-flex; align-items:center; gap:8px; margin-top:6px; cursor:pointer; font-weight:800; color:var(--ink); opacity:.9; transition:var(--t) }
+  .motivate:hover{ opacity:1; transform:translateY(-1px) }
+  .motivate i{ font-size:1.15rem; color:#f59e0b }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="wrap" dir="rtl">
+<div class="home">
+  <!-- ===== Hero ===== -->
+  <section class="hero-home" aria-labelledby="welcomeTitle">
+    <div class="content">
+      <h1 id="welcomeTitle">أهلًا {{ request.user.name|default:"بك" }} 👋</h1>
+      <p>مرحباً بعودتك! انطلق الآن ووثّق إنجازاتك، وتابع طلباتك، واطّلع على آخر المستجدات.</p>
 
-  {# ========= روابط ذكية (تعدد مسميات العناوين) ========= #}
-  {% url 'reports:add_report' as add_report_url %}
-  {% url 'reports:my_reports' as my_reports_url %}
-
-  {# إنشاء طلب/تذكرة #}
-  {% url 'reports:ticket_create' as ticket_create_url %}
-  {% if not ticket_create_url %}{% url 'reports:request_create' as ticket_create_url %}{% endif %}
-  {% if not ticket_create_url %}{% url 'reports:ticket_new' as ticket_create_url %}{% endif %}
-
-  {# طلباتي/تذاكري #}
-  {% url 'reports:my_tickets' as my_tickets_url %}
-  {% if not my_tickets_url %}{% url 'reports:my_requests' as my_tickets_url %}{% endif %}
-  {% if not my_tickets_url %}{% url 'reports:tickets_list' as my_tickets_url %}{% endif %}
-
-  {# لوحة المدير #}
-  {% url 'reports:admin_dashboard' as admin_dashboard_url %}
-  {% if not admin_dashboard_url %}{% url 'reports:manager_dashboard' as admin_dashboard_url %}{% endif %}
-
-  {# صندوق المُعيّنة لي #}
-  {% url 'reports:assigned_to_me' as assigned_to_me_url %}
-
-  {# ضابط القسم (يعتمد متغير السياق SHOW_OFFICER_REPORTS_LINK) #}
-  {% url 'reports:officer_reports' as officer_reports_url %}
-
-  <!-- ========= HERO ========= -->
-  <section class="hero" role="region" aria-label="مقدمة">
-    <div class="hero-top">
-      <div>
-        {% if request.user.is_authenticated %}
-          {% firstof request.user.name request.user.phone "مستخدم" as display_name %}
-          <div class="hello">مرحباً {{ display_name }} 👋</div>
-        {% else %}
-          <div class="hello">مرحباً ضيف 👋</div>
-        {% endif %}
-        <div class="sub">التاريخ: {% now "Y-m-d" %}</div>
-      </div>
-
+      <!-- إجراءات سريعة (تتضمن "طلباتي") -->
       <div class="hero-actions">
-        {% if add_report_url %}
-          <a class="btn btn-primary" href="{{ add_report_url }}"><i class="fa-solid fa-plus"></i> تقرير جديد</a>
-        {% endif %}
-        {% if my_reports_url %}
-          <a class="btn btn-ghost" href="{{ my_reports_url }}"><i class="fa-solid fa-clipboard-list"></i> تقاريري</a>
-        {% endif %}
-        {% if my_tickets_url %}
-          <a class="btn" href="{{ my_tickets_url }}"><i class="fa-solid fa-table-list"></i> طلباتي</a>
-        {% endif %}
-        {% if assigned_to_me_url %}
-          <a class="btn" href="{{ assigned_to_me_url }}"><i class="fa-solid fa-inbox"></i> المُعيّنة لي
-            {% if NAV_ASSIGNED_TO_ME|default:0 > 0 %}&nbsp;<span class="chip-id">{{ NAV_ASSIGNED_TO_ME }}</span>{% endif %}
+        <a class="btn" href="{% url 'reports:add_report' %}" style="background:#fff;color:var(--brand);">
+          <i class="fa-solid fa-plus"></i> إضافة تقرير جديد
+        </a>
+        <a class="btn outline" href="{% url 'reports:my_reports' %}" style="color:#eef2ff;">
+          <i class="fa-solid fa-file-lines"></i> تقاريري
+        </a>
+        {% url 'reports:assigned_to_me' as inbox_url %}
+        {% if inbox_url %}
+          <a class="btn outline" href="{{ inbox_url }}" style="color:#eef2ff;">
+            <i class="fa-solid fa-inbox"></i> المعينة لي
           </a>
         {% endif %}
-        {% if officer_reports_url and SHOW_OFFICER_REPORTS_LINK %}
-          <a class="btn" href="{{ officer_reports_url }}"><i class="fa-solid fa-users-gear"></i> تقارير قسمي
-            {% if NAV_OFFICER_REPORTS|default:0 > 0 %}&nbsp;<span class="chip-id">{{ NAV_OFFICER_REPORTS }}</span>{% endif %}
-          </a>
-        {% endif %}
-        {% if admin_dashboard_url and SHOW_ADMIN_DASHBOARD_LINK %}
-          <a class="btn" href="{{ admin_dashboard_url }}"><i class="fa-solid fa-gauge-high"></i> لوحة المدير</a>
-        {% endif %}
+        <!-- ✅ زر طلباتي المُضاف -->
+        <a class="btn outline" href="{% url 'reports:my_requests' %}" style="color:#eef2ff;">
+          <i class="fa-solid fa-rectangle-list"></i> طلباتي
+        </a>
       </div>
-    </div>
 
-    <!-- مؤشرات سريعة -->
-    <div class="kpis" aria-label="مؤشرات">
-      <div class="kpi">
-        <div class="lbl">تقاريري</div>
-        <div class="num">{{ KPI_MY_REPORTS|default:0 }}</div>
-        <div class="trend">{{ KPI_MY_REPORTS_TREND|default:"" }}</div>
-      </div>
-      <div class="kpi">
-        <div class="lbl">طلباتي</div>
-        <div class="num">{{ KPI_MY_TICKETS|default:0 }}</div>
-        <div class="trend">{{ KPI_MY_TICKETS_TREND|default:"" }}</div>
-      </div>
-      <div class="kpi">
-        <div class="lbl">إشعارات غير مقروءة</div>
-        <div class="num">{{ NAV_NOTIFICATIONS_UNREAD|default:0 }}</div>
-        <div class="trend">{{ KPI_NOTIFS_TREND|default:"" }}</div>
-      </div>
+      {% if NAV_NOTIFICATION_HERO %}
+        <button type="button" class="motivate" onclick="window.showNotification(this)" aria-label="افتح آخر إشعار تحفيزي">
+          <i class="fa-solid fa-sparkles"></i> 🎉 حفّزني الآن
+        </button>
+      {% endif %}
     </div>
   </section>
 
-  <!-- ========= الشبكة الرئيسية ========= -->
-  <section class="grid" aria-label="لوحة المعلومات">
-    <div>
-      <!-- إجراءات سريعة -->
-      <nav class="actions" aria-label="إجراءات سريعة">
-        {% if add_report_url %}
-        <a class="tile" href="{{ add_report_url }}">
-          <span class="ico add" aria-hidden="true"><i class="fa-solid fa-plus"></i></span>
-          <div>
-            <div class="tile-title">إضافة تقرير جديد</div>
-            <div class="tile-desc">سجّل التفاصيل والصور بسهولة</div>
+  <!-- ===== المحتوى ===== -->
+  <div class="grid grid-3">
+    <!-- يسار: إحصاءات + أحدث تقاريري -->
+    <div class="grid" style="align-content:start">
+      <div class="card">
+        <h3><i class="fa-solid fa-chart-simple"></i> نظرة سريعة</h3>
+        <div class="stats" role="list">
+          <div class="stat" role="listitem">
+            <div class="k">{{ stats.today_count|default:"0" }}</div>
+            <div class="t">تقارير اليوم</div>
+            <i class="ico fa-solid fa-sun"></i>
           </div>
-        </a>
-        {% endif %}
+          <div class="stat" role="listitem">
+            <div class="k">{{ stats.total_count|default:"0" }}</div>
+            <div class="t">إجمالي تقاريري</div>
+            <i class="ico fa-solid fa-layer-group"></i>
+          </div>
+          <div class="stat" role="listitem">
+            <div class="k">{{ req_stats.open|default:"0" }}</div>
+            <div class="t">طلبات جـديدة</div>
+            <i class="ico fa-solid fa-door-open"></i>
+          </div>
+          <div class="stat" role="listitem">
+            <div class="k">{{ req_stats.in_progress|default:"0" }}</div>
+            <div class="t">قيد المعالجة</div>
+            <i class="ico fa-solid fa-hourglass-half"></i>
+          </div>
+        </div>
+      </div>
 
-        {% if my_reports_url %}
-        <a class="tile" href="{{ my_reports_url }}">
-          <span class="ico list" aria-hidden="true"><i class="fa-solid fa-clipboard-list"></i></span>
-          <div>
-            <div class="tile-title">عرض تقاريري</div>
-            <div class="tile-desc">فلترة بالتاريخ واستعراض الصور</div>
+      <div class="card">
+        <h3><i class="fa-solid fa-file-circle-check"></i> أحدث تقاريري</h3>
+        {% if recent_reports %}
+          <div class="list" role="list">
+            {% for r in recent_reports %}
+            <a class="row" role="listitem" href="{% url 'reports:report_print' r.id %}" title="فتح لطباعة التقرير">
+              <div>
+                <strong>{{ r.title }}</strong>
+                <div class="meta">بتاريخ {{ r.report_date }} — {{ r.day_name }}</div>
+              </div>
+              <span class="badge b-brand">{{ r.category.name|default:"—" }}</span>
+            </a>
+            {% endfor %}
           </div>
-        </a>
-        {% endif %}
-
-        {% if ticket_create_url %}
-        <a class="tile" href="{{ ticket_create_url }}">
-          <span class="ico req" aria-hidden="true"><i class="fa-solid fa-pen-to-square"></i></span>
-          <div>
-            <div class="tile-title">إرسال طلب/تذكرة</div>
-            <div class="tile-desc">اختر القسم وتابع الحالة</div>
+          <div style="margin-top:16px">
+            <a class="btn btn-ghost" href="{% url 'reports:my_reports' %}">
+              <i class="fa-solid fa-list"></i> عرض جميع تقاريري
+            </a>
           </div>
-        </a>
+        {% else %}
+          <p class="meta">لا توجد تقارير حديثة بعد.
+            <a href="{% url 'reports:add_report' %}"><b>أضف تقريرك الأول الآن!</b></a>
+          </p>
         {% endif %}
-
-        {% if my_tickets_url %}
-        <a class="tile" href="{{ my_tickets_url }}">
-          <span class="ico list" aria-hidden="true"><i class="fa-solid fa-list-check"></i></span>
-          <div>
-            <div class="tile-title">عرض طلباتي</div>
-            <div class="tile-desc">اطّلع على الحالات والتعليقات</div>
-          </div>
-        </a>
-        {% endif %}
-
-        {% if admin_dashboard_url and SHOW_ADMIN_DASHBOARD_LINK %}
-        <a class="tile" href="{{ admin_dashboard_url }}">
-          <span class="ico mgr" aria-hidden="true"><i class="fa-solid fa-shield-halved"></i></span>
-          <div>
-            <div class="tile-title">لوحة المدير</div>
-            <div class="tile-desc">روابط الإدارة والتقارير</div>
-          </div>
-        </a>
-        {% endif %}
-      </nav>
+      </div>
     </div>
 
-    <!-- أحدث تقاريري + أحدث طلباتي -->
-    <aside>
-
-      <!-- آخر تقاريري -->
-      <div class="card" aria-label="آخر تقاريري">
-        <div class="card-hd">
-          <h3 class="card-title">🕘 آخر تقاريري</h3>
-          {% if my_reports_url %}<a class="btn btn-ghost" href="{{ my_reports_url }}">عرض الكل</a>{% endif %}
+    <!-- يمين: حالة الطلبات + دفعة طاقة -->
+    <div class="grid" style="align-content:start">
+      <div class="card">
+        <h3><i class="fa-solid fa-clipboard-check"></i> حالة طلباتي</h3>
+        <div class="list" role="list">
+          <div class="row" role="listitem">
+            <div><strong>مكتملة</strong></div>
+            <span class="badge b-accent">{{ req_stats.done|default:"0" }}</span>
+          </div>
+          <div class="row" role="listitem">
+            <div><strong>مرفوضة</strong></div>
+            <span class="badge b-danger">{{ req_stats.rejected|default:"0" }}</span>
+          </div>
         </div>
-        <div class="list">
-          {% for r in recent_reports|slice:":3" %}
-            <div class="item">
-              <div>
-                <div class="name">{{ r.title|default:"بدون عنوان" }}</div>
-                <div class="meta">
-                  التاريخ: {{ r.report_date|date:"Y-m-d"|default:"—" }}
-                  {% if r.day_name %} • {{ r.day_name }}{% endif %}
-                  • المستفيدون: {{ r.beneficiaries_count|default:"0" }}
-                  {% if r.category %} • التصنيف: {{ r.category }}{% endif %}
-                </div>
-              </div>
-              <div class="btns">
-                <span class="chip-id" title="رقم التقرير">#{{ r.pk }}</span>
-                <a class="btn-xs" href="{% url 'reports:report_print' r.pk %}" target="_blank" rel="noopener">🖨️ طباعة</a>
-              </div>
-            </div>
-          {% empty %}
-            <div class="item"><div class="empty">لا توجد تقارير حتى الآن.</div></div>
-          {% endfor %}
+        <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap">
+          <a class="btn btn-ghost" href="{% url 'reports:request_create' %}">
+            <i class="fa-solid fa-ticket"></i> فتح طلب جديد
+          </a>
+          <a class="btn" href="{% url 'reports:my_requests' %}">
+            <i class="fa-solid fa-rectangle-list"></i> طلباتي
+          </a>
         </div>
       </div>
 
-      <!-- آخر طلباتي -->
-      <div class="card" aria-label="آخر طلباتي" style="margin-top:14px">
-        <div class="card-hd">
-          <h3 class="card-title">📦 آخر طلباتي</h3>
-          {% if my_tickets_url %}<a class="btn btn-ghost" href="{{ my_tickets_url }}">عرض الكل</a>{% endif %}
-        </div>
-        <div class="list">
-          {% for t in recent_tickets|slice:":3" %}
-            <div class="item">
-              <div>
-                <div class="name">{{ t.title|default:"طلب بدون عنوان" }}</div>
-                <div class="meta">
-                  القسم: {{ t.get_department_display|default:t.department|default:"—" }} •
-                  المستلم: {% firstof t.assignee.name t.assignee.phone "—" %} •
-                  بتاريخ: {{ t.created_at|date:"Y-m-d H:i" }}
-                </div>
-              </div>
-              <div class="btns">
-                <span class="status
-                  {% if t.status == 'new' or t.status == 'open' %}s-new{% elif t.status == 'in_progress' or t.status == 'pending' %}s-in
-                  {% elif t.status == 'done' %}s-done{% else %}s-rej{% endif %}">
-                  <span class="dot" aria-hidden="true"></span>
-                  {{ t.get_status_display|default:t.status }}
-                </span>
-              </div>
-            </div>
-          {% empty %}
-            <div class="item"><div class="empty">لا توجد طلبات حتى الآن.</div></div>
-          {% endfor %}
+      <div class="card" id="motivateCard" aria-live="polite">
+        <h3><i class="fa-solid fa-bolt"></i> دفعة طاقة</h3>
+        <p class="meta">ابدأ يومك بإنجاز صغير الآن. دقيقة واحدة يمكن أن تصنع فرقًا كبيرًا.</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;">
+          <a class="btn btn-primary" href="{% url 'reports:add_report' %}">
+            <i class="fa-solid fa-plus"></i> توثيق إنجاز
+          </a>
+          {% if NAV_NOTIFICATION_HERO %}
+          <button type="button" class="btn" onclick="window.showNotification(document.getElementById('motivateCard'))">
+            <i class="fa-solid fa-sparkles"></i> عرض الإشعار
+          </button>
+          {% endif %}
         </div>
       </div>
-
-    </aside>
-  </section>
-
+    </div>
+  </div>
 </div>
 {% endblock %}

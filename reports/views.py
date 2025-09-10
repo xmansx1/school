@@ -769,17 +769,38 @@ def ticket_detail(request: HttpRequest, pk: int) -> HttpResponse:
 
     if request.method == "POST":
         status_val = (request.POST.get("status") or "").strip()
-        note_txt = (request.POST.get("note") or "").strip()
+        note_txt   = (request.POST.get("note") or "").strip()
         changed = False
 
+        # ملاحظة من المرسل أو المستلم
         if note_txt and (is_owner or can_act):
             try:
-                TicketNote.objects.create(ticket=t, author=request.user, body=note_txt, is_public=True)
-                changed = True
-            except Exception:
-                logger.exception("Failed to create note")
-                messages.error(request, "تعذّر حفظ الملاحظة.")
+                with transaction.atomic():
+                    # 1) احفظ الملاحظة
+                    TicketNote.objects.create(ticket=t, author=request.user, body=note_txt, is_public=True)
+                    changed = True
 
+                    # 2) إذا المرسل هو من أضافها والحالة غير "جديد"
+                    #    وكانت ضمن (مكتمل/مرفوض/قيد المعالجة) ⇒ نحول إلى "جديد"
+                    if is_owner and t.status in {Ticket.Status.DONE, Ticket.Status.REJECTED, Ticket.Status.IN_PROGRESS}:
+                        old_status = t.status
+                        t.status = Ticket.Status.OPEN
+                        try:
+                            t.save(update_fields=["status"])
+                        except Exception:
+                            t.save()
+                        # ملاحظة نظام توضّح التغيير
+                        TicketNote.objects.create(
+                            ticket=t,
+                            author=request.user,
+                            body=f"تغيير الحالة تلقائيًا بسبب ملاحظة المرسل: {old_status} → {Ticket.Status.OPEN}",
+                            is_public=True,
+                        )
+            except Exception:
+                logger.exception("Failed to create note / auto reopen")
+                messages.error(request, "تعذّر حفظ الملاحظة.")
+        
+        # تغيير الحالة يدويًا (فقط للمستلم/المصرّح له)
         if status_val:
             if not can_act:
                 messages.warning(request, "لا يمكنك تغيير حالة هذا الطلب. يمكنك فقط إضافة ملاحظة.")

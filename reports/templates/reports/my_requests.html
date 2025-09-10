@@ -153,7 +153,7 @@
         <label for="status">الحالة:</label>
         <select id="status" class="select" name="status">
           <option value="">جميع الحالات</option>
-          <option value="open" {% if request.GET.status == "open" %}selected{% endif %}>مفتوحة/جديدة</option>
+          <option value="open" {% if request.GET.status == "open" %}selected{% endif %}>جـديدة/جديدة</option>
           <option value="in_progress" {% if request.GET.status == "in_progress" %}selected{% endif %}>قيد المعالجة</option>
           <option value="done" {% if request.GET.status == "done" %}selected{% endif %}>مكتملة</option>
           <option value="rejected" {% if request.GET.status == "rejected" %}selected{% endif %}>مرفوضة</option>
@@ -180,7 +180,7 @@
 
     <!-- Stats -->
     <section class="stats" aria-label="إحصاءات الطلبات">
-      <div class="stat"><div><div class="num">{{ stats.open|default:0 }}</div><div class="lbl">مفتوحة</div></div><div class="ico o">✔</div></div>
+      <div class="stat"><div><div class="num">{{ stats.open|default:0 }}</div><div class="lbl">جـديدة</div></div><div class="ico o">✔</div></div>
       <div class="stat"><div><div class="num">{{ stats.in_progress|default:0 }}</div><div class="lbl">قيد المعالجة</div></div><div class="ico i">≡</div></div>
       <div class="stat"><div><div class="num">{{ stats.done|default:0 }}</div><div class="lbl">مكتملة</div></div><div class="ico d">✓</div></div>
       <div class="stat"><div><div class="num">{{ stats.rejected|default:0 }}</div><div class="lbl">مرفوضة</div></div><div class="ico r">!</div></div>
