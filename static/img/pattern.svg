@@ -1,0 +1,32 @@
+<!-- reports/static/img/pattern.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="260" viewBox="0 0 260 260" fill="none">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="r1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+                    gradientTransform="translate(210 210) rotate(45) scale(170 150)">
+      <stop stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- هالة دائرية خفيفة -->
+  <circle cx="220" cy="220" r="110" fill="url(#r1)" />
+
+  <!-- مربع متدرّج شفاف -->
+  <rect x="120" y="30" width="120" height="120" rx="26" fill="url(#g1)"/>
+
+  <!-- نقاط زخرفية صغيرة -->
+  <g fill="#ffffff" opacity="0.18">
+    <circle cx="20" cy="22" r="2"/>
+    <circle cx="48" cy="32" r="2"/>
+    <circle cx="76" cy="42" r="2"/>
+    <circle cx="104" cy="52" r="2"/>
+    <circle cx="132" cy="62" r="2"/>
+    <circle cx="160" cy="72" r="2"/>
+    <circle cx="188" cy="82" r="2"/>
+    <circle cx="216" cy="92" r="2"/>
+  </g>
+</svg>
