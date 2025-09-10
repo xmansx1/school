@@ -121,9 +121,9 @@
     .msg-progress::after{content:'';position:absolute;bottom:0;left:0;height:100%;width:100%;background:currentColor;opacity:0.3;animation:progress 3s linear forwards}
     @media (prefers-color-scheme: dark){.msg{background:#0e1b35;color:#d8e3ff}}
 
-    /* ===== نافذة الإشعار المنبثقة (خارج main) ===== */
+    /* ===== نافذة الإشعار المنبثقة (Overlay) ===== */
     .notify-overlay{
-      position:fixed; inset:0; z-index:10000; /* أعلى من كل شيء */
+      position:fixed; inset:0; z-index:10000;
       display:grid; place-items:center;
       padding:10px; padding-top:calc(10px + var(--safe-top)); padding-bottom:calc(10px + var(--safe-bottom));
     }
@@ -159,6 +159,18 @@
     .notify-confetti .piece{position:absolute;width:8px;height:14px;border-radius:2px;opacity:.9;transform:translateY(-20px) rotate(0deg);animation:confettiFall 1800ms ease-out forwards, confettiSpin 1000ms linear infinite}
     @keyframes confettiFall{to { transform:translateY(110%) rotate(var(--rot)); opacity:1; }}
     @keyframes confettiSpin{from { filter:hue-rotate(0deg);} to { filter:hue-rotate(360deg);} }
+
+    /* === نمط الإلتحام بالكرت (تموضع ثابت على الشاشة) === */
+    .notify-card.is-anchored{
+      position:fixed;
+      width:min(520px,92vw);
+      max-height:min(80vh,520px);
+    }
+    .notify-card.is-anchored::after{
+      content:""; position:absolute; width:14px; height:14px; rotate:45deg;
+      background:inherit; border:inherit; border-left:none; border-top:none;
+      /* يتم ضبط (top/left) عبر JS */
+    }
 
     /* ===== الفوتر ===== */
     .site-footer{background:linear-gradient(135deg,#0f1b30 0%, #0c1830 40%, #0b1630 100%);color:#dbe6ff;margin-top:16px;padding-bottom:var(--safe-bottom)}
@@ -400,11 +412,11 @@
     </div>
   </footer>
 
-  <!-- ===== نافذة الإشعار (نُقلت خارج main لضمان التمركز في الشاشة) ===== -->
+  <!-- ===== نافذة الإشعار (موضوعة خارج main لضمان التمركز على الشاشة) ===== -->
   {% with active=request.resolver_match.url_name %}
   {% if NAV_NOTIFICATION_HERO and active == 'home' %}
     {% url 'reports:my_notifications' as my_notifications_url %}
-    <div class="notify-overlay" id="notifyOverlay" role="dialog" aria-modal="true" aria-labelledby="notifyTitle">
+    <div class="notify-overlay" id="notifyOverlay" role="dialog" aria-modal="true" aria-labelledby="notifyTitle" style="display:none">
       <div class="notify-card" data-notif-id="{{ NAV_NOTIFICATION_HERO.id }}">
         <button class="notify-close" id="notifyClose" aria-label="إغلاق">×</button>
         <div class="notify-head">
@@ -520,31 +532,27 @@
         toTop.addEventListener('click', ()=>window.scrollTo({top:0, behavior:'smooth'}));
       }
 
-      // ===== نافذة الإشعار (منتصف الشاشة دائماً) =====
+      // ===== نافذة الإشعار: منتصف الشاشة + إمكانية الإلتحام بالكرت =====
       const overlayN = document.getElementById('notifyOverlay');
       if(overlayN){
         const card = overlayN.querySelector('.notify-card');
         const confettiBox = overlayN.querySelector('.notify-confetti');
         const id = card ? card.getAttribute('data-notif-id') : null;
 
-        // إذا سبق إخفاء هذا الإشعار عبر كوكي، لا نعرضه
+        // لا نعرض إذا سبق إخفاؤه
         const dismissed = id && document.cookie.includes(`notif_dismissed_${id}=1`);
         if(dismissed){ overlayN.remove(); return; }
 
-        // قفل تمرير الخلفية + فوكس-تراب + inert
+        // عناصر لتجميد الخلفية
         const root = document.documentElement;
         const main = document.querySelector('.page-main');
         const headerEl = document.getElementById('siteHeader');
         const footerEl = document.querySelector('.site-footer');
-        const setInert = (el, v)=>{ if(!el) return; if(v){ el.setAttribute('inert',''); } else { el.removeAttribute('inert'); } };
+        const setInert = (el, v)=>{ if(!el) return; v ? el.setAttribute('inert','') : el.removeAttribute('inert'); };
         const lockScroll = ()=>{ root.style.overflow='hidden'; };
         const unlockScroll = ()=>{ root.style.overflow=''; };
 
-        lockScroll();
-        setInert(main, true); setInert(headerEl, true); setInert(footerEl, true);
-        card && card.setAttribute('tabindex','-1'); card && card.focus({preventScroll:true});
-
-        // ك konfetti بسيط
+        // كونفيتي بسيط
         (function launchConfetti(box){
           if(!box) return; const count=40;
           for(let i=0;i<count;i++){
@@ -555,7 +563,7 @@
           }
         })(confettiBox);
 
-        // تعليم كمقروء عبر endpoint (غير حاسم)
+        // تعليم كمقروء (غير حاسم)
         function getCookie(name){ const v=`; ${document.cookie}`.split(`; ${name}=`); if(v.length===2) return decodeURIComponent(v.pop().split(';').shift()); }
         async function markReadByNotification(notifId){
           if(!notifId) return;
@@ -568,24 +576,81 @@
           }catch(e){}
         }
 
-        // إغلاق + تنظيف
+        // حساب موضع ملتحم بكرت (إن زُوّد مرجع anchor)
+        function positionAnchored(anchorEl){
+          if(!anchorEl || !card) return false;
+
+          const r = anchorEl.getBoundingClientRect();
+          const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+          const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+
+          // تفعيل النمط وقياسات أولية
+          card.classList.add('is-anchored');
+          card.style.left = '-9999px'; card.style.top = '-9999px';
+          card.style.transform = 'none';
+          const w = Math.min(card.offsetWidth || 520, vw - 24);
+          const h = Math.min(card.offsetHeight || 380, vh - 24);
+
+          const spaceBelow = vh - (r.bottom + 12);
+          const spaceAbove = r.top - 12;
+
+          let top; let arrowSide;
+          if(spaceBelow >= h){
+            top = r.bottom + 12; arrowSide = 'top';
+          }else if(spaceAbove >= h){
+            top = r.top - h - 12; arrowSide = 'bottom';
+          }else{
+            card.classList.remove('is-anchored');
+            return false;
+          }
+
+          let left = r.left + (r.width/2) - (w/2);
+          left = Math.max(12, Math.min(left, vw - w - 12));
+
+          card.style.left = `${Math.round(left)}px`;
+          card.style.top  = `${Math.round(top)}px`;
+          card.style.width = `${Math.round(w)}px`;
+
+          // سهم بسيط — نحقن CSS ديناميكيًا
+          const arrowOffset = Math.max(18, Math.min((r.left + r.width/2) - left - 7, w - 18));
+          const styleEl = document.getElementById('notify-arrow-style') || (()=> {
+            const s = document.createElement('style'); s.id = 'notify-arrow-style'; document.head.appendChild(s); return s;
+          })();
+          styleEl.textContent = `
+            .notify-card.is-anchored::after{
+              ${arrowSide==='top' ? `top:-7px;` : `bottom:-7px;`}
+              left:${arrowOffset}px;
+            }`;
+
+          return true;
+        }
+
+        // قفل/فتح الخلفية + فخ التركيز
+        function openModal(){
+          lockScroll();
+          setInert(main, true); setInert(headerEl, true); setInert(footerEl, true);
+          card && card.setAttribute('tabindex','-1');
+          card && card.focus({preventScroll:true});
+        }
+        function closeModal(){
+          if(id) document.cookie = `notif_dismissed_${id}=1; path=/; max-age=2592000; SameSite=Lax`;
+          overlayN.style.display = 'none';
+          setInert(main, false); setInert(headerEl, false); setInert(footerEl, false);
+          unlockScroll();
+        }
+
+        // نقاط الخروج
         const closeBtn = document.getElementById('notifyClose');
         const laterBtn = document.getElementById('notifyLater');
         const dismiss = () => {
-          Promise.resolve(markReadByNotification(id)).finally(()=>{
-            if(id) document.cookie = `notif_dismissed_${id}=1; path=/; max-age=2592000; SameSite=Lax`;
-            overlayN.style.display = 'none';
-            setInert(main, false); setInert(headerEl, false); setInert(footerEl, false);
-            unlockScroll();
-          });
+          Promise.resolve(markReadByNotification(id)).finally(closeModal);
         };
-
         closeBtn && closeBtn.addEventListener('click', dismiss);
         laterBtn && laterBtn.addEventListener('click', dismiss);
         overlayN.addEventListener('click', (e)=>{ if(e.target===overlayN) dismiss(); });
         document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') dismiss(); });
 
-        // فوكس-تراب داخل النافذة
+        // فخ التركيز داخل النافذة
         const focusables = overlayN.querySelectorAll('a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])');
         const first = focusables[0], last = focusables[focusables.length - 1];
         overlayN.addEventListener('keydown', (e)=>{
@@ -593,6 +658,17 @@
           if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
           else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
         });
+
+        // API: افتح الإشعار في منتصف الشاشة أو ملتحمًا بكرت
+        window.showNotification = function(anchorEl){
+          overlayN.style.display = 'grid';
+          const ok = positionAnchored(anchorEl);
+          if(!ok){ card && card.classList.remove('is-anchored'); card && (card.style.left = card.style.top = ''); }
+          openModal();
+        };
+
+        // سياسة العرض التلقائي في الرئيسية — وسط الشاشة
+        window.showNotification(null);
       }
     });
   </script>

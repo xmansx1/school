@@ -4,686 +4,109 @@
 
 {% block head %}
 <style>
-  :root {
-    --primary: #4361ee;
-    --primary-dark: #3a56d4;
-    --secondary: #7209b7;
-    --accent: #f72585;
-    --success: #4cc9f0;
-    --bg: #f8fafc;
-    --card: #ffffff;
-    --text: #1e293b;
-    --text-light: #64748b;
-    --border: #e2e8f0;
-    --radius-lg: 20px;
-    --radius-md: 12px;
-    --radius-sm: 8px;
-    --shadow: 0 10px 40px rgba(2, 6, 23, 0.08);
-    --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-    --transition: all 0.3s ease;
+  :root{
+    --primary:#4361ee; --secondary:#7209b7; --success:#10b981;
+    --bg:#f8fafc; --card:#ffffff; --text:#0f172a; --text-light:#64748b; --border:#e2e8f0;
+    --radius-lg:20px; --radius-md:12px; --shadow:0 10px 40px rgba(2,6,23,.08);
+    --gradient:linear-gradient(135deg,var(--primary),var(--secondary));
+    --t:all .28s ease;
+    --safe-top:env(safe-area-inset-top,0px); --safe-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f172a; --card:#1e293b; --text:#e5e7eb; --text-light:#a3b2c7; --border:#334155 }
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --text: #f1f5f9;
-      --text-light: #94a3b8;
-      --border: #334155;
-    }
-  }
+  .container{max-width:1400px;margin-inline:auto;padding:20px}
 
-  .container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
-  }
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 28px;flex-wrap:wrap}
+  .page-title{margin:0;font-size:2rem;font-weight:900;display:flex;align-items:center;gap:12px;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;font-weight:900;font-size:.9rem}
+  .chip.badge{background:#eef2ff;border:1px solid var(--border);color:#1e40af}
+  .chip.danger{background:#fff5f5;border:1px solid #ffe0e0;color:#b91c1c}
+  .chip.muted{background:#f8fafc;border:1px solid var(--border);color:#475569}
 
-  /* تخطيط عام للرأس */
-  .page-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    margin: 0 0 28px 0;
-    flex-wrap: wrap;
-  }
-  
-  .page-title {
-    margin: 0;
-    font-size: 2rem;
-    font-weight: 900;
-    color: var(--text);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    white-space: nowrap;
-    background: var(--gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    position: relative;
-    padding-bottom: 8px;
-  }
-  
-  .page-title::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 80px;
-    height: 4px;
-    background: var(--gradient);
-    border-radius: 2px;
-  }
-  
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    border-radius: 999px;
-    font-weight: 900;
-    font-size: 0.9rem;
-  }
-  
-  .chip.badge {
-    background: #eef2ff;
-    border: 1px solid var(--border);
-    color: #1e40af;
-  }
-  
-  .chip.danger {
-    background: #fff5f5;
-    border: 1px solid #ffe0e0;
-    color: #b91c1c;
-  }
-  
-  .chip.muted {
-    background: #f8fafc;
-    border: 1px solid var(--border);
-    color: #475569;
-  }
+  .head-actions{display:flex;gap:12px;flex-wrap:wrap}
+  .btn-outline{padding:12px 18px;border-radius:var(--radius-md);border:2px solid var(--border);background:var(--card);font-weight:800;color:var(--text);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:var(--t)}
+  .btn-outline:hover{border-color:var(--primary);color:var(--primary);box-shadow:0 4px 14px rgba(2,6,23,.08);transform:translateY(-2px)}
 
-  .head-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-  
-  .btn-outline {
-    padding: 12px 18px;
-    border-radius: var(--radius-md);
-    border: 2px solid var(--border);
-    background: var(--card);
-    font-weight: 800;
-    color: var(--text);
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: var(--transition);
-  }
-  
-  .btn-outline:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-    box-shadow: 0 4px 14px rgba(2, 6, 23, 0.08);
-    transform: translateY(-2px);
-  }
+  .cards{display:grid;gap:20px}
+  @media (min-width:768px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (min-width:1200px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
-  /* شبكة البطاقات (شبكة مرنة ومتوازنة) */
-  .cards {
-    display: grid;
-    gap: 20px;
-  }
-  
-  @media (min-width: 768px) {
-    .cards {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-  
-  @media (min-width: 1200px) {
-    .cards {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
+  .n-card{position:relative;display:flex;flex-direction:column;gap:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow);transition:var(--t);overflow:hidden}
+  .n-card::before{content:"";position:absolute;inset:0 0 auto 0;height:5px;background:var(--gradient)}
+  .n-card:hover{transform:translateY(-4px);box-shadow:0 18px 50px rgba(2,6,23,.12);border-color:#dfe7ff}
+  .n-card.read{background:linear-gradient(180deg,rgba(99,102,241,.06),transparent),var(--card)}
 
-  /* البطاقة - تصميم عصري */
-  .n-card {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 20px;
-    box-shadow: var(--shadow);
-    transition: var(--transition);
-    overflow: hidden;
-  }
-  
-  .n-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 100%;
-    height: 5px;
-    background: var(--gradient);
-  }
-  
-  .n-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 50px rgba(2, 6, 23, 0.12);
-    border-color: #dfe7ff;
-  }
-  
-  .n-card.read {
-    background: var(--bg);
-  }
-  
-  .n-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  
-  .n-title {
-    margin: 0;
-    font-weight: 900;
-    color: var(--text);
-    line-height: 1.5;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 1.2rem;
-  }
-  
-  .n-time {
-    white-space: nowrap;
-    color: var(--text-light);
-    font-weight: 700;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
+  .n-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .n-title{margin:0;font-weight:900;color:var(--text);display:flex;align-items:center;gap:10px;font-size:1.15rem}
+  .n-time{white-space:nowrap;color:var(--text-light);font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:6px}
 
-  /* محتوى قابل للقص للحفاظ على توازن الارتفاع */
-  .n-body {
-    color: var(--text);
-    font-weight: 500;
-    line-height: 1.8;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    --lines: 6;
-    -webkit-line-clamp: var(--lines);
-    overflow: hidden;
-    margin: 2px 0 4px;
-    background: var(--bg);
-    padding: 12px;
-    border-radius: var(--radius-md);
-    border-left: 4px solid var(--primary);
-  }
-  
-  @media (max-width: 900px) {
-    .n-body {
-      --lines: 5;
-    }
-  }
-  
-  @media (max-width: 600px) {
-    .n-body {
-      --lines: 4;
-    }
-  }
+  .n-body{color:var(--text);font-weight:600;line-height:1.85;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;--lines:6;-webkit-line-clamp:var(--lines);overflow:hidden;margin:2px 0 4px;background:var(--bg);padding:12px;border-radius:12px;border-inline-start:4px solid var(--primary)}
+  @media (max-width:900px){.n-body{--lines:5}} @media (max-width:600px){.n-body{--lines:4}}
 
-  /* المرسل */
-  .sender {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: var(--text);
-    flex-wrap: wrap;
-  }
-  
-  .avatar-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--primary);
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
-  }
-  
-  .read .avatar-dot {
-    background: #10b981;
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
-  }
-  
-  .sender-name {
-    font-weight: 800;
-  }
-  
-  .sender-role {
-    color: var(--text-light);
-    font-weight: 700;
-    font-size: 0.9rem;
-  }
+  .sender{display:flex;align-items:center;gap:12px;color:var(--text);flex-wrap:wrap}
+  .avatar-dot{width:12px;height:12px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 3px rgba(67,97,238,.2)}
+  .read .avatar-dot{background:var(--success);box-shadow:0 0 0 3px rgba(16,185,129,.2)}
+  .sender-name{font-weight:800}.sender-role{color:var(--text-light);font-weight:700;font-size:.9rem}
 
-  /* شريط الإجراءات مثبت أسفل البطاقة */
-  .n-actions {
-    margin-top: auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-  
-  .n-actions .left {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  
-  .btn-sm {
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    background: var(--card);
-    font-weight: 800;
-    text-decoration: none;
-    color: var(--text);
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: var(--transition);
-    font-size: 0.9rem;
-  }
-  
-  .btn-sm:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-  
-  .btn-sm.primary {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: #fff;
-  }
-  
-  .btn-sm.ghost {
-    background: #eef2ff;
-    border-color: #e5e7eb;
-    color: #1e40af;
-  }
-  
-  .btn-sm.success {
-    background: #ecfdf5;
-    border-color: #d1fae5;
-    color: #065f46;
-  }
+  .n-actions{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .n-actions .left{display:flex;gap:10px;flex-wrap:wrap}
+  .btn-sm{padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--card);font-weight:800;text-decoration:none;color:var(--text);display:inline-flex;align-items:center;gap:8px;transition:var(--t);font-size:.9rem;cursor:pointer}
+  .btn-sm:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+  .btn-sm.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn-sm.ghost{background:#eef2ff;border-color:#e5e7eb;color:#1e40af}
+  .btn-sm.success{background:#ecfdf5;border-color:#d1fae5;color:#065f46}
+  .time-badge{display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border-radius:999px;background:#f1f5ff;border:1px solid #e5edff;color:#1e3a8a;font-weight:800;font-size:.9rem}
 
-  .time-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 14px;
-    border-radius: 999px;
-    background: #f1f5ff;
-    border: 1px solid #e5edff;
-    color: #1e3a8a;
-    font-weight: 800;
-    font-size: 0.9rem;
-  }
-  
-  .status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
-  }
+  .empty{padding:40px 20px;border:2px dashed var(--border);border-radius:var(--radius-lg);background:var(--card);text-align:center;color:var(--text-light);font-weight:800;font-size:1.1rem}
+  .empty i{font-size:3rem;margin-bottom:16px;opacity:.5;display:block}
 
-  .empty {
-    padding: 40px 20px;
-    border: 2px dashed var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--card);
-    text-align: center;
-    color: var(--text-light);
-    font-weight: 800;
-    font-size: 1.1rem;
-  }
-  
-  .empty i {
-    font-size: 3rem;
-    margin-bottom: 16px;
-    opacity: 0.5;
-    display: block;
-  }
+  .pager{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:28px;flex-wrap:wrap}
+  .pager a,.pager span{padding:10px 16px;border:1px solid var(--border);border-radius:12px;background:var(--card);font-weight:800;text-decoration:none;color:var(--text);transition:var(--t)}
+  .pager a:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .pager .on{background:var(--gradient);color:#fff;border-color:var(--primary)}
 
-  /* ترقيم */
-  .pager {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    justify-content: center;
-    margin-top: 28px;
-    flex-wrap: wrap;
+  /* ===== المودال (Portal + أعلى طبقة) ===== */
+  .modal-overlay{
+    position:fixed; inset:0;
+    z-index:2147483000; /* أعلى من أي عنصر في الصفحة */
+    display:grid; place-items:center;
+    padding:20px; padding-top:calc(20px + var(--safe-top)); padding-bottom:calc(20px + var(--safe-bottom));
+    opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s ease;
   }
-  
-  .pager a, .pager span {
-    padding: 10px 16px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--card);
-    font-weight: 800;
-    text-decoration: none;
-    color: var(--text);
-    transition: var(--transition);
+  .modal-overlay::before{
+    content:""; position:absolute; inset:0;
+    background:rgba(2,6,23,.58); backdrop-filter:blur(3px);
+    pointer-events:none; /* لا تمنع النقر على الأزرار */
   }
-  
-  .pager a:hover {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
-  }
-  
-  .pager .on {
-    background: var(--gradient);
-    color: #fff;
-    border-color: var(--primary);
-  }
+  .modal-overlay.open{opacity:1;visibility:visible}
 
-  /* ===== المودال ===== */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 140;
-    display: none;
-    place-items: center;
-    backdrop-filter: blur(4px);
+  .modal{
+    position:relative; z-index:1; width:min(760px,96vw); max-height:90vh; overflow:auto;
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg);
+    box-shadow:0 24px 80px rgba(2,6,23,.35); transform:translateY(16px) scale(.98); opacity:0;
+    transition:transform .25s ease, opacity .25s ease;
   }
-  
-  .modal-overlay.open {
-    display: grid;
-  }
-  
-  .modal-overlay::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: rgba(2, 6, 23, 0.55);
-  }
-  
-  .modal {
-    position: relative;
-    width: min(820px, 94vw);
-    max-height: 88vh;
-    overflow: auto;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 30px 80px rgba(2, 6, 23, 0.35);
-    padding: 24px;
-    animation: popIn 0.3s ease both;
-  }
-  
-  .m-head {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 20px;
-  }
-  
-  .m-icon {
-    font-size: 2rem;
-    width: 50px;
-    height: 50px;
-    display: grid;
-    place-items: center;
-    border-radius: var(--radius-md);
-    background: linear-gradient(135deg, #e9f0ff, #ffffff);
-    border: 1px solid #e7efff;
-  }
-  
-  .m-title {
-    margin: 0;
-    font-weight: 900;
-    color: var(--text);
-    font-size: 1.4rem;
-  }
-  
-  .m-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 12px;
-  }
-  
-  .m-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: #eef2ff;
-    border: 1px solid #e5edff;
-    color: #1e40af;
-    border-radius: 999px;
-    padding: 8px 12px;
-    font-weight: 800;
-    font-size: 0.9rem;
-  }
-  
-  .m-body {
-    margin-top: 16px;
-    color: var(--text);
-    font-weight: 500;
-    line-height: 1.8;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    padding: 16px;
-    background: var(--bg);
-    border-radius: var(--radius-md);
-    border-left: 4px solid var(--primary);
-  }
-  
-  .m-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 20px;
-  }
-  
-  .btn {
-    padding: 12px 18px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    background: var(--card);
-    font-weight: 800;
-    cursor: pointer;
-    transition: var(--transition);
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-  
-  .btn-primary {
-    background: var(--gradient);
-    color: #fff;
-    border: none;
-  }
-  
-  .btn-ghost {
-    background: #eef2ff;
-    border-color: #e5e7eb;
-    color: #1e40af;
-  }
-  
-  .m-close {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 0;
-    background: #ef4444;
-    color: #fff;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    transition: var(--transition);
-  }
-  
-  .m-close:hover {
-    transform: scale(1.1);
-  }
+  .modal-overlay.open .modal{transform:none; opacity:1}
 
-  @keyframes popIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px) scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
+  .m-close{
+    position:absolute; inset-block-start:16px; inset-inline-start:16px;
+    width:40px; height:40px; border-radius:50%; border:0; cursor:pointer;
+    background:#ef4444; color:#fff; font-size:18px; display:grid; place-items:center; transition:var(--t)
   }
+  .m-close:hover{transform:scale(1.08)}
 
-  /* تحسينات التجاوب */
-  @media (max-width: 768px) {
-    .container {
-      padding: 16px;
-    }
-    
-    .page-head {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    
-    .page-title {
-      font-size: 1.6rem;
-    }
-    
-    .cards {
-      grid-template-columns: 1fr;
-    }
-    
-    .n-head {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 8px;
-    }
-    
-    .n-actions {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    
-    .n-actions .left {
-      flex-direction: column;
-      width: 100%;
-    }
-    
-    .btn-sm, .time-badge {
-      width: 100%;
-      justify-content: center;
-    }
-    
-    .modal {
-      padding: 20px;
-    }
-    
-    .m-head {
-      flex-direction: column;
-      text-align: center;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .page-title {
-      font-size: 1.4rem;
-    }
-    
-    .n-card {
-      padding: 16px;
-    }
-    
-    .n-title {
-      font-size: 1.1rem;
-    }
-    
-    .pager {
-      flex-direction: column;
-    }
-    
-    .pager a, .pager span {
-      width: 100%;
-      text-align: center;
-    }
-  }
-
-  /* تأثيرات للوضع الداكن */
-  @media (prefers-color-scheme: dark) {
-    .chip.badge {
-      background: rgba(30, 64, 175, 0.15);
-      border-color: rgba(30, 64, 175, 0.4);
-    }
-    
-    .chip.danger {
-      background: rgba(185, 28, 28, 0.15);
-      border-color: rgba(185, 28, 28, 0.4);
-    }
-    
-    .chip.muted {
-      background: rgba(71, 85, 105, 0.15);
-      border-color: rgba(71, 85, 105, 0.4);
-    }
-    
-    .btn-sm.ghost {
-      background: rgba(30, 64, 175, 0.15);
-      border-color: rgba(30, 64, 175, 0.4);
-      color: #e0e7ff;
-    }
-    
-    .btn-sm.success {
-      background: rgba(6, 95, 70, 0.15);
-      border-color: rgba(6, 95, 70, 0.4);
-      color: #a7f3d0;
-    }
-    
-    .time-badge {
-      background: rgba(30, 58, 138, 0.15);
-      border-color: rgba(30, 58, 138, 0.4);
-      color: #e0e7ff;
-    }
-    
-    .m-icon {
-      background: linear-gradient(135deg, #0f1b36, #111f3d);
-      border-color: #1e2e59;
-    }
-    
-    .m-chip {
-      background: rgba(30, 64, 175, 0.15);
-      border-color: rgba(30, 64, 175, 0.4);
-      color: #e0e7ff;
-    }
-    
-    .btn-ghost {
-      background: rgba(30, 64, 175, 0.15);
-      border-color: rgba(30, 64, 175, 0.4);
-      color: #e0e7ff;
-    }
-  }
+  .m-header{padding:22px; border-bottom:1px solid var(--border); background:linear-gradient(135deg,#f8fafc,#eef2ff)}
+  .m-title{margin:0 0 10px; font-weight:900; color:var(--text); font-size:1.4rem}
+  .m-meta{display:flex; flex-wrap:wrap; gap:10px}
+  .m-chip{display:inline-flex; align-items:center; gap:6px; background:#eef2ff; border:1px solid #e5edff; color:#1e40af; border-radius:999px; padding:8px 12px; font-weight:800; font-size:.9rem}
+  .m-body{padding:22px; color:var(--text); line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; background:var(--bg)}
+  .m-actions{padding:16px 22px; display:flex; gap:12px; flex-wrap:wrap; justify-content:flex-end; border-top:1px solid var(--border); background:var(--bg)}
+  .btn{padding:12px 18px; border-radius:12px; border:1px solid var(--border); background:var(--card); font-weight:800; cursor:pointer; transition:var(--t); display:inline-flex; align-items:center; gap:8px; text-decoration:none}
+  .btn-primary{background:var(--gradient); color:#fff; border:none}
+  .btn-ghost{background:#eef2ff; border-color:#e5e7eb; color:#1e40af}
+  .btn:hover{transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.1)}
 </style>
 {% endblock %}
 
@@ -703,7 +126,7 @@
     <form class="head-actions" method="post" action="{% url 'reports:notifications_mark_all_read' %}">
       {% csrf_token %}
       <button class="btn-outline" type="submit" id="markAllBtn">
-        <i class="fa-solid fa-check-double" aria-hidden="true"></i> تحديد الكل كمقروء
+        <i class="fa-solid fa-check-double"></i> تحديد الكل كمقروء
       </button>
     </form>
   </header>
@@ -718,9 +141,7 @@
               {% if n.is_important %}<span class="chip danger"><i class="fa-solid fa-exclamation-circle"></i> هام</span>{% endif %}
               {{ n.title|default:"رسالة من الإدارة" }}
             </h3>
-            <time class="n-time" datetime="{{ r.created_at|date:'c' }}">
-              <i class="fa-regular fa-clock"></i> {{ r.created_at|date:"Y-m-d H:i" }}
-            </time>
+            <time class="n-time" datetime="{{ r.created_at|date:'c' }}"><i class="fa-regular fa-clock"></i> {{ r.created_at|date:"Y-m-d H:i" }}</time>
           </div>
 
           {% firstof n.message n.body n.content n.text n.details as body %}
@@ -728,19 +149,13 @@
 
           <div class="sender" aria-label="المرسِل">
             <span class="avatar-dot" aria-hidden="true"></span>
-            <span class="sender-name">
-              {% with s=n.created_by %}{% firstof s.name s.phone s.username "الإدارة" %}{% endwith %}
-            </span>
-            <span class="sender-role">
-              {% with s=n.created_by %}{% if s and s.role %}— {% firstof s.role.name s.role.slug %}{% endif %}{% endwith %}
-            </span>
+            <span class="sender-name">{% with s=n.created_by %}{% firstof s.name s.phone s.username "الإدارة" %}{% endwith %}</span>
+            <span class="sender-role">{% with s=n.created_by %}{% if s and s.role %}— {% firstof s.role.name s.role.slug %}{% endif %}{% endwith %}</span>
           </div>
 
           <div class="n-actions">
             <div class="left">
-              <span class="time-badge">
-                <i class="fa-regular fa-clock" aria-hidden="true"></i> {{ r.created_at|date:"Y-m-d H:i" }}
-              </span>
+              <span class="time-badge"><i class="fa-regular fa-clock"></i> {{ r.created_at|date:"Y-m-d H:i" }}</span>
 
               <button type="button"
                       class="btn-sm ghost btn-view"
@@ -750,28 +165,24 @@
                       data-sender="{% with s=n.created_by %}{% firstof s.name|escape s.phone|escape s.username|escape 'الإدارة' %}{% endwith %}{% with s=n.created_by %}{% if s and s.role %} — {% firstof s.role.name|escape s.role.slug|escape %}{% endif %}{% endwith %}"
                       data-time="{{ r.created_at|date:'Y-m-d H:i' }}"
                       {% if n.action_url %}data-url="{{ n.action_url|escape }}"{% endif %}>
-                <i class="fa-regular fa-eye" aria-hidden="true"></i> عرض
+                <i class="fa-regular fa-eye"></i> عرض
               </button>
 
               {% if n.action_url %}
                 <a class="btn-sm primary" href="{{ n.action_url }}" rel="noopener">
-                  <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i> فتح الرابط
+                  <i class="fa-solid fa-up-right-from-square"></i> فتح الرابط
                 </a>
               {% endif %}
             </div>
 
             <div class="right">
               {% if r.is_read %}
-                <span class="btn-sm success"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> مقروء</span>
-                {% if r.read_at %}
-                  <span class="chip muted"><i class="fa-regular fa-clock" aria-hidden="true"></i> {{ r.read_at|date:"Y-m-d H:i" }}</span>
-                {% endif %}
+                <span class="btn-sm success"><i class="fa-solid fa-circle-check"></i> مقروء</span>
+                {% if r.read_at %}<span class="chip muted"><i class="fa-regular fa-clock"></i> {{ r.read_at|date:"Y-m-d H:i" }}</span>{% endif %}
               {% else %}
                 <form method="post" action="{% url 'reports:notification_mark_read' r.pk %}">
                   {% csrf_token %}
-                  <button class="btn-sm" type="submit">
-                    <i class="fa-solid fa-check" aria-hidden="true"></i> تمت القراءة
-                  </button>
+                  <button class="btn-sm" type="submit"><i class="fa-solid fa-check"></i> تمت القراءة</button>
                 </form>
               {% endif %}
             </div>
@@ -783,40 +194,26 @@
 
     {% if page_obj.paginator.num_pages > 1 %}
       <nav class="pager" aria-label="التنقل بين الصفحات">
-        {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}">
-            <i class="fa-solid fa-arrow-right"></i> السابق
-          </a>
-        {% endif %}
+        {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}"><i class="fa-solid fa-arrow-right"></i> السابق</a>{% endif %}
         <span class="on">صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span>
-        {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}">
-            التالي <i class="fa-solid fa-arrow-left"></i>
-          </a>
-        {% endif %}
+        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">التالي <i class="fa-solid fa-arrow-left"></i></a>{% endif %}
       </nav>
     {% endif %}
   {% else %}
-    <div class="empty">
-      <i class="fa-regular fa-bell"></i>
-      <p>لا توجد إشعارات حتى الآن.</p>
-    </div>
+    <div class="empty"><i class="fa-regular fa-bell"></i><p>لا توجد إشعارات حتى الآن.</p></div>
   {% endif %}
 </div>
 
-<!-- نافذة عرض الإشعار -->
-<div class="modal-overlay" id="nModal" role="dialog" aria-modal="true" aria-labelledby="mTitle" aria-describedby="mBody">
-  <div class="modal">
-    <button class="m-close" id="mClose" aria-label="إغلاق">×</button>
+<!-- نضع المودال هنا، وسننقله إلى <body> تلقائياً ليكون فوق كل شيء -->
+<div class="modal-overlay" id="nModal" aria-hidden="true">
+  <div class="modal" id="nModalCard" role="dialog" aria-modal="true" aria-labelledby="mTitle" aria-describedby="mBody" tabindex="-1">
+    <button class="m-close" id="mClose" type="button" aria-label="إغلاق">×</button>
 
-    <div class="m-head">
-      <div class="m-icon"><i class="fa-solid fa-bell"></i></div>
-      <div>
-        <h3 class="m-title" id="mTitle">عنوان الإشعار</h3>
-        <div class="m-meta">
-          <span class="m-chip" id="mSender">الإدارة</span>
-          <span class="m-chip" id="mTime"><i class="fa-regular fa-clock"></i> —</span>
-        </div>
+    <div class="m-header">
+      <h3 class="m-title" id="mTitle">عنوان الإشعار</h3>
+      <div class="m-meta">
+        <span class="m-chip" id="mSender">الإدارة</span>
+        <span class="m-chip" id="mTime"><i class="fa-regular fa-clock"></i> —</span>
       </div>
     </div>
 
@@ -824,9 +221,9 @@
 
     <div class="m-actions">
       <a class="btn btn-primary" id="mAction" href="#" target="_blank" rel="noopener" style="display:none">
-        <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i> فتح الرابط
+        <i class="fa-solid fa-up-right-from-square"></i> فتح الرابط
       </a>
-      <button class="btn btn-ghost" id="mOk">إغلاق</button>
+      <button class="btn btn-ghost" id="mOk" type="button">إغلاق</button>
     </div>
   </div>
 </div>
@@ -834,75 +231,108 @@
 
 {% block scripts %}
 <script>
-  document.addEventListener('DOMContentLoaded', function(){
-    // منع الإرسال المزدوج لزر "تحديد جميع الإشعارات كمقروءة"
-    const markAll = document.getElementById('markAllBtn');
-    if(markAll){ 
-      markAll.addEventListener('click', ()=>{ 
-        markAll.disabled = true; 
-        markAll.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري المعالجة...';
-      }); 
-    }
-
-    // منع الإرسال المزدوج لأزرار "تمت القراءة"
-    document.querySelectorAll('.n-actions form').forEach(f=>{
-      f.addEventListener('submit', ()=>{
-        const btn = f.querySelector('button[type="submit"]');
-        if(btn){ 
-          btn.disabled = true; 
-          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري المعالجة...';
-        }
-      });
+document.addEventListener('DOMContentLoaded', function(){
+  // زر "تحديد الكل" منع النقر المزدوج
+  const markAll = document.getElementById('markAllBtn');
+  if(markAll){
+    markAll.addEventListener('click', ()=>{
+      markAll.disabled = true;
+      markAll.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري المعالجة...';
     });
-
-    // ===== نافذة عرض الإشعار =====
-    const modal  = document.getElementById('nModal');
-    const mTitle = document.getElementById('mTitle');
-    const mBody  = document.getElementById('mBody');
-    const mSender= document.getElementById('mSender');
-    const mTime  = document.getElementById('mTime');
-    const mAction= document.getElementById('mAction');
-    const mClose = document.getElementById('mClose');
-    const mOk    = document.getElementById('mOk');
-
-    function openModal(data){
-      mTitle.textContent  = data.title || 'إشعار';
-      mSender.textContent = data.sender || 'الإدارة';
-      mTime.innerHTML     = '<i class="fa-regular fa-clock" aria-hidden="true"></i> ' + (data.time || '');
-      mBody.textContent   = data.body || '';
-
-      if(data.url){ 
-        mAction.href = data.url; 
-        mAction.style.display='inline-flex'; 
-      } else { 
-        mAction.style.display='none'; 
-      }
-
-      modal.classList.add('open');
-      document.body.style.overflow='hidden';
-      mOk.focus();
-    }
-    
-    function closeModal(){
-      modal.classList.remove('open');
-      document.body.style.overflow='';
-    }
-
-    document.querySelectorAll('.btn-view').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        openModal({
-          title:  btn.dataset.title || '',
-          body:   btn.dataset.body || '',
-          sender: btn.dataset.sender || '',
-          time:   btn.dataset.time || '',
-          url:    btn.dataset.url || ''
-        });
-      });
+  }
+  document.querySelectorAll('.n-actions form').forEach(f=>{
+    f.addEventListener('submit', ()=>{
+      const b=f.querySelector('button[type="submit"]');
+      if(b){ b.disabled=true; b.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> جاري المعالجة...'; }
     });
-
-    [mClose,mOk].forEach(el=> el.addEventListener('click', closeModal));
-    document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeModal(); });
-    document.getElementById('nModal').addEventListener('click', (e)=>{ if(e.target === e.currentTarget) closeModal(); });
   });
+
+  // ===== المودال =====
+  const overlay = document.getElementById('nModal');
+  const card    = document.getElementById('nModalCard');
+  const mTitle  = document.getElementById('mTitle');
+  const mBody   = document.getElementById('mBody');
+  const mSender = document.getElementById('mSender');
+  const mTime   = document.getElementById('mTime');
+  const mAction = document.getElementById('mAction');
+  const mClose  = document.getElementById('mClose');
+  const mOk     = document.getElementById('mOk');
+
+  // 🧩 Portal: انقل المودال إلى body لضمان أعلى طبقة فوق الهيدر وأي طبقات أخرى
+  if (overlay && overlay.parentElement !== document.body) {
+    document.body.appendChild(overlay);
+  }
+
+  const root = document.documentElement;
+  const main = document.querySelector('.page-main');
+  const headerEl = document.getElementById('siteHeader');
+  const footerEl = document.querySelector('.site-footer');
+  const setInert = (el, v)=>{ if(!el) return; v ? el.setAttribute('inert','') : el.removeAttribute('inert'); };
+
+  let lastFocus = null;
+
+  function lockScroll(){ root.style.overflow='hidden'; }
+  function unlockScroll(){ root.style.overflow=''; }
+
+  function setModalData(d){
+    mTitle.textContent  = d.title || 'إشعار';
+    mSender.textContent = d.sender || 'الإدارة';
+    mTime.innerHTML     = '<i class="fa-regular fa-clock" aria-hidden="true"></i> ' + (d.time ? String(d.time).replace(/[<>&]/g,'') : '');
+    mBody.textContent   = d.body || '';
+    if(d.url){ mAction.href=d.url; mAction.style.display='inline-flex'; } else { mAction.style.display='none'; }
+  }
+
+  function openModal(data){
+    lastFocus = document.activeElement;
+    setModalData(data);
+
+    overlay.classList.add('open');
+    overlay.removeAttribute('aria-hidden');
+
+    lockScroll(); setInert(main,true); setInert(headerEl,true); setInert(footerEl,true);
+
+    card.focus({preventScroll:true});
+
+    // Trap داخل المودال
+    const focusables = overlay.querySelectorAll('a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])');
+    const first = focusables[0], last = focusables[focusables.length-1] || first;
+    overlay._trap = function(e){
+      if(e.key !== 'Tab') return;
+      if(focusables.length === 0){ e.preventDefault(); return; }
+      if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+    };
+    overlay.addEventListener('keydown', overlay._trap);
+  }
+
+  function closeModal(){
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden','true');
+
+    unlockScroll(); setInert(main,false); setInert(headerEl,false); setInert(footerEl,false);
+
+    if(overlay._trap){ overlay.removeEventListener('keydown', overlay._trap); overlay._trap=null; }
+    if(lastFocus && typeof lastFocus.focus === 'function'){ lastFocus.focus({preventScroll:true}); }
+  }
+
+  // فتح من “عرض”
+  document.querySelectorAll('.btn-view').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      openModal({
+        title:  btn.dataset.title || '',
+        body:   btn.dataset.body  || '',
+        sender: btn.dataset.sender|| '',
+        time:   btn.dataset.time  || '',
+        url:    btn.dataset.url   || ''
+      });
+    });
+  });
+
+  // إغلاقات مضمونة
+  mClose && mClose.addEventListener('click', (e)=>{ e.preventDefault(); closeModal(); });
+  mOk    && mOk.addEventListener('click',    (e)=>{ e.preventDefault(); closeModal(); });
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && overlay.classList.contains('open')) closeModal(); });
+});
 </script>
 {% endblock %}
