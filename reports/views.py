@@ -1871,3 +1871,173 @@ def notification_mark_read_by_notification(request: HttpRequest, pk: int) -> Htt
 @user_passes_test(_is_staff, login_url="reports:login")
 def send_notification(request: HttpRequest) -> HttpResponse:
     return redirect("reports:notifications_create")
+
+
+
+from django.conf import settings
+
+def _get_department_heads(dept):
+    """
+    تُعيد Queryset/قائمة برؤساء القسم الفعّالين.
+    تدعم حالتين:
+    1) وجود Membership بعلم is_head=True (الأفضل).
+    2) أو اعتمادًا على Teacher.role.slug == DEPARTMENT_HEAD_ROLE_SLUG.
+    """
+    if not dept:
+        return []
+
+    # 1) لو عندك نموذج عضوية مثلاً DepartmentMember فيه is_head
+    try:
+        # افترض أن العلاقة dept.members تعيد معلمين، مع وسيط عضوية اسمه through
+        through = getattr(dept.members, "through", None)
+        if through and hasattr(through, "is_head"):
+            return dept.members.filter(departmentmember__is_head=True, is_active=True)
+    except Exception:
+        pass
+
+    # 2) رجوع للخيار التراثي حسب السلاج
+    slug = getattr(settings, "DEPARTMENT_HEAD_ROLE_SLUG", "department_head")
+    try:
+        return dept.members.filter(role__slug=slug, is_active=True)
+    except Exception:
+        # لو ما فيه members، جرّب كل المعلّمين المنتمين للقسم
+        try:
+            return dept.teacher_set.filter(role__slug=slug, is_active=True)
+        except Exception:
+            return []
+
+def decide_department_head_for_print(dept):
+    """
+    تُعيد dict يوضح ما الذي يجب طباعته في خانة اعتماد رئيس القسم.
+    الحالات:
+      - no_render: لا نطبع شيئًا (لا يوجد قسم)
+      - single: يوجد اسم رئيس واحد (نطبعه)
+      - multi_blank: أكثر من رئيس، اتركها فارغة
+      - multi_dept: أكثر من رئيس، اطبع اسم القسم فقط مع خانة توقيع
+    """
+    if not dept:
+        return {"no_render": True}
+
+    heads = list(_get_department_heads(dept))
+    count = len(heads)
+    policy = getattr(settings, "PRINT_MULTIHEAD_POLICY", "blank")
+
+    if count == 1:
+        return {"single": True, "name": getattr(heads[0], "name", str(heads[0]))}
+
+    if count == 0:
+        # لا رؤساء محددين للقسم → نتعامل كـ "متعدد" بنفس السياسة (فارغ/اسم قسم)
+        if policy == "dept":
+            return {"multi_dept": True, "dept_name": getattr(dept, "name", "")}
+        return {"multi_blank": True}
+
+    # count > 1
+    if policy == "dept":
+        return {"multi_dept": True, "dept_name": getattr(dept, "name", "")}
+    return {"multi_blank": True}
+
+
+
+# views.py
+from django.conf import settings
+from django.db.models import Q
+
+try:
+    from .models import Department, DepartmentMembership
+except Exception:
+    Department = None
+    DepartmentMembership = None
+
+
+def _resolve_department_for_category(cat):
+    """يستخرج كائن القسم المرتبط بالتصنيف (إن وُجد)."""
+    if not cat or Department is None:
+        return None
+
+    # 1) علاقة مباشرة cat.department (إن وُجدت)
+    try:
+        d = getattr(cat, "department", None)
+        if d:
+            return d
+    except Exception:
+        pass
+
+    # 2) علاقات M2M شائعة: departments / depts / dept_list
+    for rel_name in ("departments", "depts", "dept_list"):
+        rel = getattr(cat, rel_name, None)
+        if rel is not None:
+            try:
+                d = rel.all().first()
+                if d:
+                    return d
+            except Exception:
+                pass
+
+    # 3) استعلام احتياطي
+    try:
+        return Department.objects.filter(reporttypes=cat).first()
+    except Exception:
+        return None
+
+
+def _build_head_decision(dept):
+    """
+    يُرجع dict يحدّد ماذا نطبع في خانة (اعتماد رئيس القسم).
+    - بدون قسم: لا نعرض شيئًا.
+    - رئيس واحد: نعرض اسمه.
+    - أكثر من رئيس: حسب السياسة PRINT_MULTIHEAD_POLICY = "blank" أو "dept".
+    """
+    if not dept or DepartmentMembership is None:
+        return {"no_render": True}
+
+    try:
+        role_officer = getattr(DepartmentMembership, "OFFICER", "officer")
+        qs = (DepartmentMembership.objects
+              .select_related("teacher")
+              .filter(department=dept, role_type=role_officer, teacher__is_active=True))
+        heads = [m.teacher for m in qs]
+    except Exception:
+        heads = []
+
+    count = len(heads)
+    policy = getattr(settings, "PRINT_MULTIHEAD_POLICY", "blank")  # "blank" أو "dept"
+
+    if count == 1:
+        return {"single": True, "name": getattr(heads[0], "name", str(heads[0]))}
+
+    if policy == "dept":
+        return {"multi_dept": True, "dept_name": getattr(dept, "name", "")}
+
+    return {"multi_blank": True}
+
+
+# ⬇️ استبدل دالة report_print بالكامل بهذه النسخة
+def report_print(request, pk):
+    r = _get_report_for_user_or_404(request.user, pk)
+
+    # لو حابّ تسمح بتحديد القسم يدويًا في رابط الطباعة ?dept=slug-or-id
+    dept = None
+    if Department is not None:
+        pref = request.GET.get("dept")
+        if pref:
+            dept = (Department.objects.filter(Q(slug=pref) | Q(id=pref)).first()
+                    or dept)
+
+    if dept is None:
+        cat = getattr(r, "category", None)
+        dept = _resolve_department_for_category(cat)
+
+    head_decision = _build_head_decision(dept)
+
+    # اسم مدير المدرسة (اختياري): مرّره من إعداداتك أو اتركه فارغًا
+    school_principal = getattr(settings, "SCHOOL_PRINCIPAL", "")
+
+    return render(
+        request,
+        "reports/report_print.html",
+        {
+            "r": r,
+            "head_decision": head_decision,   # ← القالب يعتمد عليه
+            "SCHOOL_PRINCIPAL": school_principal,
+        },
+    )

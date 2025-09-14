@@ -187,3 +187,13 @@ LOGIN_REDIRECT_URL = "reports:home"
 LOGOUT_REDIRECT_URL = "reports:login"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# كيف نتصرف عند وجود أكثر من رئيس للقسم؟
+# "blank"  => ترك خانة الاعتماد فارغة
+# "dept"   => طباعة اسم القسم فقط مع خط فارغ للتوقيع
+PRINT_MULTIHEAD_POLICY = "blank"  # أو "dept"
+
+# كيف نحدد رؤساء القسم؟
+# لو عندك عضوية قسم بعَلم is_head=True؛ اترك DEFAULT.
+# لو عندك أدوار من Teacher.role.slug فحدد السلاج المناسب.
+DEPARTMENT_HEAD_ROLE_SLUG = "department_head"  # غيّرها لو اسم السلاج مختلف

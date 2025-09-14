@@ -26,13 +26,13 @@
 
     /* ===== شريط أدوات (لا يُطبع) ===== */
     .toolbar{
-      display:flex;gap:8px;justify-content:center;
+      display:flex;gap:8px;justify-content:center;align-items:center;
       padding:10px;background:#f3f6ff;border-bottom:1px solid var(--line);
       position:sticky;top:0;z-index:9
     }
     .btn{padding:8px 14px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-weight:700}
     .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
-    .muted{color:var(--muted)}
+    .muted{color:var(--muted);font-weight:700}
 
     /* ===== الحاوية/الورقة ===== */
     .container{max-width:900px;margin:auto;padding:10px}
@@ -98,9 +98,10 @@
       padding:18px;border-top:1px dashed var(--line);
       background:linear-gradient(180deg,#fff, #f9fbff);
       break-inside:avoid; page-break-inside:avoid;
+      justify-content:space-between;
     }
     .sign .box{
-      flex:1;border:1px dashed var(--line);border-radius:12px;padding:14px;min-height:100px;background:var(--bg);text-align:center;
+      flex:1 1 260px;border:1px dashed var(--line);border-radius:12px;padding:14px;min-height:110px;background:var(--bg);text-align:center;
       display:flex;flex-direction:column;justify-content:space-between;gap:8px;
     }
     .sign .title{font-weight:900}
@@ -109,28 +110,19 @@
     .hint{font-size:.85rem;color:var(--muted)}
 
     /* ===== الطباعة الدقيقة بقياسات A4 ===== */
-    @page{
-      size:A4;
-      margin: var(--print-margin);
-    }
+    @page{ size:A4; margin: var(--print-margin); }
     @media print{
-      /* إزالة هوامش/ظلال الشاشة */
       .toolbar{display:none!important}
       body{background:#fff}
       .container{padding:0;margin:0}
       .sheet{
         box-shadow:none;border:1px solid var(--line);
         border-radius:var(--radius);
-        /* العرض والارتفاع القابلان للحساب داخل A4 وفق الهامش */
         width:calc(210mm - (2 * var(--print-margin)));
         min-height:calc(297mm - (2 * var(--print-margin)));
-        margin:auto; /* توسيط داخل الصفحة */
+        margin:auto;
       }
-
-      /* الحفاظ على الألوان والخلفيات */
       -webkit-print-color-adjust:exact; print-color-adjust:exact;
-
-      /* منع تقطيع العناصر المهمة */
       .hero,.section-title,.idea-box,.photos,.card-row,.sign{page-break-inside:avoid; break-inside:avoid}
       a[href]::after{content:"" !important}
     }
@@ -148,7 +140,7 @@
 
 <div class="toolbar no-print">
   <button class="btn btn-primary" onclick="window.print()">🖨️ طباعة</button>
-  <span class="muted" style="font-weight:700">نصيحة: عطِّل خيار “Headers and footers” من إعدادات الطباعة لإخفاء رابط الصفحة ورقمها.</span>
+  <span class="muted">نصيحة: عطِّل خيار “Headers and footers” من إعدادات الطباعة لإخفاء رابط الصفحة ورقمها.</span>
 </div>
 
 <div class="container">
@@ -191,6 +183,13 @@
           <div class="label">عدد المستفيدين</div>
           <div class="value">{{ r.beneficiaries_count|default_if_none:"-" }}</div>
         </div>
+
+        {% if r.department %}
+        <div class="card-row" style="grid-column:1 / -1">
+          <div class="label">القسم</div>
+          <div class="value">{{ r.department.name }}</div>
+        </div>
+        {% endif %}
       </div>
 
       <h3 class="section-title">💡 الوصــف</h3>
@@ -207,19 +206,41 @@
       {% endif %}
     </div>
 
-    <!-- التواقيع مثبتة بأسفل الصفحة -->
+    <!-- ===== التواقيع (أسفل الصفحة) ===== -->
     <div class="sign">
+      <!-- معد التقرير -->
       <div class="box">
-        <div class="title">توقيع منفذ التقرير</div>
-        <div class="name"> {{ r.teacher_display_name }} </div>
+        <div class="title">معـد التقرير</div>
+        <div class="name">{{ r.teacher_display_name }}</div>
         <div class="sigline" aria-hidden="true"></div>
-        <div class="hint">الاسم والتوقيع</div>
       </div>
+
+      <!-- اعتماد رئيس القسم (شرطي حسب head_decision) -->
+      {% with hd=head_decision %}
+        {% if hd and not hd.no_render %}
+          <div class="box">
+            {% if hd.single %}
+              <div class="title">اعتماد رئيس القسم</div>
+              <div class="name">{{ hd.name }}</div>
+              <div class="sigline" aria-hidden="true"></div>
+            {% elif hd.multi_dept %}
+              <div class="title">اعتماد رئيس قسم {{ hd.dept_name }}</div>
+              <div class="name">____________________</div>
+              <div class="sigline" aria-hidden="true"></div>
+            {% elif hd.multi_blank %}
+              <div class="title">اعتماد رئيس القسم</div>
+              <div class="name">____________________</div>
+              <div class="sigline" aria-hidden="true"></div>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <!-- اعتماد مدير المدرسة (ديناميكي) -->
       <div class="box">
         <div class="title">اعتماد مدير المدرسة</div>
-        <div class="name"> فهــد بن عبدالله الفـهـــد </div>
+        <div class="name">{% firstof SCHOOL_PRINCIPAL "فـهــد بن عبدالله الفــهد" %}</div>
         <div class="sigline" aria-hidden="true"></div>
-        <div class="hint">الاسم والختم/التوقيع</div>
       </div>
     </div>
 

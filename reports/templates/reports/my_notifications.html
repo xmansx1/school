@@ -25,9 +25,11 @@
   .chip.danger{background:#fff5f5;border:1px solid #ffe0e0;color:#b91c1c}
   .chip.muted{background:#f8fafc;border:1px solid var(--border);color:#475569}
 
-  .head-actions{display:flex;gap:12px;flex-wrap:wrap}
+  .head-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
   .btn-outline{padding:12px 18px;border-radius:var(--radius-md);border:2px solid var(--border);background:var(--card);font-weight:800;color:var(--text);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:var(--t)}
   .btn-outline:hover{border-color:var(--primary);color:var(--primary);box-shadow:0 4px 14px rgba(2,6,23,.08);transform:translateY(-2px)}
+  .toggle{display:inline-flex;align-items:center;gap:8px;font-weight:800;color:var(--text)}
+  .toggle input{width:18px;height:18px}
 
   .cards{display:grid;gap:20px}
   @media (min-width:768px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -67,36 +69,18 @@
   .pager a:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
   .pager .on{background:var(--gradient);color:#fff;border-color:var(--primary)}
 
-  /* ===== المودال (Portal + أعلى طبقة) ===== */
+  /* ===== المودال ===== */
   .modal-overlay{
-    position:fixed; inset:0;
-    z-index:2147483000; /* أعلى من أي عنصر في الصفحة */
-    display:grid; place-items:center;
+    position:fixed; inset:0; z-index:2147483000; display:grid; place-items:center;
     padding:20px; padding-top:calc(20px + var(--safe-top)); padding-bottom:calc(20px + var(--safe-bottom));
     opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s ease;
   }
-  .modal-overlay::before{
-    content:""; position:absolute; inset:0;
-    background:rgba(2,6,23,.58); backdrop-filter:blur(3px);
-    pointer-events:none; /* لا تمنع النقر على الأزرار */
-  }
+  .modal-overlay::before{content:""; position:absolute; inset:0; background:rgba(2,6,23,.58); backdrop-filter:blur(3px); pointer-events:none}
   .modal-overlay.open{opacity:1;visibility:visible}
-
-  .modal{
-    position:relative; z-index:1; width:min(760px,96vw); max-height:90vh; overflow:auto;
-    background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg);
-    box-shadow:0 24px 80px rgba(2,6,23,.35); transform:translateY(16px) scale(.98); opacity:0;
-    transition:transform .25s ease, opacity .25s ease;
-  }
+  .modal{position:relative; z-index:1; width:min(760px,96vw); max-height:90vh; overflow:auto; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:0 24px 80px rgba(2,6,23,.35); transform:translateY(16px) scale(.98); opacity:0; transition:transform .25s ease, opacity .25s ease}
   .modal-overlay.open .modal{transform:none; opacity:1}
-
-  .m-close{
-    position:absolute; inset-block-start:16px; inset-inline-start:16px;
-    width:40px; height:40px; border-radius:50%; border:0; cursor:pointer;
-    background:#ef4444; color:#fff; font-size:18px; display:grid; place-items:center; transition:var(--t)
-  }
+  .m-close{position:absolute; inset-block-start:16px; inset-inline-start:16px; width:40px; height:40px; border-radius:50%; border:0; cursor:pointer; background:#ef4444; color:#fff; font-size:18px; display:grid; place-items:center; transition:var(--t)}
   .m-close:hover{transform:scale(1.08)}
-
   .m-header{padding:22px; border-bottom:1px solid var(--border); background:linear-gradient(135deg,#f8fafc,#eef2ff)}
   .m-title{margin:0 0 10px; font-weight:900; color:var(--text); font-size:1.4rem}
   .m-meta{display:flex; flex-wrap:wrap; gap:10px}
@@ -120,22 +104,32 @@
         <span class="chip badge" id="unreadCount" aria-live="polite">
           <i class="fa-solid fa-envelope"></i> {{ NAV_NOTIFICATIONS_UNREAD }} غير مقروءة
         </span>
+      {% else %}
+        <span class="chip badge" id="unreadCount" aria-live="polite" style="display:none">
+          <i class="fa-solid fa-envelope"></i> 0 غير مقروءة
+        </span>
       {% endif %}
     </h1>
 
-    <form class="head-actions" method="post" action="{% url 'reports:notifications_mark_all_read' %}">
-      {% csrf_token %}
-      <button class="btn-outline" type="submit" id="markAllBtn">
-        <i class="fa-solid fa-check-double"></i> تحديد الكل كمقروء
-      </button>
-    </form>
+    <div class="head-actions">
+      <label class="toggle" for="onlyUnread">
+        <input type="checkbox" id="onlyUnread"> إظهار غير المقروء فقط
+      </label>
+
+      <form class="head-actions mark-all" method="post" action="{% url 'reports:notifications_mark_all_read' %}">
+        {% csrf_token %}
+        <button class="btn-outline" type="submit" id="markAllBtn">
+          <i class="fa-solid fa-check-double"></i> تحديد الكل كمقروء
+        </button>
+      </form>
+    </div>
   </header>
 
   {% if page_obj and page_obj.object_list %}
-    <section class="cards">
+    <section class="cards" id="cards">
       {% for r in page_obj %}
         {% with n=r.notification %}
-        <article class="n-card {% if r.is_read %}read{% endif %}">
+        <article class="n-card {% if r.is_read %}read{% endif %}" data-read="{{ r.is_read|yesno:'1,0' }}">
           <div class="n-head">
             <h3 class="n-title">
               {% if n.is_important %}<span class="chip danger"><i class="fa-solid fa-exclamation-circle"></i> هام</span>{% endif %}
@@ -180,9 +174,9 @@
                 <span class="btn-sm success"><i class="fa-solid fa-circle-check"></i> مقروء</span>
                 {% if r.read_at %}<span class="chip muted"><i class="fa-regular fa-clock"></i> {{ r.read_at|date:"Y-m-d H:i" }}</span>{% endif %}
               {% else %}
-                <form method="post" action="{% url 'reports:notification_mark_read' r.pk %}">
+                <form method="post" action="{% url 'reports:notification_mark_read' r.pk %}" class="mark-one-form">
                   {% csrf_token %}
-                  <button class="btn-sm" type="submit"><i class="fa-solid fa-check"></i> تمت القراءة</button>
+                  <button class="btn-sm mark-one" type="submit"><i class="fa-solid fa-check"></i> تمت القراءة</button>
                 </form>
               {% endif %}
             </div>
@@ -204,7 +198,7 @@
   {% endif %}
 </div>
 
-<!-- نضع المودال هنا، وسننقله إلى <body> تلقائياً ليكون فوق كل شيء -->
+<!-- المودال -->
 <div class="modal-overlay" id="nModal" aria-hidden="true">
   <div class="modal" id="nModalCard" role="dialog" aria-modal="true" aria-labelledby="mTitle" aria-describedby="mBody" tabindex="-1">
     <button class="m-close" id="mClose" type="button" aria-label="إغلاق">×</button>
@@ -232,36 +226,77 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function(){
-  // زر "تحديد الكل" منع النقر المزدوج
-  const markAll = document.getElementById('markAllBtn');
-  if(markAll){
-    markAll.addEventListener('click', ()=>{
-      markAll.disabled = true;
-      markAll.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري المعالجة...';
+  const $  = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+
+  // ===== عداد غير المقروء =====
+  const unreadCountEl = $('#unreadCount');
+  function countUnread(){
+    return $$('.n-card').filter(c => !c.classList.contains('read')).length;
+  }
+  function renderUnread(){
+    if(!unreadCountEl) return;
+    const n = countUnread();
+    if(n > 0){
+      unreadCountEl.style.display = '';
+      unreadCountEl.innerHTML = '<i class="fa-solid fa-envelope"></i> ' + n + ' غير مقروءة';
+    }else{
+      unreadCountEl.style.display = 'none';
+    }
+  }
+
+  // ===== إظهار غير المقروء فقط =====
+  const onlyUnread = $('#onlyUnread');
+  function applyOnlyUnread(){
+    const only = onlyUnread && onlyUnread.checked;
+    $$('.n-card').forEach(c=>{
+      const isRead = c.classList.contains('read');
+      c.style.display = (only && isRead) ? 'none' : '';
     });
   }
-  document.querySelectorAll('.n-actions form').forEach(f=>{
-    f.addEventListener('submit', ()=>{
-      const b=f.querySelector('button[type="submit"]');
-      if(b){ b.disabled=true; b.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> جاري المعالجة...'; }
+  if(onlyUnread){
+    onlyUnread.addEventListener('change', ()=>{ applyOnlyUnread(); });
+  }
+
+  // ===== "تحديد الكل كمقروء" — عطّل عند submit وليس click =====
+  const markAllForm = document.querySelector('form.mark-all');
+  const markAllBtn  = $('#markAllBtn');
+  if(markAllForm && markAllBtn){
+    markAllForm.addEventListener('submit', ()=>{
+      markAllBtn.disabled = true;
+      markAllBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري المعالجة...';
+      // تحسين بصري: وسم كل البطاقات كمقروء محليًا
+      $$('.n-card').forEach(c=> c.classList.add('read'));
+      renderUnread();
+      applyOnlyUnread();
     });
+  }
+
+  // ===== وسم رسالة واحدة كمقروء (تحسين بصري + منع النقر المزدوج) =====
+  $$('.mark-one-form').forEach(f=>{
+    f.addEventListener('submit', ()=>{
+      const btn = f.querySelector('.mark-one');
+      if(btn){ btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري المعالجة...'; }
+      const card = f.closest('.n-card');
+      if(card){ card.classList.add('read'); }
+      renderUnread();
+      applyOnlyUnread();
+    }, {passive:false});
   });
 
   // ===== المودال =====
-  const overlay = document.getElementById('nModal');
-  const card    = document.getElementById('nModalCard');
-  const mTitle  = document.getElementById('mTitle');
-  const mBody   = document.getElementById('mBody');
-  const mSender = document.getElementById('mSender');
-  const mTime   = document.getElementById('mTime');
-  const mAction = document.getElementById('mAction');
-  const mClose  = document.getElementById('mClose');
-  const mOk     = document.getElementById('mOk');
+  const overlay = $('#nModal');
+  const card    = $('#nModalCard');
+  const mTitle  = $('#mTitle');
+  const mBody   = $('#mBody');
+  const mSender = $('#mSender');
+  const mTime   = $('#mTime');
+  const mAction = $('#mAction');
+  const mClose  = $('#mClose');
+  const mOk     = $('#mOk');
 
-  // 🧩 Portal: انقل المودال إلى body لضمان أعلى طبقة فوق الهيدر وأي طبقات أخرى
-  if (overlay && overlay.parentElement !== document.body) {
-    document.body.appendChild(overlay);
-  }
+  // Portal إلى body
+  if (overlay && overlay.parentElement !== document.body) document.body.appendChild(overlay);
 
   const root = document.documentElement;
   const main = document.querySelector('.page-main');
@@ -270,7 +305,6 @@ document.addEventListener('DOMContentLoaded', function(){
   const setInert = (el, v)=>{ if(!el) return; v ? el.setAttribute('inert','') : el.removeAttribute('inert'); };
 
   let lastFocus = null;
-
   function lockScroll(){ root.style.overflow='hidden'; }
   function unlockScroll(){ root.style.overflow=''; }
 
@@ -285,15 +319,11 @@ document.addEventListener('DOMContentLoaded', function(){
   function openModal(data){
     lastFocus = document.activeElement;
     setModalData(data);
-
     overlay.classList.add('open');
     overlay.removeAttribute('aria-hidden');
-
     lockScroll(); setInert(main,true); setInert(headerEl,true); setInert(footerEl,true);
-
     card.focus({preventScroll:true});
 
-    // Trap داخل المودال
     const focusables = overlay.querySelectorAll('a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])');
     const first = focusables[0], last = focusables[focusables.length-1] || first;
     overlay._trap = function(e){
@@ -308,15 +338,13 @@ document.addEventListener('DOMContentLoaded', function(){
   function closeModal(){
     overlay.classList.remove('open');
     overlay.setAttribute('aria-hidden','true');
-
     unlockScroll(); setInert(main,false); setInert(headerEl,false); setInert(footerEl,false);
-
     if(overlay._trap){ overlay.removeEventListener('keydown', overlay._trap); overlay._trap=null; }
     if(lastFocus && typeof lastFocus.focus === 'function'){ lastFocus.focus({preventScroll:true}); }
   }
 
   // فتح من “عرض”
-  document.querySelectorAll('.btn-view').forEach(btn=>{
+  $$('.btn-view').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       openModal({
         title:  btn.dataset.title || '',
@@ -328,11 +356,15 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   });
 
-  // إغلاقات مضمونة
+  // إغلاقات
   mClose && mClose.addEventListener('click', (e)=>{ e.preventDefault(); closeModal(); });
   mOk    && mOk.addEventListener('click',    (e)=>{ e.preventDefault(); closeModal(); });
   overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeModal(); });
   document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && overlay.classList.contains('open')) closeModal(); });
+
+  // تهيئة أولية
+  renderUnread();
+  applyOnlyUnread();
 });
 </script>
 {% endblock %}

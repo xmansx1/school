@@ -22,403 +22,77 @@
     --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
     --transition: all 0.3s ease;
   }
-
   @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --text: #f1f5f9;
-      --text-light: #94a3b8;
-      --border: #334155;
-    }
+    :root { --bg:#0f172a; --card:#1e293b; --text:#f1f5f9; --text-light:#94a3b8; --border:#334155 }
   }
 
-  .add-report {
-    min-height: 100vh;
-    background: var(--bg);
-    padding: 20px 0;
-  }
+  .add-report{min-height:100vh;background:var(--bg);padding:20px 0}
+  .page-wrap{max-width:900px;margin:0 auto;padding:0 20px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:30px;box-shadow:var(--shadow);transition:var(--transition);position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;top:0;right:0;width:100%;height:5px;background:var(--gradient)}
+  .card:hover{box-shadow:0 15px 50px rgba(2,6,23,.12)}
+  .section-title{font-size:1.8rem;font-weight:900;color:var(--text);margin:0 0 28px;padding-bottom:16px;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 
-  .page-wrap {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 20px;
-  }
+  .form-grid{display:grid;gap:24px}
+  .form-group{display:flex;flex-direction:column;gap:10px}
+  label{font-weight:800;color:var(--text);font-size:1rem;display:flex;align-items:center;gap:8px}
+  input,textarea,select{padding:14px 16px;border:2px solid var(--border);border-radius:var(--radius-md);font-size:1rem;transition:var(--transition);background:var(--bg);color:var(--text);font-family:inherit}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(67,97,238,.2)}
+  textarea{min-height:140px;resize:vertical;line-height:1.6}
 
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 30px;
-    box-shadow: var(--shadow);
-    transition: var(--transition);
-    position: relative;
-    overflow: hidden;
-  }
+  .images-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:20px;margin-top:12px}
+  .image-upload{position:relative;border:2px dashed var(--border);border-radius:var(--radius-md);padding:24px 12px;text-align:center;transition:var(--transition);background:var(--bg);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+  .image-upload:hover{border-color:var(--primary);background:rgba(67,97,238,.05);transform:translateY(-2px)}
+  .image-upload input[type="file"]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+  .upload-icon{font-size:2.2rem;color:var(--text-light)}
+  .upload-text{font-size:.9rem;color:var(--text-light);font-weight:600}
 
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 100%;
-    height: 5px;
-    background: var(--gradient);
-  }
+  .preview-container{margin-top:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:16px}
+  .image-preview{position:relative;border-radius:var(--radius-md);overflow:hidden;height:120px;background:var(--bg);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+  .image-preview img{max-width:100%;max-height:100%;object-fit:cover}
+  .remove-image{position:absolute;top:8px;right:8px;background:rgba(239,68,68,.9);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;transition:var(--transition);border:none}
+  .remove-image:hover{background:#ef4444;transform:scale(1.1)}
 
-  .card:hover {
-    box-shadow: 0 15px 50px rgba(2, 6, 23, 0.12);
-  }
+  .form-note{font-size:.9rem;color:var(--text-light);margin-top:10px;padding:12px 16px;background:var(--bg);border-radius:var(--radius-md);border-right:4px solid var(--primary);font-weight:600}
 
-  .section-title {
-    font-size: 1.8rem;
-    font-weight: 900;
-    color: var(--text);
-    margin: 0 0 28px 0;
-    padding-bottom: 16px;
-    border-bottom: 2px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: var(--gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .form-grid {
-    display: grid;
-    gap: 24px;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  label {
-    font-weight: 800;
-    color: var(--text);
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  input,
-  textarea,
-  select {
-    padding: 14px 16px;
-    border: 2px solid var(--border);
-    border-radius: var(--radius-md);
-    font-size: 1rem;
-    transition: var(--transition);
-    background: var(--bg);
-    color: var(--text);
-    font-family: inherit;
-  }
-
-  input:focus,
-  textarea:focus,
-  select:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
-  }
-
-  textarea {
-    min-height: 140px;
-    resize: vertical;
-    line-height: 1.6;
-  }
-
-  .images-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 20px;
-    margin-top: 12px;
-  }
-
-  .image-upload {
-    position: relative;
-    border: 2px dashed var(--border);
-    border-radius: var(--radius-md);
-    padding: 24px 12px;
-    text-align: center;
-    transition: var(--transition);
-    background: var(--bg);
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .image-upload:hover {
-    border-color: var(--primary);
-    background: rgba(67, 97, 238, 0.05);
-    transform: translateY(-2px);
-  }
-
-  .image-upload input[type="file"] {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-  }
-
-  .upload-icon {
-    font-size: 2.2rem;
-    color: var(--text-light);
-  }
-
-  .upload-text {
-    font-size: 0.9rem;
-    color: var(--text-light);
-    font-weight: 600;
-  }
-
-  .preview-container {
-    margin-top: 20px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 16px;
-  }
-
-  .image-preview {
-    position: relative;
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    height: 120px;
-    background: var(--bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: var(--shadow);
-  }
-
-  .image-preview img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: cover;
-  }
-
-  .remove-image {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(239, 68, 68, 0.9);
-    color: #fff;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    cursor: pointer;
-    transition: var(--transition);
-    border: none;
-  }
-
-  .remove-image:hover {
-    background: #ef4444;
-    transform: scale(1.1);
-  }
-
-  .form-note {
-    font-size: 0.9rem;
-    color: var(--text-light);
-    margin-top: 10px;
-    padding: 12px 16px;
-    background: var(--bg);
-    border-radius: var(--radius-md);
-    border-right: 4px solid var(--primary);
-    font-weight: 600;
-  }
-
-  .btn {
-    padding: 16px 28px;
-    border: none;
-    border-radius: var(--radius-md);
-    font-size: 1rem;
-    font-weight: 800;
-    cursor: pointer;
-    transition: var(--transition);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    text-decoration: none;
-  }
-
-  .btn-accent {
-    background: var(--gradient);
-    color: #fff;
-    box-shadow: 0 8px 25px rgba(67, 97, 238, 0.3);
-  }
-
-  .btn-accent:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(67, 97, 238, 0.4);
-  }
-
-  .btn-outline {
-    background: transparent;
-    color: var(--text);
-    border: 2px solid var(--border);
-  }
-
-  .btn-outline:hover {
-    background: var(--bg);
-    border-color: var(--primary);
-    color: var(--primary);
-  }
-
-  .form-actions {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-    margin-top: 32px;
-  }
-
-  @media (min-width: 640px) {
-    .form-actions {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
+  .btn{padding:16px 28px;border:none;border-radius:var(--radius-md);font-size:1rem;font-weight:800;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;justify-content:center;gap:10px;text-decoration:none}
+  .btn-accent{background:var(--gradient);color:#fff;box-shadow:0 8px 25px rgba(67,97,238,.3)}
+  .btn-accent:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(67,97,238,.4)}
+  .btn-outline{background:transparent;color:var(--text);border:2px solid var(--border)}
+  .btn-outline:hover{background:var(--bg);border-color:var(--primary);color:var(--primary)}
+  .form-actions{display:grid;grid-template-columns:1fr;gap:16px;margin-top:32px}
 
   /* رسائل الخطأ */
-  .client-error {
-    color: #ef4444;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    padding: 12px 16px;
-    border-radius: var(--radius-md);
-    font-size: 0.9rem;
-    font-weight: 600;
-    margin-bottom: 16px;
-  }
-
-  .invalid {
-    border-color: #fca5a5 !important;
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
-  }
+  .client-error{color:#ef4444;background:#fef2f2;border:1px solid #fecaca;padding:12px 16px;border-radius:var(--radius-md);font-size:.9rem;font-weight:600;margin-bottom:16px}
+  .invalid{border-color:#fca5a5 !important;box-shadow:0 0 0 3px rgba(239,68,68,.15) !important}
 
   /* طبقة التحميل */
-  .add-report-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.85);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    backdrop-filter: blur(4px);
-  }
+  .add-report-overlay{position:fixed;inset:0;background:rgba(15,23,42,.85);display:none;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(4px)}
+  .up-card{width:min(520px,92%);background:var(--card);border-radius:var(--radius-lg);padding:28px;border:1px solid var(--border);box-shadow:0 20px 50px rgba(0,0,0,.3);text-align:center}
+  .up-title{margin:0 0 12px;font-weight:900;color:var(--text);font-size:1.4rem}
+  .up-desc{margin:0 0 20px;color:var(--text-light);font-weight:600}
+  .bar{height:12px;background:var(--bg);border:1px solid var(--border);border-radius:999px;overflow:hidden}
+  .bar-fill{height:100%;width:0;background:var(--gradient);transition:width .3s ease;border-radius:999px}
+  .mini{display:flex;justify-content:space-between;margin-top:12px;color:var(--text-light);font-weight:700;font-size:.9rem}
 
-  .up-card {
-    width: min(520px, 92%);
-    background: var(--card);
-    border-radius: var(--radius-lg);
-    padding: 28px;
-    border: 1px solid var(--border);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-    text-align: center;
+  /* تجاوب */
+  @media (min-width:640px){ .form-actions{grid-template-columns:1fr 1fr} }
+  @media (max-width:768px){
+    .page-wrap{padding:0 16px}
+    .card{padding:24px}
+    .section-title{font-size:1.5rem}
+    .images-grid{grid-template-columns:repeat(2,1fr)}
+    .form-actions{grid-template-columns:1fr}
+    .btn{padding:14px 20px}
   }
-
-  .up-title {
-    margin: 0 0 12px 0;
-    font-weight: 900;
-    color: var(--text);
-    font-size: 1.4rem;
+  @media (max-width:480px){
+    .images-grid{grid-template-columns:1fr}
+    .preview-container{grid-template-columns:repeat(2,1fr)}
+    .section-title{font-size:1.3rem}
   }
-
-  .up-desc {
-    margin: 0 0 20px 0;
-    color: var(--text-light);
-    font-weight: 600;
-  }
-
-  .bar {
-    height: 12px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    overflow: hidden;
-  }
-
-  .bar-fill {
-    height: 100%;
-    width: 0;
-    background: var(--gradient);
-    transition: width 0.3s ease;
-    border-radius: 999px;
-  }
-
-  .mini {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 12px;
-    color: var(--text-light);
-    font-weight: 700;
-    font-size: 0.9rem;
-  }
-
-  /* تحسينات التجاوب */
-  @media (max-width: 768px) {
-    .page-wrap {
-      padding: 0 16px;
-    }
-    
-    .card {
-      padding: 24px;
-    }
-    
-    .section-title {
-      font-size: 1.5rem;
-    }
-    
-    .images-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .form-actions {
-      grid-template-columns: 1fr;
-    }
-    
-    .btn {
-      padding: 14px 20px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .images-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .preview-container {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .section-title {
-      font-size: 1.3rem;
-    }
-  }
-
-  /* تأثيرات للوضع الداكن */
-  @media (prefers-color-scheme: dark) {
-    .client-error {
-      background: rgba(239, 68, 68, 0.15);
-      border-color: rgba(239, 68, 68, 0.4);
-    }
-    
-    .btn-outline:hover {
-      background: rgba(67, 97, 238, 0.1);
-    }
+  @media (prefers-color-scheme: dark){
+    .client-error{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4)}
+    .btn-outline:hover{background:rgba(67,97,238,.1)}
   }
 </style>
 {% endblock %}
@@ -428,20 +102,13 @@
 <div class="add-report">
   <div class="page-wrap">
     <div class="card">
-      <h2 class="section-title">
-        <i class="fa-solid fa-plus"></i> إضافة تقرير جديد
-      </h2>
+      <h2 class="section-title"><i class="fa-solid fa-plus"></i> إضافة تقرير جديد</h2>
 
       {% if messages %}
-        {% for message in messages %}
-          <div class="client-error">{{ message }}</div>
-        {% endfor %}
+        {% for message in messages %}<div class="client-error">{{ message }}</div>{% endfor %}
       {% endif %}
-      
       {% if form.non_field_errors %}
-        <div class="client-error">
-          {% for e in form.non_field_errors %}• {{ e }}<br>{% endfor %}
-        </div>
+        <div class="client-error">{% for e in form.non_field_errors %}• {{ e }}<br>{% endfor %}</div>
       {% endif %}
 
       <form id="report-form" method="POST" enctype="multipart/form-data" class="form-grid" autocomplete="off" novalidate>
@@ -449,127 +116,81 @@
 
         <!-- نوع التقرير -->
         <div class="form-group" data-group="category">
-          <label for="{{ form.category.id_for_label }}">
-            <i class="fa-solid fa-tag"></i> نوع التقرير
-          </label>
+          <label for="{{ form.category.id_for_label }}"><i class="fa-solid fa-tag"></i> نوع التقرير</label>
           <select name="{{ form.category.html_name }}" id="{{ form.category.id_for_label }}" class="input" required>
             <option value="" selected hidden>— اختر نوع التقرير —</option>
             {% for value,label in form.fields.category.choices %}
               {% if value != "" %}
                 <option value="{{ value }}"
-                  {% if form.is_bound and form.data.category == value %}selected{% endif %}
-                  {% if not form.is_bound and form.initial.category == value %}selected{% endif %}
-                >{{ label }}</option>
+                        {% if form.is_bound and form.data.category == value %}selected{% endif %}
+                        {% if not form.is_bound and form.initial.category == value %}selected{% endif %}>
+                  {{ label }}
+                </option>
               {% endif %}
             {% endfor %}
           </select>
-          {% if form.category.errors %}
-            <div class="client-error">{% for e in form.category.errors %}• {{ e }}<br>{% endfor %}</div>
-          {% endif %}
+          {% if form.category.errors %}<div class="client-error">{% for e in form.category.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
         </div>
 
         <!-- اسم المعلم -->
         <div class="form-group" data-group="teacher_name">
-          <label for="id_teacher_name">
-            <i class="fa-solid fa-user"></i> اسم المعلم
-          </label>
+          <label for="id_teacher_name"><i class="fa-solid fa-user"></i> اسم المعلم</label>
           <input type="text" id="id_teacher_name" name="teacher_name" class="input" maxlength="120"
                  placeholder="اكتب اسم المعلم" value="{{ form.data.teacher_name|default:request.user.name }}" required />
         </div>
 
         <!-- العنوان -->
         <div class="form-group" data-group="title">
-          <label for="{{ form.title.id_for_label }}">
-            <i class="fa-solid fa-heading"></i> العنوان
-          </label>
+          <label for="{{ form.title.id_for_label }}"><i class="fa-solid fa-heading"></i> العنوان</label>
           {{ form.title }}
-          {% if form.title.errors %}
-            <div class="client-error">{% for e in form.title.errors %}• {{ e }}<br>{% endfor %}</div>
-          {% endif %}
+          {% if form.title.errors %}<div class="client-error">{% for e in form.title.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
         </div>
 
-        <!-- التاريخ -->
+        <!-- التاريخ (يُمنع المستقبل) -->
         <div class="form-group" data-group="report_date">
-          <label for="{{ form.report_date.id_for_label }}">
-            <i class="fa-solid fa-calendar"></i> اختر التاريخ
-          </label>
+          <label for="{{ form.report_date.id_for_label }}"><i class="fa-solid fa-calendar"></i> اختر التاريخ</label>
           {{ form.report_date }}
-          {% if form.report_date.errors %}
-            <div class="client-error">{% for e in form.report_date.errors %}• {{ e }}<br>{% endfor %}</div>
-          {% endif %}
+          <div class="client-error" id="futureDateErr" style="display:none">لا يُسمح بتاريخ مستقبلي. اختر تاريخ اليوم أو تاريخًا سابقًا.</div>
+          {% if form.report_date.errors %}<div class="client-error">{% for e in form.report_date.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
         </div>
 
         <!-- اليوم -->
         <div class="form-group">
-          <label for="{{ form.day_name.id_for_label }}">
-            <i class="fa-solid fa-calendar-day"></i> اليوم
-          </label>
+          <label for="{{ form.day_name.id_for_label }}"><i class="fa-solid fa-calendar-day"></i> اليوم</label>
           {{ form.day_name }}
-          {% if form.day_name.errors %}
-            <div class="client-error">{% for e in form.day_name.errors %}• {{ e }}<br>{% endfor %}</div>
-          {% endif %}
+          {% if form.day_name.errors %}<div class="client-error">{% for e in form.day_name.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
         </div>
 
         <!-- عدد المستفيدين (اختياري) -->
         <div class="form-group">
-          <label for="{{ form.beneficiaries_count.id_for_label }}">
-            <i class="fa-solid fa-users"></i> عدد المستفيدين
-          </label>
+          <label for="{{ form.beneficiaries_count.id_for_label }}"><i class="fa-solid fa-users"></i> عدد المستفيدين</label>
           {{ form.beneficiaries_count }}
-          {% if form.beneficiaries_count.errors %}
-            <div class="client-error">{% for e in form.beneficiaries_count.errors %}• {{ e }}<br>{% endfor %}</div>
-          {% endif %}
+          {% if form.beneficiaries_count.errors %}<div class="client-error">{% for e in form.beneficiaries_count.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
         </div>
 
         <!-- الوصف -->
         <div class="form-group" data-group="idea">
-          <label for="{{ form.idea.id_for_label }}">
-            <i class="fa-solid fa-file-lines"></i> الوصف
-          </label>
+          <label for="{{ form.idea.id_for_label }}"><i class="fa-solid fa-file-lines"></i> الوصف</label>
           {{ form.idea }}
-          {% if form.idea.errors %}
-            <div class="client-error">{% for e in form.idea.errors %}• {{ e }}<br>{% endfor %}</div>
-          {% endif %}
+          {% if form.idea.errors %}<div class="client-error">{% for e in form.idea.errors %}• {{ e }}<br>{% endfor %}</div>{% endif %}
         </div>
 
         <!-- الصور -->
         <div class="form-group">
-          <label>
-            <i class="fa-solid fa-images"></i> الصور (اختياري)
-          </label>
+          <label><i class="fa-solid fa-images"></i> الصور (اختياري)</label>
           <div class="images-grid">
-            <div class="image-upload">
-              <div class="upload-icon"><i class="fa-solid fa-camera"></i></div>
-              <div class="upload-text">صورة 1</div>
-              {{ form.image1 }}
-            </div>
-            <div class="image-upload">
-              <div class="upload-icon"><i class="fa-solid fa-camera"></i></div>
-              <div class="upload-text">صورة 2</div>
-              {{ form.image2 }}
-            </div>
-            <div class="image-upload">
-              <div class="upload-icon"><i class="fa-solid fa-camera"></i></div>
-              <div class="upload-text">صورة 3</div>
-              {{ form.image3 }}
-            </div>
-            <div class="image-upload">
-              <div class="upload-icon"><i class="fa-solid fa-camera"></i></div>
-              <div class="upload-text">صورة 4</div>
-              {{ form.image4 }}
-            </div>
+            <div class="image-upload"><div class="upload-icon"><i class="fa-solid fa-camera"></i></div><div class="upload-text">صورة 1</div>{{ form.image1 }}</div>
+            <div class="image-upload"><div class="upload-icon"><i class="fa-solid fa-camera"></i></div><div class="upload-text">صورة 2</div>{{ form.image2 }}</div>
+            <div class="image-upload"><div class="upload-icon"><i class="fa-solid fa-camera"></i></div><div class="upload-text">صورة 3</div>{{ form.image3 }}</div>
+            <div class="image-upload"><div class="upload-icon"><i class="fa-solid fa-camera"></i></div><div class="upload-text">صورة 4</div>{{ form.image4 }}</div>
           </div>
           <div class="preview-container" id="preview-container"></div>
           <div class="form-note">سنقوم بضغط الصور تلقائيًا أثناء الحفظ لتسريع الرفع.</div>
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="btn btn-accent">
-            <i class="fa-solid fa-floppy-disk"></i> حفظ التقرير
-          </button>
-          <a class="btn btn-outline" href="{% url 'reports:home' %}">
-            <i class="fa-solid fa-arrow-right"></i> العودة للرئيسية
-          </a>
+          <button type="submit" class="btn btn-accent"><i class="fa-solid fa-floppy-disk"></i> حفظ التقرير</button>
+          <a class="btn btn-outline" href="{% url 'reports:home' %}"><i class="fa-solid fa-arrow-right"></i> العودة للرئيسية</a>
         </div>
       </form>
     </div>
@@ -581,35 +202,69 @@
   <div class="up-card">
     <h3 class="up-title"><i class="fa-solid fa-cloud-upload-alt"></i> يتم رفع الصور…</h3>
     <p class="up-desc">يرجى الانتظار حتى اكتمال الرفع وعدم إغلاق الصفحة.</p>
-    <div class="bar">
-      <div class="bar-fill" id="upFill"></div>
-    </div>
-    <div class="mini">
-      <span id="upLabel">بدء التحميل…</span>
-      <span id="upPct">0%</span>
-    </div>
+    <div class="bar"><div class="bar-fill" id="upFill"></div></div>
+    <div class="mini"><span id="upLabel">بدء التحميل…</span><span id="upPct">0%</span></div>
   </div>
 </div>
 
 <script>
-  // توليد اليوم تلقائيًا
+  /* أدوات وقت/تاريخ */
+  function todayYYYYMMDD(){
+    const t = new Date(); t.setHours(0,0,0,0);
+    const y = t.getFullYear();
+    const m = String(t.getMonth()+1).padStart(2,'0');
+    const d = String(t.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+  function parseDateInput(val){
+    // يحوّل "YYYY-MM-DD" إلى Date في منتصف الليل للمقارنة
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(val || "");
+    if(!m) return null;
+    const dt = new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
+    dt.setHours(0,0,0,0);
+    return isNaN(dt) ? null : dt;
+  }
+
+  // توليد اليوم تلقائيًا من حقل التاريخ
   (function(){
     const d = document.getElementById("id_report_date");
     const day = document.getElementById("id_day_name");
-    if (d && day){
+    const err = document.getElementById('futureDateErr');
+
+    if(d){
+      // ✅ منع المستقبل على مستوى المتصفح
+      d.setAttribute('max', todayYYYYMMDD());
+      // ضع قيمة افتراضية اليوم إذا الحقل فارغ
+      if(!d.value){ d.value = todayYYYYMMDD(); }
+
       d.addEventListener("change", function(){
-        if(!this.value){ day.value = ""; return; }
-        const dt = new Date(this.value);
-        const days = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
-        if(!isNaN(dt)) day.value = days[dt.getDay()];
+        err.style.display = 'none';
+        d.classList.remove('invalid');
+
+        const dt = parseDateInput(this.value);
+        if(!dt){ if(day) day.value=""; return; }
+
+        const now = parseDateInput(todayYYYYMMDD());
+        if(dt.getTime() > now.getTime()){
+          // تاريخ مستقبلي -> خطأ فوري
+          err.style.display = 'block';
+          d.classList.add('invalid');
+          if(day) day.value = "";
+          return;
+        }
+
+        // حساب اسم اليوم
+        if(day){
+          const days = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+          day.value = days[dt.getDay()];
+        }
       });
     }
   })();
 
-  // ✅ إتاحة "الكاميرا أو الاستديو" على الجوال:
+  // ✅ إتاحة "الكاميرا أو الاستديو" على الجوال
   (function() {
-    const ids = ['id_image1','id_image2','id_image3','id_image4'];
-    ids.forEach(id=>{
+    ['id_image1','id_image2','id_image3','id_image4'].forEach(id=>{
       const inp = document.getElementById(id);
       if(!inp) return;
       inp.setAttribute('accept','image/*');
@@ -637,8 +292,7 @@
           x.className = 'remove-image';
           x.innerHTML = '×';
           x.onclick = function(){ input.value=''; wrap.remove(); };
-          wrap.appendChild(img);
-          wrap.appendChild(x);
+          wrap.appendChild(img); wrap.appendChild(x);
           previewContainer.appendChild(wrap);
         };
         reader.readAsDataURL(file);
@@ -646,12 +300,11 @@
     });
   })();
 
-  // ===== تحقق من الحقول المطلوبة قبل الرفع =====
+  // ===== أدوات رسائل/تحققات عامة =====
   function clearClientErrors(form){
     form.querySelectorAll('.client-error[data-gen="1"]').forEach(e=>e.remove());
     form.querySelectorAll('.invalid').forEach(e=>e.classList.remove('invalid'));
   }
-  
   function addError(groupEl, inputEl, msg){
     inputEl.classList.add('invalid');
     const box = document.createElement('div');
@@ -660,45 +313,39 @@
     box.textContent = msg;
     groupEl.appendChild(box);
   }
-  
   function validateForm(form){
     clearClientErrors(form);
     let firstBad = null;
 
     const gCat = form.querySelector('[data-group="category"]');
     const sel = gCat.querySelector('select');
-    if(!sel.value){
-      addError(gCat, sel, 'فضلاً اختر نوع التقرير.');
-      if(!firstBad) firstBad = sel;
-    }
+    if(!sel.value){ addError(gCat, sel, 'فضلاً اختر نوع التقرير.'); firstBad ||= sel; }
 
     const gName = form.querySelector('[data-group="teacher_name"]');
     const nameInput = gName.querySelector('input[name="teacher_name"]');
-    if(!nameInput.value || !nameInput.value.trim()){
-      addError(gName, nameInput, 'اكتب اسم المعلم.');
-      if(!firstBad) firstBad = nameInput;
-    }
+    if(!nameInput.value || !nameInput.value.trim()){ addError(gName, nameInput, 'اكتب اسم المعلم.'); firstBad ||= nameInput; }
 
     const gTitle = form.querySelector('[data-group="title"]');
     const titleEl = gTitle.querySelector('input,textarea,select');
-    if(!titleEl || !titleEl.value || !titleEl.value.trim()){
-      addError(gTitle, titleEl, 'اكتب عنوان التقرير.');
-      if(!firstBad) firstBad = titleEl;
-    }
+    if(!titleEl || !titleEl.value || !titleEl.value.trim()){ addError(gTitle, titleEl, 'اكتب عنوان التقرير.'); firstBad ||= titleEl; }
 
     const gDate = form.querySelector('[data-group="report_date"]');
-    const dateEl = gDate.querySelector('input[type="date"]') || gDate.querySelector('input');
-    if(!dateEl.value){
-      addError(gDate, dateEl, 'اختر تاريخ التقرير.');
-      if(!firstBad) firstBad = dateEl;
+    const dateEl = document.getElementById('id_report_date') || gDate.querySelector('input[type="date"]') || gDate.querySelector('input');
+    if(!dateEl.value){ addError(gDate, dateEl, 'اختر تاريخ التقرير.'); firstBad ||= dateEl; }
+    else{
+      const picked = parseDateInput(dateEl.value);
+      const today  = parseDateInput(todayYYYYMMDD());
+      if(!picked){ addError(gDate, dateEl, 'تاريخ غير صالح.'); firstBad ||= dateEl; }
+      else if(picked.getTime() > today.getTime()){
+        // ✅ المنع الصريح للتاريخ المستقبلي
+        addError(gDate, dateEl, 'لا يُسمح بتاريخ مستقبلي. اختر تاريخ اليوم أو سابقًا.');
+        firstBad ||= dateEl;
+      }
     }
 
     const gIdea = form.querySelector('[data-group="idea"]');
     const ideaEl = gIdea.querySelector('textarea') || gIdea.querySelector('input');
-    if(!ideaEl.value || !ideaEl.value.trim()){
-      addError(gIdea, ideaEl, 'اكتب وصف/فكرة التقرير.');
-      if(!firstBad) firstBad = ideaEl;
-    }
+    if(!ideaEl.value || !ideaEl.value.trim()){ addError(gIdea, ideaEl, 'اكتب وصف/فكرة التقرير.'); firstBad ||= ideaEl; }
 
     if(firstBad){
       firstBad.scrollIntoView({behavior:'smooth', block:'center'});
@@ -768,6 +415,7 @@
       ev.preventDefault();
       if(!validateForm(form)) return;
 
+      // لو مرّ الفحص، أظهر طبقة الرفع
       overlay.style.display = 'flex';
       fill.style.width = '0%'; pctEl.textContent = '0%'; label.textContent = 'تحضير الملفات…';
 

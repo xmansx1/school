@@ -1,4 +1,4 @@
-{# templates/reports/admin_reports.html — 2025 (نسخة مُحسّنة مع شريط فلاتر أفقي) #}
+{# templates/reports/admin_reports.html — 2025 (نسخة محسّنة ومتجاوبة) #}
 {% extends "base.html" %}
 {% block title %}لوحة التقارير{% endblock %}
 
@@ -20,11 +20,8 @@
 .sub{color:var(--muted);font-weight:800}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
 
-/* ========== شريط الفلاتر (أفقي) ========= */
-/* استبدل كتلة CSS الخاصة بشريط الفلاتر بما يلي */
+/* ========== شريط الفلاتر (أفقي ومتجاوب) ========= */
 .filters { display:grid; gap:12px; margin-bottom:12px; }
-
-/* شبكة مرنة: تاريخ من / إلى / اسم المعلم / التصنيف / أزرار */
 .filters-bar{
   display:grid; align-items:end; gap:10px;
   grid-template-columns:
@@ -34,27 +31,20 @@
     minmax(160px, 0.9fr)  /* التصنيف */
     auto;                 /* الأزرار */
 }
-.f{ min-width:0 }           /* يمنع انكماش غريب داخل الشبكة */
+.f{ min-width:0 }
 .f .label{ display:block; color:var(--muted); font-weight:900; font-size:.9rem; margin:0 0 6px; }
 .field{ position:relative }
 .input,.select{ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font:inherit; }
 .has-icon{ padding-inline-start:38px }
 .field i{ position:absolute; inset-inline-start:12px; top:50%; transform:translateY(-50%); opacity:.7; font-size:.95rem; }
+.f-actions{ display:flex; gap:8px; justify-content:flex-start; flex-wrap:wrap }
 
-/* الأزرار تبقى في آخر عمود وتتمدد بقدر محتواها */
-.f-actions{ display:flex; gap:8px; justify-content:flex-start; }
-
-/* تفكيك تدريجي */
 @media (max-width:1200px){
   .filters-bar{ grid-template-columns: repeat(3, minmax(180px, 1fr)); }
-  .f-actions{ grid-column: 1 / -1; } /* الأزرار تسقط لسطر مستقل */
+  .f-actions{ grid-column: 1 / -1; }
 }
-@media (max-width:820px){
-  .filters-bar{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width:520px){
-  .filters-bar{ grid-template-columns: 1fr; }
-}
+@media (max-width:820px){ .filters-bar{ grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width:520px){ .filters-bar{ grid-template-columns: 1fr; } }
 
 /* ========== جدول ديسكتوب ========= */
 .table-wrap{overflow:auto}
@@ -82,6 +72,7 @@
 
 /* ========== أزرار الإجراءات ========= */
 .actions-row{display:flex;gap:6px;flex-wrap:wrap}
+.btn{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer}
 .btn-show{background:#3b82f6;color:#fff;border-color:#3b82f6}
 .btn-print{background:#10b981;color:#fff;border-color:#10b981}
 .btn-del{background:#ef4444;color:#fff;border-color:#ef4444}
@@ -101,20 +92,32 @@
 .tone-orange{background:#ffedd5;color:#9a3412;border-color:#fed7aa}
 .tone-gray{background:#f1f5f9;color:#334155;border-color:#e2e8f0}
 
-/* ========== المودال (متمركز + قابل للسحب على الديسكتوب) ========= */
-.modal{position:fixed;inset:0;background:rgba(2,6,23,.42);backdrop-filter:blur(2px);
-       z-index:2000;opacity:0;visibility:hidden;transition:opacity .16s ease,visibility .16s ease;display:grid;place-items:center;
-       padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+/* ========== المودال ========= */
+.modal{
+  position:fixed; inset:0; z-index:2000;
+  display:grid; place-items:center;
+  padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+  background:rgba(2,6,23,.42); backdrop-filter:blur(2px);
+  opacity:0; visibility:hidden; transition:opacity .16s ease,visibility .16s ease;
+  overscroll-behavior:contain; touch-action:none; /* يمنع سحب الخلفية */
+}
 .modal.open{opacity:1;visibility:visible}
-.sheet{position:fixed; /* ليس grid ليمكن سحبه */ 
-       width:clamp(320px,92vw,560px);max-height:min(84svh,640px);background:var(--card);color:var(--ink);
-       border:1px solid var(--line);border-radius:14px;box-shadow:0 22px 60px rgba(2,6,23,.18);
-       overflow:hidden;display:flex;flex-direction:column;transform:translate(-50%,-50%) scale(.98);transition:transform .18s ease}
+.sheet{
+  position:fixed; /* حتى يمكن سحبه على الديسكتوب */
+  width:clamp(320px,92vw,560px); max-height:min(84svh,640px);
+  background:var(--card); color:var(--ink);
+  border:1px solid var(--line); border-radius:14px; box-shadow:0 22px 60px rgba(2,6,23,.18);
+  overflow:hidden; display:flex; flex-direction:column;
+  transform:translate(-50%,-50%) scale(.98); transition:transform .18s ease;
+}
 .modal.open .sheet{transform:translate(-50%,-50%) scale(1)}
 .head{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;cursor:move}
 .head h2{margin:0;font-weight:900;font-size:.98rem}
 .close{background:#ef4444;color:#fff;border:0;width:28px;height:28px;border-radius:999px;cursor:pointer;display:grid;place-items:center}
-.body{padding:10px 12px;overflow:auto}
+.body{
+  padding:10px 12px; overflow:auto;
+  overscroll-behavior:contain; -webkit-overflow-scrolling:touch; /* سلاسة موبايل */
+}
 .idea{white-space:pre-line;margin:8px 0;font-size:14px;line-height:1.7;padding:10px;background:#f9fafb;border:1px solid var(--line);border-radius:10px}
 .meta p{margin:3px 0;color:var(--muted);font-size:13px}
 .gal{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
@@ -132,7 +135,7 @@
   <p class="sub">إدارة وعرض جميع التقارير المقدمة من المعلمين</p>
 
   <div class="card">
-    <!-- ===== شريط الفلاتر (أفقي) ===== -->
+    <!-- ===== شريط الفلاتر ===== -->
     <form method="get" class="filters" novalidate>
       <div class="filters-bar">
         <div class="f f-date-from">
@@ -169,9 +172,9 @@
         {% endif %}
 
         <div class="f f-actions">
-          <button class="btn btn-primary" type="submit"><i class="fa-solid fa-check"></i> تطبيق</button>
+          <button class="btn" style="background:var(--brand);color:#fff;border-color:var(--brand)" type="submit"><i class="fa-solid fa-check"></i> تطبيق</button>
           {% if start_date or end_date or teacher_name or category %}
-            <a class="btn btn-ghost" href="{% url 'reports:admin_reports' %}"><i class="fa-solid fa-rotate-left"></i> مسح</a>
+            <a class="btn" style="background:#eef2ff;border-color:#e5e7eb;color:#1e40af" href="{% url 'reports:admin_reports' %}"><i class="fa-solid fa-rotate-left"></i> مسح</a>
           {% endif %}
         </div>
       </div>
@@ -288,7 +291,6 @@
       {% endfor %}
     </div>
 
-    <!-- ===== ترقيم ===== -->
     {% if reports.paginator.num_pages > 1 %}
     <div style="display:flex;gap:10px;align-items:center;justify-content:center;margin-top:10px">
       {% if reports.has_previous %}
@@ -349,10 +351,28 @@
   const mCat    = document.getElementById('mCategory');
   const mImages = document.getElementById('mImages');
 
-  /* قفل تمرير الخلفية */
-  const lockScroll = (on)=>{ document.documentElement.style.overflow = on ? 'hidden' : ''; };
+  /* ✅ قفل تمرير الخلفية بطريقة body-fixed تحفظ موضع الصفحة */
+  let _scrollY = 0;
+  function freezeScroll(){
+    _scrollY = window.scrollY || window.pageYOffset || 0;
+    const body = document.body;
+    body.style.position = 'fixed';
+    body.style.top      = `-${_scrollY}px`;
+    body.style.left     = '0';
+    body.style.right    = '0';
+    body.style.width    = '100%';
+  }
+  function unfreezeScroll(){
+    const body = document.body;
+    body.style.position = '';
+    body.style.top      = '';
+    body.style.left     = '';
+    body.style.right    = '';
+    body.style.width    = '';
+    window.scrollTo(0, _scrollY || 0);
+  }
 
-  /* تمركز أولي */
+  /* تمركز أولي في وسط الشاشة */
   function centerSheet(){
     sheet.style.left = (window.innerWidth/2) + 'px';
     sheet.style.top  = (window.innerHeight/2) + 'px';
@@ -383,22 +403,24 @@
     });
 
     centerSheet();
+    freezeScroll();
     modal.classList.add('open');
     modal.setAttribute('aria-hidden','false');
-    lockScroll(true);
-    setTimeout(()=>closeBt.focus(),30);
+    setTimeout(()=> closeBt && closeBt.focus({preventScroll:true}), 10);
   }
 
   /* ربط أزرار العرض */
-  document.querySelectorAll('.btn-show').forEach(b=>b.addEventListener('click',()=>openFrom(b)));
+  document.querySelectorAll('.btn-show').forEach(b=>{
+    b.addEventListener('click', (e)=>{ e.preventDefault(); openFrom(b); });
+  });
 
-  /* إغلاق */
+  /* إغلاق المودال */
   function close(){
     modal.classList.remove('open');
     modal.setAttribute('aria-hidden','true');
-    lockScroll(false);
+    unfreezeScroll();
   }
-  closeBt.addEventListener('click',close);
+  closeBt.addEventListener('click', close);
   modal.addEventListener('click',e=>{ if(e.target===modal) close(); });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape' && modal.classList.contains('open')) close(); });
 
