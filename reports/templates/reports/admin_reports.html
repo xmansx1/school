@@ -1,52 +1,42 @@
-{# templates/reports/admin_reports.html — 2025 (نسخة محسّنة ومتجاوبة) #}
+{# templates/reports/admin_reports.html — 2025 (نسخة محسّنة ومتجاوبة بحوار <dialog>) #}
 {% extends "base.html" %}
 {% block title %}لوحة التقارير{% endblock %}
 
 {% block head %}
 <style>
-/* ========== نظام ألوان ومتغيرات ========= */
 :root{
   --ink:#0f172a; --muted:#64748b; --line:#e5e7eb; --card:#fff; --bg:#f8fafc;
-  --brand:#2563eb; --accent:#10b981; --danger:#ef4444; --warn:#f59e0b;
+  --brand:#2563eb; --accent:#10b981; --danger:#ef4444;
   --radius:16px; --shadow:0 14px 36px rgba(2,6,23,.10); --t:all .22s ease;
 }
 @media (prefers-color-scheme:dark){
   :root{ --ink:#e6ebff; --muted:#9fb0d9; --line:#1b2744; --card:#0f1629; --bg:#0b1220 }
 }
 
-/* ========== الحاوية والعناصر العامة ========= */
+/* إطار عام */
 .admin25{max-width:1400px;margin:auto;padding:18px}
-.h1{margin:0 0 6px;font-size:clamp(1.15rem,2.4vw,1.5rem);font-weight:900;color:var(--ink);letter-spacing:-.2px;display:flex;gap:10px;align-items:center}
+.h1{margin:0 0 6px;font-size:clamp(1.15rem,2.4vw,1.5rem);font-weight:900;color:var(--ink);display:flex;gap:10px;align-items:center}
 .sub{color:var(--muted);font-weight:800}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
 
-/* ========== شريط الفلاتر (أفقي ومتجاوب) ========= */
-.filters { display:grid; gap:12px; margin-bottom:12px; }
+/* شريط فلاتر */
+.filters{display:grid;gap:12px;margin-bottom:12px}
 .filters-bar{
-  display:grid; align-items:end; gap:10px;
-  grid-template-columns:
-    minmax(160px, 1fr)    /* من تاريخ */
-    minmax(160px, 1fr)    /* إلى تاريخ */
-    minmax(220px, 1.4fr)  /* اسم المعلم */
-    minmax(160px, 0.9fr)  /* التصنيف */
-    auto;                 /* الأزرار */
+  display:grid;align-items:end;gap:10px;
+  grid-template-columns:minmax(160px,1fr) minmax(160px,1fr) minmax(220px,1.4fr) minmax(160px,.9fr) auto;
 }
-.f{ min-width:0 }
-.f .label{ display:block; color:var(--muted); font-weight:900; font-size:.9rem; margin:0 0 6px; }
-.field{ position:relative }
-.input,.select{ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font:inherit; }
-.has-icon{ padding-inline-start:38px }
-.field i{ position:absolute; inset-inline-start:12px; top:50%; transform:translateY(-50%); opacity:.7; font-size:.95rem; }
-.f-actions{ display:flex; gap:8px; justify-content:flex-start; flex-wrap:wrap }
+.f{min-width:0}
+.f .label{display:block;color:var(--muted);font-weight:900;font-size:.9rem;margin:0 0 6px}
+.field{position:relative}
+.input,.select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font:inherit}
+.has-icon{padding-inline-start:38px}
+.field i{position:absolute;inset-inline-start:12px;top:50%;transform:translateY(-50%);opacity:.7;font-size:.95rem}
+.f-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media (max-width:1200px){.filters-bar{grid-template-columns:repeat(3,minmax(180px,1fr))}.f-actions{grid-column:1/-1}}
+@media (max-width:820px){.filters-bar{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.filters-bar{grid-template-columns:1fr}}
 
-@media (max-width:1200px){
-  .filters-bar{ grid-template-columns: repeat(3, minmax(180px, 1fr)); }
-  .f-actions{ grid-column: 1 / -1; }
-}
-@media (max-width:820px){ .filters-bar{ grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width:520px){ .filters-bar{ grid-template-columns: 1fr; } }
-
-/* ========== جدول ديسكتوب ========= */
+/* جدول */
 .table-wrap{overflow:auto}
 .table{width:100%;border-collapse:collapse;font-size:14px}
 .table th,.table td{padding:12px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
@@ -59,7 +49,7 @@
 .imgs{display:flex;gap:6px;flex-wrap:wrap}
 .imgs img{width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
 
-/* ========== بطاقات موبايل ========= */
+/* بطاقات للجوال */
 .desktop-only{display:block}
 .mobile-only{display:none}
 @media(max-width:820px){.desktop-only{display:none}.mobile-only{display:grid;gap:12px}}
@@ -70,14 +60,14 @@
 .mimgs img{width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
 .mactions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 
-/* ========== أزرار الإجراءات ========= */
+/* أزرار */
 .actions-row{display:flex;gap:6px;flex-wrap:wrap}
 .btn{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer}
 .btn-show{background:#3b82f6;color:#fff;border-color:#3b82f6}
 .btn-print{background:#10b981;color:#fff;border-color:#10b981}
 .btn-del{background:#ef4444;color:#fff;border-color:#ef4444}
 
-/* ========== بادجات التصنيف ========= */
+/* كابسولات التصنيف */
 .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid #e2e8f0;background:#f1f5f9;color:#334155;font-weight:800;font-size:.85rem}
 .tone-blue{background:#e0f2fe;color:#075985;border-color:#bae6fd}
 .tone-amber{background:#fef3c7;color:#92400e;border-color:#fde68a}
@@ -92,40 +82,26 @@
 .tone-orange{background:#ffedd5;color:#9a3412;border-color:#fed7aa}
 .tone-gray{background:#f1f5f9;color:#334155;border-color:#e2e8f0}
 
-/* ========== المودال ========= */
-.modal{
-  position:fixed; inset:0; z-index:2000;
-  display:grid; place-items:center;
-  padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
-  background:rgba(2,6,23,.42); backdrop-filter:blur(2px);
-  opacity:0; visibility:hidden; transition:opacity .16s ease,visibility .16s ease;
-  overscroll-behavior:contain; touch-action:none; /* يمنع سحب الخلفية */
+/* ===== حوار <dialog> (Bottom Sheet موبايل / Center ديسكتوب) ===== */
+dialog.report-dialog{
+  border:1px solid var(--line); border-radius:14px; padding:0; width:clamp(320px,92vw,620px);
+  color:var(--ink); background:var(--card); box-shadow:0 24px 80px rgba(2,6,23,.25);
 }
-.modal.open{opacity:1;visibility:visible}
-.sheet{
-  position:fixed; /* حتى يمكن سحبه على الديسكتوب */
-  width:clamp(320px,92vw,560px); max-height:min(84svh,640px);
-  background:var(--card); color:var(--ink);
-  border:1px solid var(--line); border-radius:14px; box-shadow:0 22px 60px rgba(2,6,23,.18);
-  overflow:hidden; display:flex; flex-direction:column;
-  transform:translate(-50%,-50%) scale(.98); transition:transform .18s ease;
-}
-.modal.open .sheet{transform:translate(-50%,-50%) scale(1)}
-.head{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;cursor:move}
-.head h2{margin:0;font-weight:900;font-size:.98rem}
-.close{background:#ef4444;color:#fff;border:0;width:28px;height:28px;border-radius:999px;cursor:pointer;display:grid;place-items:center}
-.body{
-  padding:10px 12px; overflow:auto;
-  overscroll-behavior:contain; -webkit-overflow-scrolling:touch; /* سلاسة موبايل */
-}
+dialog.report-dialog::backdrop{ background:rgba(2,6,23,.45); backdrop-filter:blur(2px) }
+.dialog-head{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px}
+.dialog-head h2{margin:0;font-weight:900;font-size:1rem}
+.dialog-close{background:#ef4444;color:#fff;border:0;width:30px;height:30px;border-radius:999px;cursor:pointer;display:grid;place-items:center}
+.dialog-body{padding:12px;max-height:70svh;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .idea{white-space:pre-line;margin:8px 0;font-size:14px;line-height:1.7;padding:10px;background:#f9fafb;border:1px solid var(--line);border-radius:10px}
 .meta p{margin:3px 0;color:var(--muted);font-size:13px}
-.gal{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
-.gal img{width:100%;height:110px;object-fit:cover;border-radius:10px;border:1px solid var(--line);box-shadow:0 3px 10px rgba(0,0,0,.12);cursor:pointer;transition:transform .2s,box-shadow .2s}
+.gal{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.gal img{width:100%;height:120px;object-fit:cover;border-radius:10px;border:1px solid var(--line);box-shadow:0 3px 10px rgba(0,0,0,.12);cursor:pointer;transition:transform .2s,box-shadow .2s}
 .gal img:hover{transform:scale(1.04);box-shadow:0 6px 16px rgba(0,0,0,.18)}
-@media(max-width:420px){.sheet{width:96vw;max-height:78svh}.gal{grid-template-columns:repeat(2,1fr)}}
-/* إعادة تحجيم اختيارية على الديسكتوب */
-@media(min-width:1024px){ .sheet{ resize:both; overflow:auto } }
+@media (max-width:820px){
+  dialog.report-dialog{ width:100vw; max-width:none; margin:0; border-radius:16px 16px 0 0 }
+  dialog.report-dialog[open]{ inset:auto 0 0 0 } /* Bottom sheet */
+  .dialog-body{ max-height:66svh }
+}
 </style>
 {% endblock %}
 
@@ -135,7 +111,7 @@
   <p class="sub">إدارة وعرض جميع التقارير المقدمة من المعلمين</p>
 
   <div class="card">
-    <!-- ===== شريط الفلاتر ===== -->
+    <!-- ===== فلاتر ===== -->
     <form method="get" class="filters" novalidate>
       <div class="filters-bar">
         <div class="f f-date-from">
@@ -198,15 +174,11 @@
         <tbody>
           {% for r in reports %}
           <tr>
-            <td>
-              {{ r.report_date|date:"Y-m-d" }}<br><small class="sub" style="font-weight:800">{{ r.day_name }}</small>
-            </td>
+            <td>{{ r.report_date|date:"Y-m-d" }}<br><small class="sub" style="font-weight:800">{{ r.day_name }}</small></td>
             <td>{{ r.teacher_display_name }}</td>
             <td>{{ r.title }}</td>
             <td>
-              <span class="pill" data-code="{{ r.category.code|default_if_none:'' }}">
-                <i class="fa-solid fa-tag"></i>{{ r.category.name|default_if_none:'-' }}
-              </span>
+              <span class="pill" data-code="{{ r.category.code|default_if_none:'' }}"><i class="fa-solid fa-tag"></i>{{ r.category.name|default_if_none:'-' }}</span>
             </td>
             <td class="text-center">{{ r.beneficiaries_count }}</td>
             <td>
@@ -223,13 +195,14 @@
             </td>
             <td>
               <div class="actions-row">
-                <button class="btn btn-show"
+                <button class="btn btn-show" type="button"
                         data-idea-id="idea-{{ r.pk }}"
                         data-teacher="{{ r.teacher.name|escapejs }}"
                         data-program="{{ r.title|escapejs }}"
                         data-date="{{ r.report_date|date:'Y-m-d' }} - {{ r.day_name|default_if_none:''|escapejs }}"
                         data-category="{{ r.category.name|default_if_none:''|escapejs }}"
-                        data-images="{% if r.image1 %}{{ r.image1.url }}{% endif %}|{% if r.image2 %}{{ r.image2.url }}{% endif %}|{% if r.image3 %}{{ r.image3.url }}{% endif %}|{% if r.image4 %}{{ r.image4.url }}{% endif %}">
+                        data-images="{% if r.image1 %}{{ r.image1.url }}{% endif %}|{% if r.image2 %}{{ r.image2.url }}{% endif %}|{% if r.image3 %}{{ r.image3.url }}{% endif %}|{% if r.image4 %}{{ r.image4.url }}{% endif %}"
+                        data-print-url="{% url 'reports:report_print' r.pk %}">
                   <i class="fa-solid fa-eye"></i>
                 </button>
                 <a class="btn btn-print" href="{% url 'reports:report_print' r.pk %}" target="_blank" rel="noopener"><i class="fa-solid fa-print"></i></a>
@@ -269,13 +242,14 @@
           {% if r.image4 %}<img src="{{ r.image4.url }}" alt="img">{% endif %}
         </div>
         <div class="mactions">
-          <button class="btn btn-show"
+          <button class="btn btn-show" type="button"
                   data-idea-id="idea-m-{{ r.pk }}"
                   data-teacher="{{ r.teacher.name|escapejs }}"
                   data-program="{{ r.title|escapejs }}"
                   data-date="{{ r.report_date|date:'Y-m-d' }} - {{ r.day_name|default_if_none:''|escapejs }}"
                   data-category="{{ r.category.name|default_if_none:''|escapejs }}"
-                  data-images="{% if r.image1 %}{{ r.image1.url }}{% endif %}|{% if r.image2 %}{{ r.image2.url }}{% endif %}|{% if r.image3 %}{{ r.image3.url }}{% endif %}|{% if r.image4 %}{{ r.image4.url }}{% endif %}">
+                  data-images="{% if r.image1 %}{{ r.image1.url }}{% endif %}|{% if r.image2 %}{{ r.image2.url }}{% endif %}|{% if r.image3 %}{{ r.image3.url }}{% endif %}|{% if r.image4 %}{{ r.image4.url }}{% endif %}"
+                  data-print-url="{% url 'reports:report_print' r.pk %}">
             👁 عرض
           </button>
           <a class="btn btn-print" href="{% url 'reports:report_print' r.pk %}" target="_blank" rel="noopener">🖨 طباعة</a>
@@ -305,31 +279,29 @@
   </div>
 </div>
 
-<!-- ===== المودال ===== -->
-<div id="reportModal" class="modal" aria-hidden="true">
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
-    <div class="head" id="dragHandle">
-      <h2 id="reportTitle">💡 التقرير</h2>
-      <button class="close" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="body">
-      <div id="mIdea" class="idea"></div>
-      <div class="meta">
-        <p>👨‍🏫 <b>المعلم:</b> <span id="mTeacher"></span></p>
-        <p>📖 <b>العنوان:</b> <span id="mProgram"></span></p>
-        <p>🏷️ <b>التصنيف:</b> <span id="mCategory"></span></p>
-        <p>📅 <b>التاريخ:</b> <span id="mDate"></span></p>
-      </div>
-      <div id="mImages" class="gal"></div>
-    </div>
+<!-- ===== حوار العرض ===== -->
+<dialog id="reportDialog" class="report-dialog" aria-labelledby="reportTitle" aria-describedby="reportDesc">
+  <div class="dialog-head">
+    <h2 id="reportTitle">💡 التقرير</h2>
+    <button class="dialog-close" type="button" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
   </div>
-</div>
+  <div class="dialog-body" id="reportDesc">
+    <div id="mIdea" class="idea"></div>
+    <div class="meta">
+      <p>👨‍🏫 <b>المعلم:</b> <span id="mTeacher"></span></p>
+      <p>📖 <b>العنوان:</b> <span id="mProgram"></span></p>
+      <p>🏷️ <b>التصنيف:</b> <span id="mCategory"></span></p>
+      <p>📅 <b>التاريخ:</b> <span id="mDate"></span></p>
+    </div>
+    <div id="mImages" class="gal"></div>
+  </div>
+</dialog>
 {% endblock %}
 
 {% block scripts %}
 <script>
 (function(){
-  /* تلوين التصنيفات */
+  /* ألوان التصنيف */
   const toneMap={activity:"blue",volunteer:"amber",affairs:"violet",admin:"red",manager:"slate",
                  sports:"green",cultural:"fuchsia",culture:"fuchsia",social:"rose",
                  scientific:"teal",science:"teal",health:"emerald",safety:"orange",
@@ -339,11 +311,8 @@
     el.classList.add('tone-'+(toneMap[code]||'gray'));
   });
 
-  /* عناصر المودال */
-  const modal   = document.getElementById('reportModal');
-  const sheet   = modal.querySelector('.sheet');
-  const closeBt = modal.querySelector('.close');
-  const dragHd  = document.getElementById('dragHandle');
+  const dlg = document.getElementById('reportDialog');
+  const closeBtn = dlg.querySelector('.dialog-close');
   const mIdea   = document.getElementById('mIdea');
   const mTeacher= document.getElementById('mTeacher');
   const mProgram= document.getElementById('mProgram');
@@ -351,107 +320,52 @@
   const mCat    = document.getElementById('mCategory');
   const mImages = document.getElementById('mImages');
 
-  /* ✅ قفل تمرير الخلفية بطريقة body-fixed تحفظ موضع الصفحة */
-  let _scrollY = 0;
-  function freezeScroll(){
-    _scrollY = window.scrollY || window.pageYOffset || 0;
-    const body = document.body;
-    body.style.position = 'fixed';
-    body.style.top      = `-${_scrollY}px`;
-    body.style.left     = '0';
-    body.style.right    = '0';
-    body.style.width    = '100%';
-  }
-  function unfreezeScroll(){
-    const body = document.body;
-    body.style.position = '';
-    body.style.top      = '';
-    body.style.left     = '';
-    body.style.right    = '';
-    body.style.width    = '';
-    window.scrollTo(0, _scrollY || 0);
-  }
-
-  /* تمركز أولي في وسط الشاشة */
-  function centerSheet(){
-    sheet.style.left = (window.innerWidth/2) + 'px';
-    sheet.style.top  = (window.innerHeight/2) + 'px';
-  }
-
-  /* فتح المودال */
   function openFrom(btn){
-    const taId = btn.dataset.ideaId;
-    const ta = taId ? document.getElementById(taId) : null;
+    const ta = document.getElementById(btn.dataset.ideaId);
     const idea = (ta ? ta.value : '').replace(/\r/g,'');
-    mIdea.innerText = idea;             // آمن ضد XSS
-    mTeacher.innerText = btn.dataset.teacher || '';
-    mProgram.innerText = btn.dataset.program || '';
-    mDate.innerText    = btn.dataset.date || '';
-    mCat.innerText     = btn.dataset.category || '';
-    mImages.innerHTML  = '';
+    mIdea.textContent = idea; // آمن
+    mTeacher.textContent = btn.dataset.teacher || '';
+    mProgram.textContent = btn.dataset.program || '';
+    mDate.textContent    = btn.dataset.date || '';
+    mCat.textContent     = btn.dataset.category || '';
+    mImages.innerHTML    = '';
 
     (btn.dataset.images||'').split('|').map(s=>s.trim()).filter(Boolean).forEach(url=>{
       const img=new Image(); img.src=url; img.alt='صورة التقرير';
       img.addEventListener('click',()=>{
         const o=document.createElement('div');
-        o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:3000';
-        o.innerHTML=`<img src="${url}" alt="" style="max-width:90%;max-height:90%;border-radius:12px;box-shadow:0 6px 30px rgba(0,0,0,.5)">`;
-        o.addEventListener("click",()=>o.remove());
+        o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;z-index:3000';
+        o.innerHTML=`<img src="${url}" alt="" style="max-width:94%;max-height:94%;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.6)">`;
+        o.addEventListener('click',()=>o.remove());
         document.body.appendChild(o);
       });
       mImages.appendChild(img);
     });
 
-    centerSheet();
-    freezeScroll();
-    modal.classList.add('open');
-    modal.setAttribute('aria-hidden','false');
-    setTimeout(()=> closeBt && closeBt.focus({preventScroll:true}), 10);
+    if ('showModal' in dlg){
+      dlg.showModal();              // لا قفز للأعلى ولا قفل يدوي
+      // تركيز أول عنصر داخل الحوار بدون تمرير الصفحة
+      requestAnimationFrame(()=> closeBtn.focus({preventScroll:true}));
+    }else{
+      // Fallback: افتح صفحة الطباعة
+      const url = btn.dataset.printUrl;
+      if(url) window.open(url, '_blank', 'noopener');
+    }
   }
 
-  /* ربط أزرار العرض */
-  document.querySelectorAll('.btn-show').forEach(b=>{
-    b.addEventListener('click', (e)=>{ e.preventDefault(); openFrom(b); });
-  });
-
-  /* إغلاق المودال */
-  function close(){
-    modal.classList.remove('open');
-    modal.setAttribute('aria-hidden','true');
-    unfreezeScroll();
-  }
-  closeBt.addEventListener('click', close);
-  modal.addEventListener('click',e=>{ if(e.target===modal) close(); });
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape' && modal.classList.contains('open')) close(); });
-
-  /* سحب المودال على الديسكتوب */
-  let drag=false, sx=0, sy=0, ox=0, oy=0;
-  function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
-  dragHd.addEventListener('mousedown', (e)=>{
-    if(window.innerWidth < 1024) return; // على الجوال لا نسحب
-    drag=true; sx=e.clientX; sy=e.clientY;
-    const r=sheet.getBoundingClientRect(); ox=r.left; oy=r.top;
+  // تفويض نقرات "عرض"
+  document.addEventListener('click', (e)=>{
+    const b = e.target.closest('.btn-show');
+    if(!b) return;
     e.preventDefault();
+    openFrom(b);
   });
-  window.addEventListener('mousemove',(e)=>{
-    if(!drag) return;
-    const nx = clamp(ox + (e.clientX - sx), 12, window.innerWidth - sheet.offsetWidth - 12);
-    const ny = clamp(oy + (e.clientY - sy), 12, window.innerHeight - sheet.offsetHeight - 12);
-    sheet.style.left = (nx + sheet.offsetWidth/2) + 'px';
-    sheet.style.top  = (ny + sheet.offsetHeight/2) + 'px';
-  });
-  window.addEventListener('mouseup', ()=> drag=false);
-  window.addEventListener('resize', ()=> { if(modal.classList.contains('open')) centerSheet(); });
 
-  /* فخ التركيز (وصولية) */
-  modal.addEventListener('keydown', (e)=>{
-    if(e.key!=='Tab') return;
-    const focusables = modal.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
-    if(!focusables.length) return;
-    const first = focusables[0], last = focusables[focusables.length-1];
-    if(e.shiftKey && document.activeElement===first){ last.focus(); e.preventDefault(); }
-    else if(!e.shiftKey && document.activeElement===last){ first.focus(); e.preventDefault(); }
-  });
+  // غلق الحوار
+  closeBtn.addEventListener('click', ()=> dlg.close());
+  dlg.addEventListener('click', (e)=>{ if(e.target === dlg) dlg.close(); });
+  dlg.addEventListener('cancel', (e)=>{ e.preventDefault(); dlg.close(); }); // ESC
+
 })();
 </script>
 {% endblock %}
