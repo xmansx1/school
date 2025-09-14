@@ -1,4 +1,4 @@
-{# templates/reports/admin_reports.html — 2025 (نسخة محسّنة ومتجاوبة بحوار <dialog>) #}
+{# templates/reports/admin_reports.html — 2025 (حوار تقرير + حوار صور) #}
 {% extends "base.html" %}
 {% block title %}لوحة التقارير{% endblock %}
 
@@ -69,7 +69,7 @@
 
 /* كابسولات التصنيف */
 .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid #e2e8f0;background:#f1f5f9;color:#334155;font-weight:800;font-size:.85rem}
-.tone-blue{background:#e0f2fe;color:#075985;border-color:#bae6fd}
+.tone-blue{background:#e0ف2fe;color:#075985;border-color:#bae6fd}
 .tone-amber{background:#fef3c7;color:#92400e;border-color:#fde68a}
 .tone-red{background:#fee2e2;color:#7f1d1d;border-color:#fecaca}
 .tone-violet{background:#ede9fe;color:#5b21b6;border-color:#ddd6fe}
@@ -82,7 +82,7 @@
 .tone-orange{background:#ffedd5;color:#9a3412;border-color:#fed7aa}
 .tone-gray{background:#f1f5f9;color:#334155;border-color:#e2e8f0}
 
-/* ===== حوار <dialog> (Bottom Sheet موبايل / Center ديسكتوب) ===== */
+/* ===== حوار التقرير <dialog> ===== */
 dialog.report-dialog{
   border:1px solid var(--line); border-radius:14px; padding:0; width:clamp(320px,92vw,620px);
   color:var(--ink); background:var(--card); box-shadow:0 24px 80px rgba(2,6,23,.25);
@@ -102,6 +102,16 @@ dialog.report-dialog::backdrop{ background:rgba(2,6,23,.45); backdrop-filter:blu
   dialog.report-dialog[open]{ inset:auto 0 0 0 } /* Bottom sheet */
   .dialog-body{ max-height:66svh }
 }
+
+/* ===== حوار الصور (Lightbox) أعلى كل شيء ===== */
+dialog.imgbox{
+  padding:0; border:0; background:transparent;
+  width:auto; max-width:none;
+}
+dialog.imgbox[open]{ inset:0; width:100vw; height:100svh }
+dialog.imgbox::backdrop{ background:rgba(0,0,0,.86) }
+.imgbox figure{margin:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center}
+.imgbox img{max-width:94vw; max-height:94svh; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,.6); cursor:zoom-out}
 </style>
 {% endblock %}
 
@@ -279,7 +289,7 @@ dialog.report-dialog::backdrop{ background:rgba(2,6,23,.45); backdrop-filter:blu
   </div>
 </div>
 
-<!-- ===== حوار العرض ===== -->
+<!-- ===== حوار التقرير ===== -->
 <dialog id="reportDialog" class="report-dialog" aria-labelledby="reportTitle" aria-describedby="reportDesc">
   <div class="dialog-head">
     <h2 id="reportTitle">💡 التقرير</h2>
@@ -296,12 +306,19 @@ dialog.report-dialog::backdrop{ background:rgba(2,6,23,.45); backdrop-filter:blu
     <div id="mImages" class="gal"></div>
   </div>
 </dialog>
+
+<!-- ===== حوار الصور (Lightbox) ===== -->
+<dialog id="imgDialog" class="imgbox" aria-label="صورة التقرير">
+  <figure>
+    <img id="imgDialogSrc" alt="" />
+  </figure>
+</dialog>
 {% endblock %}
 
 {% block scripts %}
 <script>
 (function(){
-  /* ألوان التصنيف */
+  /* تلوين التصنيف */
   const toneMap={activity:"blue",volunteer:"amber",affairs:"violet",admin:"red",manager:"slate",
                  sports:"green",cultural:"fuchsia",culture:"fuchsia",social:"rose",
                  scientific:"teal",science:"teal",health:"emerald",safety:"orange",
@@ -320,40 +337,45 @@ dialog.report-dialog::backdrop{ background:rgba(2,6,23,.45); backdrop-filter:blu
   const mCat    = document.getElementById('mCategory');
   const mImages = document.getElementById('mImages');
 
+  const imgDlg   = document.getElementById('imgDialog');
+  const imgDlgEl = document.getElementById('imgDialogSrc');
+
+  function openImage(url){
+    if('showModal' in imgDlg){
+      imgDlgEl.src = url;
+      imgDlg.showModal();  // يوضع في Top Layer فوق حوار التقرير
+    }else{
+      window.open(url, '_blank', 'noopener');
+    }
+  }
+  imgDlg.addEventListener('click', ()=> imgDlg.close());
+  imgDlg.addEventListener('cancel', (e)=>{ e.preventDefault(); imgDlg.close(); });
+
   function openFrom(btn){
     const ta = document.getElementById(btn.dataset.ideaId);
     const idea = (ta ? ta.value : '').replace(/\r/g,'');
-    mIdea.textContent = idea; // آمن
-    mTeacher.textContent = btn.dataset.teacher || '';
-    mProgram.textContent = btn.dataset.program || '';
-    mDate.textContent    = btn.dataset.date || '';
-    mCat.textContent     = btn.dataset.category || '';
-    mImages.innerHTML    = '';
+    mIdea.textContent   = idea;
+    mTeacher.textContent= btn.dataset.teacher || '';
+    mProgram.textContent= btn.dataset.program || '';
+    mDate.textContent   = btn.dataset.date || '';
+    mCat.textContent    = btn.dataset.category || '';
+    mImages.innerHTML   = '';
 
     (btn.dataset.images||'').split('|').map(s=>s.trim()).filter(Boolean).forEach(url=>{
       const img=new Image(); img.src=url; img.alt='صورة التقرير';
-      img.addEventListener('click',()=>{
-        const o=document.createElement('div');
-        o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;z-index:3000';
-        o.innerHTML=`<img src="${url}" alt="" style="max-width:94%;max-height:94%;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.6)">`;
-        o.addEventListener('click',()=>o.remove());
-        document.body.appendChild(o);
-      });
+      img.addEventListener('click', ()=> openImage(url));
       mImages.appendChild(img);
     });
 
     if ('showModal' in dlg){
-      dlg.showModal();              // لا قفز للأعلى ولا قفل يدوي
-      // تركيز أول عنصر داخل الحوار بدون تمرير الصفحة
+      dlg.showModal();
       requestAnimationFrame(()=> closeBtn.focus({preventScroll:true}));
     }else{
-      // Fallback: افتح صفحة الطباعة
       const url = btn.dataset.printUrl;
       if(url) window.open(url, '_blank', 'noopener');
     }
   }
 
-  // تفويض نقرات "عرض"
   document.addEventListener('click', (e)=>{
     const b = e.target.closest('.btn-show');
     if(!b) return;
@@ -361,11 +383,9 @@ dialog.report-dialog::backdrop{ background:rgba(2,6,23,.45); backdrop-filter:blu
     openFrom(b);
   });
 
-  // غلق الحوار
   closeBtn.addEventListener('click', ()=> dlg.close());
   dlg.addEventListener('click', (e)=>{ if(e.target === dlg) dlg.close(); });
-  dlg.addEventListener('cancel', (e)=>{ e.preventDefault(); dlg.close(); }); // ESC
-
+  dlg.addEventListener('cancel', (e)=>{ e.preventDefault(); dlg.close(); });
 })();
 </script>
 {% endblock %}
