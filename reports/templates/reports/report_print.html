@@ -9,17 +9,19 @@
   {% endwith %}
 
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
+
   <style>
     :root{
       --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
       --brand:#2563eb; --accent:#059669; --bg:#f8fafc; --card:#ffffff;
       --chip:#eef2ff; --chip-ink:#1e40af;
-      --radius:12px; --print-margin:12mm;
+      --radius:12px; --print-margin:10mm; /* قللنا الهوامش للطباعة */
+      --content-max: calc(297mm - (2 * var(--print-margin))); /* ارتفاع صفحة A4 داخل الهوامش */
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0;font-family:'Tajawal',sans-serif;color:var(--ink);background:#fff;
+      margin:0;font-family:'Tajawal',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:#fff;
       -webkit-print-color-adjust:exact; print-color-adjust:exact;
     }
     a{color:inherit;text-decoration:none}
@@ -41,6 +43,7 @@
       box-shadow:0 6px 18px rgba(0,0,0,.05);
       display:flex;flex-direction:column;
       min-height:calc(100vh - 120px);
+      transform-origin: top center; /* مهم لتصغير الورقة عند الطباعة */
     }
 
     /* الرأس */
@@ -50,7 +53,7 @@
       color:#fff;padding:16px 20px
     }
     .hero .logo{width:64px;height:64px;object-fit:contain;background:rgba(255,255,255,.15);border-radius:12px;padding:8px}
-    .hero .title{font-size:1.2rem;font-weight:900;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .hero .title{font-size:1.15rem;font-weight:900;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .hero .sub{opacity:.95;font-size:.9rem}
     .cat-badge{
       display:inline-flex;align-items:center;gap:6px;
@@ -60,56 +63,57 @@
     }
 
     /* المحتوى */
-    .content{padding:18px;flex:1}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    .content{padding:16px;flex:1}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
     .card-row{
       display:flex;flex-direction:column;justify-content:center;align-items:center;
-      gap:8px;padding:14px;border:1px dashed var(--line);border-radius:12px;background:#fafafa;text-align:center;
+      gap:6px;padding:12px;border:1px dashed var(--line);border-radius:12px;background:#fafafa;text-align:center;
       break-inside:avoid; page-break-inside:avoid;
     }
     .label{color:var(--muted);font-weight:800}
-    .value{font-weight:900;font-size:1rem}
+    .value{font-weight:900;font-size:1rem;word-break:break-word}
 
     .section-title{
-      margin:16px 0 8px;font-weight:900;color:var(--ink);
+      margin:14px 0 8px;font-weight:900;color:var(--ink);
       display:inline-flex;align-items:center;gap:8px;
-      background:var(--chip);color:var(--chip-ink);padding:6px 12px;border-radius:999px;font-size:.95rem;
+      background:var(--chip);color:var(--chip-ink);padding:6px 10px;border-radius:999px;font-size:.9rem;
       break-inside:avoid; page-break-inside:avoid;
     }
     .idea-box{
-      padding:14px;border:1px solid var(--line);border-radius:12px;background:#fbfdff;
-      white-space:pre-wrap; line-height:1.8;font-weight:600;
+      padding:12px;border:1px solid var(--line);border-radius:12px;background:#fbfdff;
+      white-space:pre-wrap; line-height:1.7;font-weight:600;
       break-inside:avoid; page-break-inside:avoid;
     }
 
+    /* الصور: شبكة مرنة قابلة للتكثيف */
     .photos{
-      display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:12px;
+      display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;margin-top:10px; /* كثافة أعلى افتراضياً */
       break-inside:avoid; page-break-inside:avoid;
     }
     .photos img{
-      width:100%;height:200px;object-fit:cover;border-radius:12px;border:1px solid var(--line);
-      box-shadow:0 4px 10px rgba(0,0,0,.08);
+      width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;border:1px solid var(--line);
+      box-shadow:0 2px 6px rgba(0,0,0,.06);
       break-inside:avoid; page-break-inside:avoid;
     }
 
     /* ===== التواقيع أسفل الصفحة ===== */
     .sign{
-      display:flex;gap:14px;margin-top:auto;flex-wrap:wrap;
-      padding:18px;border-top:1px dashed var(--line);
+      display:flex;gap:12px;margin-top:auto;flex-wrap:wrap;
+      padding:14px;border-top:1px dashed var(--line);
       background:linear-gradient(180deg,#fff, #f9fbff);
       break-inside:avoid; page-break-inside:avoid;
       justify-content:space-between;
     }
     .sign .box{
-      flex:1 1 260px;border:1px dashed var(--line);border-radius:12px;padding:14px;min-height:110px;background:var(--bg);text-align:center;
-      display:flex;flex-direction:column;justify-content:space-between;gap:8px;
+      flex:1 1 240px;border:1px dashed var(--line);border-radius:12px;padding:12px;min-height:100px;background:var(--bg);text-align:center;
+      display:flex;flex-direction:column;justify-content:space-between;gap:6px;
     }
     .sign .title{font-weight:900}
-    .sign .name{font-weight:800;opacity:.9}
-    .sigline{height:1px;background:repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(0,0,0,.25) 8px, rgba(0,0,0,.25) 16px); margin:10px 0}
+    .sign .name{font-weight:800;opacity:.9;word-break:break-word}
+    .sigline{height:1px;background:repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(0,0,0,.25) 8px, rgba(0,0,0,.25) 16px); margin:8px 0}
     .hint{font-size:.85rem;color:var(--muted)}
 
-    /* ===== الطباعة الدقيقة بقياسات A4 ===== */
+    /* ===== إعدادات الطباعة A4 + تحجيم تلقائي للورقة ===== */
     @page{ size:A4; margin: var(--print-margin); }
     @media print{
       .toolbar{display:none!important}
@@ -122,8 +126,23 @@
         min-height:calc(297mm - (2 * var(--print-margin)));
         margin:auto;
       }
-      -webkit-print-color-adjust:exact; print-color-adjust:exact;
-      .hero,.section-title,.idea-box,.photos,.card-row,.sign{page-break-inside:avoid; break-inside:avoid}
+      /* تقليل الفراغات والخطوط للطباعة لزيادة احتمال الاحتواء في صفحة */
+      .hero{padding:12px 14px}
+      .hero .logo{width:54px;height:54px}
+      .hero .title{font-size:1rem}
+      .hero .sub{font-size:.85rem}
+      .content{padding:12px}
+      .grid{gap:8px}
+      .card-row{padding:10px}
+      .section-title{margin:10px 0 6px;padding:4px 8px;font-size:.85rem}
+      .idea-box{padding:10px;line-height:1.6}
+      /* تكثيف الصور للطباعة: 4 أعمدة (أو أقل حسب العدد) وارتفاع أصغر */
+      .photos{grid-template-columns:repeat(4, 1fr);gap:6px}
+      .photos img{aspect-ratio:4/3}
+      .sign{padding:12px;gap:10px}
+      .sign .box{padding:10px;min-height:90px}
+
+      /* منع ظهور روابط بعد النص */
       a[href]::after{content:"" !important}
     }
 
@@ -132,7 +151,6 @@
       .grid{grid-template-columns:1fr}
       .hero .logo{width:54px;height:54px}
       .photos{grid-template-columns:1fr 1fr}
-      .photos img{height:160px}
     }
   </style>
 </head>
@@ -144,8 +162,7 @@
 </div>
 
 <div class="container">
-  <div class="sheet">
-
+  <div class="sheet" id="sheet">
     {% with cat_label=r.category.name|default:"غير مصنّف" %}
     <div class="hero">
       <img class="logo"
@@ -162,7 +179,7 @@
     </div>
     {% endwith %}
 
-    <div class="content">
+    <div class="content" id="content">
       <div class="grid">
         <div class="card-row">
           <div class="label">العنوان</div>
@@ -197,11 +214,11 @@
 
       {% if r.image1 or r.image2 or r.image3 or r.image4 %}
         <h3 class="section-title">📷 الصور المرفقة</h3>
-        <div class="photos">
-          {% if r.image1 %}<img src="{{ r.image1.url }}" alt="صورة 1">{% endif %}
-          {% if r.image2 %}<img src="{{ r.image2.url }}" alt="صورة 2">{% endif %}
-          {% if r.image3 %}<img src="{{ r.image3.url }}" alt="صورة 3">{% endif %}
-          {% if r.image4 %}<img src="{{ r.image4.url }}" alt="صورة 4">{% endif %}
+        <div class="photos" id="photos">
+          {% if r.image1 %}<img src="{{ r.image1.url }}" alt="صورة 1" loading="eager">{% endif %}
+          {% if r.image2 %}<img src="{{ r.image2.url }}" alt="صورة 2" loading="eager">{% endif %}
+          {% if r.image3 %}<img src="{{ r.image3.url }}" alt="صورة 3" loading="eager">{% endif %}
+          {% if r.image4 %}<img src="{{ r.image4.url }}" alt="صورة 4" loading="eager">{% endif %}
         </div>
       {% endif %}
     </div>
@@ -246,6 +263,101 @@
 
   </div>
 </div>
+
+<script>
+/**
+ * مواءمة تلقائية لاحتواء كل المحتوى في صفحة A4 واحدة وقت الطباعة:
+ * - نحسب ارتفاع الورقة داخل الهوامش المسموحة.
+ * - إذا زاد المحتوى، نُطبِّق scale على .sheet.
+ * ملاحظات:
+ * - يعمل عند فتح نافذة الطباعة (beforeprint) وأيضًا عند تحميل الصور.
+ * - يعيد الضبط بعد الطباعة (afterprint).
+ */
+(function(){
+  const mm = (v)=> v * 3.7795275591; // تحويل mm إلى px تقريبياً (96dpi)
+  const PRINT_MARGIN_MM = 10;
+  const PAGE_H_MM = 297;
+  const availablePx = mm(PAGE_H_MM - 2*PRINT_MARGIN_MM);
+
+  const sheet = document.getElementById('sheet');
+  if(!sheet) return;
+
+  let lastScale = 1;
+
+  function fitOnce(){
+    // إزالة أي تحجيم سابق لإعادة الحساب بدقة
+    sheet.style.transform = 'none';
+    // قياس ارتفاع المحتوى الحقيقي
+    const rect = sheet.getBoundingClientRect();
+    const currentH = rect.height;
+
+    if(currentH > availablePx){
+      const scale = Math.max(0.6, (availablePx / currentH)); // حد أدنى 60% لعدم صِغَر مبالغ
+      sheet.style.transform = `scale(${scale})`;
+      // عند التصغير، قد يتكون فراغ أسفل… نعوّض بزيادة margin-bottom بصرياً (لا يؤثر في الطباعة)
+      sheet.style.marginBottom = (currentH * (1 - scale)) + 'px';
+      lastScale = scale;
+    }else{
+      sheet.style.transform = 'none';
+      sheet.style.marginBottom = '';
+      lastScale = 1;
+    }
+  }
+
+  // حدث قبل الطباعة
+  function handleBeforePrint(){
+    try{ fitOnce(); }catch(e){}
+  }
+  // إعادة الضبط بعد الطباعة
+  function handleAfterPrint(){
+    try{
+      sheet.style.transform = 'none';
+      sheet.style.marginBottom = '';
+      lastScale = 1;
+    }catch(e){}
+  }
+
+  // دعم متصفحات مختلفة
+  if(window.matchMedia){
+    const mql = window.matchMedia('print');
+    // قديمة: listener
+    if (typeof mql.addListener === 'function'){
+      mql.addListener(function(e){ e.matches ? handleBeforePrint() : handleAfterPrint(); });
+    }
+    // حديثة: addEventListener
+    if (typeof mql.addEventListener === 'function'){
+      mql.addEventListener('change', (e)=>{ e.matches ? handleBeforePrint() : handleAfterPrint(); });
+    }
+  }
+  window.addEventListener('beforeprint', handleBeforePrint);
+  window.addEventListener('afterprint', handleAfterPrint);
+
+  // أعد الحساب عند تحميل الصور لضمان مقاس صحيح
+  function rerunAfterImages(){
+    const imgs = Array.from(document.images);
+    if(imgs.length === 0){ fitOnce(); return; }
+    let loaded = 0;
+    const done = ()=>{ loaded++; if(loaded === imgs.length) fitOnce(); };
+    imgs.forEach(img=>{
+      if(img.complete) return done();
+      img.addEventListener('load', done, {once:true});
+      img.addEventListener('error', done, {once:true});
+    });
+  }
+
+  // تشغيل مبدئي
+  rerunAfterImages();
+
+  // زر الطباعة يضمن المواءمة قبل فتح نافذة الطباعة (لمن يضغط الزر)
+  const btn = document.querySelector('.btn.btn-primary');
+  if(btn){
+    btn.addEventListener('click', ()=>{
+      fitOnce();
+      setTimeout(()=>window.print(), 30);
+    });
+  }
+})();
+</script>
 
 </body>
 </html>
