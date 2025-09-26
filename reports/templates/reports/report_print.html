@@ -15,8 +15,7 @@
       --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
       --brand:#2563eb; --accent:#059669; --bg:#f8fafc; --card:#ffffff;
       --chip:#eef2ff; --chip-ink:#1e40af;
-      --radius:12px; --print-margin:10mm; /* قللنا الهوامش للطباعة */
-      --content-max: calc(297mm - (2 * var(--print-margin))); /* ارتفاع صفحة A4 داخل الهوامش */
+      --radius:12px; --print-margin:10mm; /* هوامش أصغر للطباعة */
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -36,14 +35,14 @@
     .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
     .muted{color:var(--muted);font-weight:700}
 
-    /* ===== الحاوية/الورقة ===== */
+    /* ===== الحاوية/الورقة (عرض الشاشة) ===== */
     .container{max-width:900px;margin:auto;padding:10px}
     .sheet{
       border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--card);
       box-shadow:0 6px 18px rgba(0,0,0,.05);
       display:flex;flex-direction:column;
-      min-height:calc(100vh - 120px);
-      transform-origin: top center; /* مهم لتصغير الورقة عند الطباعة */
+      min-height:calc(100vh - 120px);     /* للشاشة فقط */
+      transform-origin: top center;        /* مهم لتصغير الورقة عند الطباعة */
     }
 
     /* الرأس */
@@ -113,34 +112,44 @@
     .sigline{height:1px;background:repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(0,0,0,.25) 8px, rgba(0,0,0,.25) 16px); margin:8px 0}
     .hint{font-size:.85rem;color:var(--muted)}
 
-    /* ===== إعدادات الطباعة A4 + تحجيم تلقائي للورقة ===== */
+    /* ===== إعدادات الطباعة A4 + منع الانقسام ===== */
     @page{ size:A4; margin: var(--print-margin); }
+
     @media print{
       .toolbar{display:none!important}
       body{background:#fff}
       .container{padding:0;margin:0}
+
       .sheet{
         box-shadow:none;border:1px solid var(--line);
         border-radius:var(--radius);
         width:calc(210mm - (2 * var(--print-margin)));
-        min-height:calc(297mm - (2 * var(--print-margin)));
+        height:calc(297mm - (2 * var(--print-margin)));   /* ارتفاع مضبوط لصفحة واحدة */
         margin:auto;
+        overflow:hidden;                                   /* يمنع الانسكاب لصفحة ثانية */
+        page-break-inside:avoid; break-inside:avoid-page;
+        transform-origin:top center;
       }
+
       /* تقليل الفراغات والخطوط للطباعة لزيادة احتمال الاحتواء في صفحة */
-      .hero{padding:12px 14px}
-      .hero .logo{width:54px;height:54px}
-      .hero .title{font-size:1rem}
-      .hero .sub{font-size:.85rem}
-      .content{padding:12px}
-      .grid{gap:8px}
-      .card-row{padding:10px}
-      .section-title{margin:10px 0 6px;padding:4px 8px;font-size:.85rem}
-      .idea-box{padding:10px;line-height:1.6}
-      /* تكثيف الصور للطباعة: 4 أعمدة (أو أقل حسب العدد) وارتفاع أصغر */
+      .hero{padding:10px 12px}
+      .hero .logo{width:50px;height:50px}
+      .hero .title{font-size:.95rem}
+      .hero .sub{font-size:.82rem}
+
+      .content{padding:10px}
+      .grid{gap:6px}
+      .card-row{padding:8px}
+
+      .section-title{margin:8px 0 6px;padding:4px 8px;font-size:.82rem}
+      .idea-box{padding:8px;line-height:1.55}
+
+      /* تكثيف الصور للطباعة */
       .photos{grid-template-columns:repeat(4, 1fr);gap:6px}
       .photos img{aspect-ratio:4/3}
-      .sign{padding:12px;gap:10px}
-      .sign .box{padding:10px;min-height:90px}
+
+      .sign{padding:10px;gap:8px}
+      .sign .box{padding:8px;min-height:82px}
 
       /* منع ظهور روابط بعد النص */
       a[href]::after{content:"" !important}
@@ -268,94 +277,79 @@
 /**
  * مواءمة تلقائية لاحتواء كل المحتوى في صفحة A4 واحدة وقت الطباعة:
  * - نحسب ارتفاع الورقة داخل الهوامش المسموحة.
- * - إذا زاد المحتوى، نُطبِّق scale على .sheet.
+ * - إذا زاد المحتوى، نُطبِّق zoom (أفضل لكروم/ويبكت) مع transform احتياطيًا.
  * ملاحظات:
- * - يعمل عند فتح نافذة الطباعة (beforeprint) وأيضًا عند تحميل الصور.
+ * - يعمل عند فتح نافذة الطباعة (beforeprint) وأيضًا بعد تحميل الصور.
  * - يعيد الضبط بعد الطباعة (afterprint).
  */
 (function(){
-  const mm = (v)=> v * 3.7795275591; // تحويل mm إلى px تقريبياً (96dpi)
+  // mm -> px (تقريب 96dpi)
+  const mm = (v)=> v * 3.7795275591;
   const PRINT_MARGIN_MM = 10;
   const PAGE_H_MM = 297;
-  const availablePx = mm(PAGE_H_MM - 2*PRINT_MARGIN_MM);
+  const availablePx = mm(PAGE_H_MM - 2*PRINT_MARGIN_MM); // الارتفاع داخل الهوامش
 
   const sheet = document.getElementById('sheet');
   if(!sheet) return;
 
-  let lastScale = 1;
-
   function fitOnce(){
-    // إزالة أي تحجيم سابق لإعادة الحساب بدقة
+    // إعادة الضبط
     sheet.style.transform = 'none';
-    // قياس ارتفاع المحتوى الحقيقي
-    const rect = sheet.getBoundingClientRect();
-    const currentH = rect.height;
+    sheet.style.zoom = '1';
+    sheet.style.height = ''; // للشاشة
 
-    if(currentH > availablePx){
-      const scale = Math.max(0.6, (availablePx / currentH)); // حد أدنى 60% لعدم صِغَر مبالغ
-      sheet.style.transform = `scale(${scale})`;
-      // عند التصغير، قد يتكون فراغ أسفل… نعوّض بزيادة margin-bottom بصرياً (لا يؤثر في الطباعة)
-      sheet.style.marginBottom = (currentH * (1 - scale)) + 'px';
-      lastScale = scale;
+    // قياس الارتفاع الحقيقي قبل الطباعة
+    const fullH = sheet.scrollHeight;
+    const maxH = availablePx;
+
+    if(fullH > maxH){
+      const scale = Math.max(0.55, maxH / fullH); // 🔧 الحد الأدنى للتصغير (يمكن تغييره)
+      sheet.style.zoom = String(scale);           // فعّال في Chrome/WebKit للطباعة
+      sheet.style.transform = `scale(${scale})`;  // احتياطي للمتصفحات الأخرى
+      sheet.style.height = maxH + 'px';           // يمنع دفع المحتوى لصفحة ثانية
     }else{
+      sheet.style.zoom = '1';
       sheet.style.transform = 'none';
-      sheet.style.marginBottom = '';
-      lastScale = 1;
+      sheet.style.height = maxH + 'px';           // تثبيت الارتفاع لتجنّب تذبذب
     }
   }
 
-  // حدث قبل الطباعة
-  function handleBeforePrint(){
-    try{ fitOnce(); }catch(e){}
-  }
-  // إعادة الضبط بعد الطباعة
-  function handleAfterPrint(){
-    try{
-      sheet.style.transform = 'none';
-      sheet.style.marginBottom = '';
-      lastScale = 1;
-    }catch(e){}
-  }
+  function handleBeforePrint(){ try{ fitOnce(); }catch(e){} }
+  function handleAfterPrint(){ try{
+    sheet.style.transform='none';
+    sheet.style.zoom='1';
+    sheet.style.height='';
+  }catch(e){} }
 
-  // دعم متصفحات مختلفة
   if(window.matchMedia){
     const mql = window.matchMedia('print');
-    // قديمة: listener
-    if (typeof mql.addListener === 'function'){
-      mql.addListener(function(e){ e.matches ? handleBeforePrint() : handleAfterPrint(); });
-    }
-    // حديثة: addEventListener
-    if (typeof mql.addEventListener === 'function'){
-      mql.addEventListener('change', (e)=>{ e.matches ? handleBeforePrint() : handleAfterPrint(); });
+    if(typeof mql.addEventListener==='function'){
+      mql.addEventListener('change', e=> e.matches ? handleBeforePrint() : handleAfterPrint());
+    }else if(typeof mql.addListener==='function'){
+      mql.addListener(e=> e.matches ? handleBeforePrint() : handleAfterPrint());
     }
   }
   window.addEventListener('beforeprint', handleBeforePrint);
   window.addEventListener('afterprint', handleAfterPrint);
 
-  // أعد الحساب عند تحميل الصور لضمان مقاس صحيح
-  function rerunAfterImages(){
+  // أعِد الحساب بعد تحميل الصور
+  (function rerunAfterImages(){
     const imgs = Array.from(document.images);
     if(imgs.length === 0){ fitOnce(); return; }
-    let loaded = 0;
-    const done = ()=>{ loaded++; if(loaded === imgs.length) fitOnce(); };
+    let doneCount = 0;
+    const done = ()=>{ if(++doneCount === imgs.length) fitOnce(); };
     imgs.forEach(img=>{
       if(img.complete) return done();
       img.addEventListener('load', done, {once:true});
       img.addEventListener('error', done, {once:true});
     });
-  }
+  })();
 
-  // تشغيل مبدئي
-  rerunAfterImages();
-
-  // زر الطباعة يضمن المواءمة قبل فتح نافذة الطباعة (لمن يضغط الزر)
-  const btn = document.querySelector('.btn.btn-primary');
-  if(btn){
-    btn.addEventListener('click', ()=>{
-      fitOnce();
-      setTimeout(()=>window.print(), 30);
-    });
-  }
+  // زر الطباعة يضمن المواءمة مسبقًا لمن يضغطه
+  document.querySelector('.btn.btn-primary')?.addEventListener('click', ()=>{
+    fitOnce();
+    setTimeout(()=>window.print(), 30);
+  });
 })();
 </script>
 
