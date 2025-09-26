@@ -9,20 +9,18 @@
   {% endwith %}
 
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
-
   <style>
     :root{
       --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
       --brand:#2563eb; --accent:#059669; --bg:#f8fafc; --card:#ffffff;
       --chip:#eef2ff; --chip-ink:#1e40af;
-      --radius:12px; --print-margin:10mm; /* هوامش A4 داخل الصفحة */
+      --radius:12px; --print-margin:12mm;
     }
-
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0;font-family:'Tajawal',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-      color:var(--ink);background:#fff;-webkit-print-color-adjust:exact; print-color-adjust:exact;
+      margin:0;font-family:'Tajawal',sans-serif;color:var(--ink);background:#fff;
+      -webkit-print-color-adjust:exact; print-color-adjust:exact;
     }
     a{color:inherit;text-decoration:none}
 
@@ -36,15 +34,12 @@
     .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
     .muted{color:var(--muted);font-weight:700}
 
-    /* ===== العرض على الشاشة ===== */
+    /* ===== الحاوية/الورقة ===== */
     .container{max-width:900px;margin:auto;padding:10px}
     .sheet{
       border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--card);
       box-shadow:0 6px 18px rgba(0,0,0,.05);
-    }
-    .sheet-inner{
-      display:flex;flex-direction:column; /* مهم لتثبيت التواقيع أسفل */
-      transform-origin:top center;        /* للطباعة عند التصغير */
+      display:flex;flex-direction:column;
       min-height:calc(100vh - 120px);
     }
 
@@ -55,7 +50,7 @@
       color:#fff;padding:16px 20px
     }
     .hero .logo{width:64px;height:64px;object-fit:contain;background:rgba(255,255,255,.15);border-radius:12px;padding:8px}
-    .hero .title{font-size:1.1rem;font-weight:900;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .hero .title{font-size:1.2rem;font-weight:900;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .hero .sub{opacity:.95;font-size:.9rem}
     .cat-badge{
       display:inline-flex;align-items:center;gap:6px;
@@ -65,98 +60,70 @@
     }
 
     /* المحتوى */
-    .content{padding:16px;flex:1} /* يأخذ الفراغ المتبقي */
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .content{padding:18px;flex:1}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
     .card-row{
       display:flex;flex-direction:column;justify-content:center;align-items:center;
-      gap:6px;padding:12px;border:1px dashed var(--line);border-radius:12px;background:#fafafa;text-align:center;
+      gap:8px;padding:14px;border:1px dashed var(--line);border-radius:12px;background:#fafafa;text-align:center;
       break-inside:avoid; page-break-inside:avoid;
     }
     .label{color:var(--muted);font-weight:800}
-    .value{font-weight:900;font-size:1rem;word-break:break-word}
+    .value{font-weight:900;font-size:1rem}
 
     .section-title{
-      margin:14px 0 8px;font-weight:900;color:var(--ink);
+      margin:16px 0 8px;font-weight:900;color:var(--ink);
       display:inline-flex;align-items:center;gap:8px;
-      background:var(--chip);color:var(--chip-ink);padding:6px 10px;border-radius:999px;font-size:.9rem;
+      background:var(--chip);color:var(--chip-ink);padding:6px 12px;border-radius:999px;font-size:.95rem;
       break-inside:avoid; page-break-inside:avoid;
     }
     .idea-box{
-      padding:12px;border:1px solid var(--line);border-radius:12px;background:#fbfdff;
-      white-space:pre-wrap; line-height:1.7;font-weight:600;
+      padding:14px;border:1px solid var(--line);border-radius:12px;background:#fbfdff;
+      white-space:pre-wrap; line-height:1.8;font-weight:600;
       break-inside:avoid; page-break-inside:avoid;
     }
 
     .photos{
-      display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;margin-top:10px;
+      display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:12px;
       break-inside:avoid; page-break-inside:avoid;
     }
     .photos img{
-      width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;border:1px solid var(--line);
-      box-shadow:0 2px 6px rgba(0,0,0,.06);
+      width:100%;height:200px;object-fit:cover;border-radius:12px;border:1px solid var(--line);
+      box-shadow:0 4px 10px rgba(0,0,0,.08);
       break-inside:avoid; page-break-inside:avoid;
     }
 
     /* ===== التواقيع أسفل الصفحة ===== */
     .sign{
-      margin-top:auto;                 /* يلصق القسم بالقاع في Flex */
-      display:flex;gap:12px;flex-wrap:wrap;
-      padding:14px;border-top:1px dashed var(--line);
+      display:flex;gap:14px;margin-top:auto;flex-wrap:wrap;
+      padding:18px;border-top:1px dashed var(--line);
       background:linear-gradient(180deg,#fff, #f9fbff);
       break-inside:avoid; page-break-inside:avoid;
       justify-content:space-between;
     }
     .sign .box{
-      flex:1 1 240px;border:1px dashed var(--line);border-radius:12px;padding:12px;min-height:100px;background:var(--bg);text-align:center;
-      display:flex;flex-direction:column;justify-content:space-between;gap:6px;
+      flex:1 1 260px;border:1px dashed var(--line);border-radius:12px;padding:14px;min-height:110px;background:var(--bg);text-align:center;
+      display:flex;flex-direction:column;justify-content:space-between;gap:8px;
     }
     .sign .title{font-weight:900}
-    .sign .name{font-weight:800;opacity:.9;word-break:break-word}
-    .sigline{height:1px;background:repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(0,0,0,.25) 8px, rgba(0,0,0,.25) 16px); margin:8px 0}
+    .sign .name{font-weight:800;opacity:.9}
+    .sigline{height:1px;background:repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(0,0,0,.25) 8px, rgba(0,0,0,.25) 16px); margin:10px 0}
+    .hint{font-size:.85rem;color:var(--muted)}
 
-    /* ===== إعدادات الطباعة الدقيقة A4 ===== */
-    @page { size: A4; margin: var(--print-margin); }
-
+    /* ===== الطباعة الدقيقة بقياسات A4 ===== */
+    @page{ size:A4; margin: var(--print-margin); }
     @media print{
       .toolbar{display:none!important}
       body{background:#fff}
       .container{padding:0;margin:0}
-
-      /* الإطار الخارجي يطابق A4 داخل الهوامش */
       .sheet{
-        width: calc(210mm - (2 * var(--print-margin)));
-        height: calc(297mm - (2 * var(--print-margin)));
+        box-shadow:none;border:1px solid var(--line);
+        border-radius:var(--radius);
+        width:calc(210mm - (2 * var(--print-margin)));
+        min-height:calc(297mm - (2 * var(--print-margin)));
         margin:auto;
-        box-shadow:none;border:0;border-radius:0;background:#fff;
-        overflow:hidden;
-        page-break-inside:avoid; break-inside:avoid-page;
       }
-
-      .sheet-inner{
-        min-height:100%;
-        display:flex;flex-direction:column; /* تأكيد */
-        transform-origin:top center;
-      }
-
-      /* تكثيف المسافات للطباعة */
-      .hero{padding:10mm 8mm}
-      .hero .logo{width:48px;height:48px}
-      .hero .title{font-size:.95rem}
-      .hero .sub{font-size:.82rem}
-
-      .content{padding:8mm}
-      .grid{gap:6px}
-      .card-row{padding:8px}
-
-      .section-title{margin:8px 0 6px;padding:4px 8px;font-size:.82rem}
-      .idea-box{padding:8px;line-height:1.55}
-
-      .photos{grid-template-columns:repeat(4,1fr);gap:6px}
-      .photos img{aspect-ratio:4/3}
-
-      .sign{padding:8mm 8mm 6mm;gap:8px;margin-top:auto}
-      .sign .box{padding:8px;min-height:82px}
-
+      -webkit-print-color-adjust:exact; print-color-adjust:exact;
+      .hero,.section-title,.idea-box,.photos,.card-row,.sign{page-break-inside:avoid; break-inside:avoid}
       a[href]::after{content:"" !important}
     }
 
@@ -165,6 +132,7 @@
       .grid{grid-template-columns:1fr}
       .hero .logo{width:54px;height:54px}
       .photos{grid-template-columns:1fr 1fr}
+      .photos img{height:160px}
     }
   </style>
 </head>
@@ -172,183 +140,112 @@
 
 <div class="toolbar no-print">
   <button class="btn btn-primary" onclick="window.print()">🖨️ طباعة</button>
-  <span class="muted">عطِّل خيار “Headers and footers” من إعدادات الطباعة لإخفاء رابط الصفحة ورقمها.</span>
+  <span class="muted">نصيحة: عطِّل خيار “Headers and footers” من إعدادات الطباعة لإخفاء رابط الصفحة ورقمها.</span>
 </div>
 
 <div class="container">
-  <div class="sheet" id="sheet">
-    <div class="sheet-inner" id="sheetInner">
-      {% with cat_label=r.category.name|default:"غير مصنّف" %}
-      <div class="hero">
-        <img class="logo"
-             src="{% if SCHOOL_LOGO_URL %}{{ SCHOOL_LOGO_URL }}{% else %}{% static 'img/logo.png' %}{% endif %}"
-             alt="{{ SCHOOL_NAME|default:'شعار المدرسة' }}">
-        <div>
-          <div class="title">
-            تقرير <span class="cat-badge">{{ cat_label }}</span>
-          </div>
-          <div class="sub">
-            {% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}نظام توثيق أعمال المعلمين{% endif %}
-          </div>
+  <div class="sheet">
+
+    {% with cat_label=r.category.name|default:"غير مصنّف" %}
+    <div class="hero">
+      <img class="logo"
+           src="{% if SCHOOL_LOGO_URL %}{{ SCHOOL_LOGO_URL }}{% else %}{% static 'img/logo.png' %}{% endif %}"
+           alt="{{ SCHOOL_NAME|default:'شعار المدرسة' }}">
+      <div>
+        <div class="title">
+          تقرير <span class="cat-badge">{{ cat_label }}</span>
+        </div>
+        <div class="sub">
+          {% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}نظام توثيق أعمال المعلمين{% endif %}
         </div>
       </div>
-      {% endwith %}
+    </div>
+    {% endwith %}
 
-      <div class="content">
-        <div class="grid">
-          <div class="card-row">
-            <div class="label">العنوان</div>
-            <div class="value">{{ r.title }}</div>
-          </div>
-
-          <div class="card-row">
-            <div class="label">التاريخ</div>
-            <div class="value">{{ r.report_date|date:"Y-m-d" }}{% if r.day_name %} • {{ r.day_name }}{% endif %}</div>
-          </div>
-
-          <div class="card-row">
-            <div class="label">المعلم</div>
-            <div class="value">{{ r.teacher_display_name }}</div>
-          </div>
-
-          <div class="card-row">
-            <div class="label">عدد المستفيدين</div>
-            <div class="value">{{ r.beneficiaries_count|default_if_none:"-" }}</div>
-          </div>
-
-          {% if r.department %}
-          <div class="card-row" style="grid-column:1 / -1">
-            <div class="label">القسم</div>
-            <div class="value">{{ r.department.name }}</div>
-          </div>
-          {% endif %}
+    <div class="content">
+      <div class="grid">
+        <div class="card-row">
+          <div class="label">العنوان</div>
+          <div class="value">{{ r.title }}</div>
         </div>
 
-        <h3 class="section-title">💡 الوصــف</h3>
-        <div class="idea-box">{{ r.idea|default_if_none:"" }}</div>
+        <div class="card-row">
+          <div class="label">التاريخ</div>
+          <div class="value">{{ r.report_date|date:"Y-m-d" }}{% if r.day_name %} • {{ r.day_name }}{% endif %}</div>
+        </div>
 
-        {% if r.image1 or r.image2 or r.image3 or r.image4 %}
-          <h3 class="section-title">📷 الصور المرفقة</h3>
-          <div class="photos" id="photos">
-            {% if r.image1 %}<img src="{{ r.image1.url }}" alt="صورة 1" loading="eager">{% endif %}
-            {% if r.image2 %}<img src="{{ r.image2.url }}" alt="صورة 2" loading="eager">{% endif %}
-            {% if r.image3 %}<img src="{{ r.image3.url }}" alt="صورة 3" loading="eager">{% endif %}
-            {% if r.image4 %}<img src="{{ r.image4.url }}" alt="صورة 4" loading="eager">{% endif %}
-          </div>
+        <div class="card-row">
+          <div class="label">المعلم</div>
+          <div class="value">{{ r.teacher_display_name }}</div>
+        </div>
+
+        <div class="card-row">
+          <div class="label">عدد المستفيدين</div>
+          <div class="value">{{ r.beneficiaries_count|default_if_none:"-" }}</div>
+        </div>
+
+        {% if r.department %}
+        <div class="card-row" style="grid-column:1 / -1">
+          <div class="label">القسم</div>
+          <div class="value">{{ r.department.name }}</div>
+        </div>
         {% endif %}
       </div>
 
-      <!-- ===== التواقيع (مثبّتة أسفل الصفحة) ===== -->
-      <div class="sign">
-        <div class="box">
-          <div class="title">معـد التقرير</div>
-          <div class="name">{{ r.teacher_display_name }}</div>
-          <div class="sigline" aria-hidden="true"></div>
-        </div>
+      <h3 class="section-title">💡 الوصــف</h3>
+      <div class="idea-box">{{ r.idea|default_if_none:"" }}</div>
 
-        {% with hd=head_decision %}
-          {% if hd and not hd.no_render %}
-            <div class="box">
-              {% if hd.single %}
-                <div class="title">اعتماد رئيس القسم</div>
-                <div class="name">{{ hd.name }}</div>
-                <div class="sigline" aria-hidden="true"></div>
-              {% elif hd.multi_dept %}
-                <div class="title">اعتماد رئيس قسم {{ hd.dept_name }}</div>
-                <div class="name">____________________</div>
-                <div class="sigline" aria-hidden="true"></div>
-              {% elif hd.multi_blank %}
-                <div class="title">اعتماد رئيس القسم</div>
-                <div class="name">____________________</div>
-                <div class="sigline" aria-hidden="true"></div>
-              {% endif %}
-            </div>
-          {% endif %}
-        {% endwith %}
-
-        <div class="box">
-          <div class="title">اعتماد مدير المدرسة</div>
-          <div class="name">{% firstof SCHOOL_PRINCIPAL "فـهــد بن عبدالله الفــهد" %}</div>
-          <div class="sigline" aria-hidden="true"></div>
+      {% if r.image1 or r.image2 or r.image3 or r.image4 %}
+        <h3 class="section-title">📷 الصور المرفقة</h3>
+        <div class="photos">
+          {% if r.image1 %}<img src="{{ r.image1.url }}" alt="صورة 1">{% endif %}
+          {% if r.image2 %}<img src="{{ r.image2.url }}" alt="صورة 2">{% endif %}
+          {% if r.image3 %}<img src="{{ r.image3.url }}" alt="صورة 3">{% endif %}
+          {% if r.image4 %}<img src="{{ r.image4.url }}" alt="صورة 4">{% endif %}
         </div>
+      {% endif %}
+    </div>
+
+    <!-- ===== التواقيع (أسفل الصفحة) ===== -->
+    <div class="sign">
+      <!-- معد التقرير -->
+      <div class="box">
+        <div class="title">معـد التقرير</div>
+        <div class="name">{{ r.teacher_display_name }}</div>
+        <div class="sigline" aria-hidden="true"></div>
       </div>
 
-    </div><!-- /.sheet-inner -->
-  </div><!-- /.sheet -->
-</div><!-- /.container -->
+      <!-- اعتماد رئيس القسم (شرطي حسب head_decision) -->
+      {% with hd=head_decision %}
+        {% if hd and not hd.no_render %}
+          <div class="box">
+            {% if hd.single %}
+              <div class="title">اعتماد رئيس القسم</div>
+              <div class="name">{{ hd.name }}</div>
+              <div class="sigline" aria-hidden="true"></div>
+            {% elif hd.multi_dept %}
+              <div class="title">اعتماد رئيس قسم {{ hd.dept_name }}</div>
+              <div class="name">____________________</div>
+              <div class="sigline" aria-hidden="true"></div>
+            {% elif hd.multi_blank %}
+              <div class="title">اعتماد رئيس القسم</div>
+              <div class="name">____________________</div>
+              <div class="sigline" aria-hidden="true"></div>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endwith %}
 
-<script>
-/**
- * تصغير تلقائي فقط إذا زاد المحتوى عن مساحة A4:
- * - الإطار .sheet ثابت على A4 داخل الهوامش.
- * - نصغّر .sheet-inner حتى لا يتخطى الارتفاع/العرض.
- * - التواقيع تبقى مثبتة أسفل بفضل Flex.
- */
-(function(){
-  const mm = (v)=> v * 3.7795275591; // ~96dpi
-  const PRINT_MARGIN_MM = 10, PAGE_W_MM = 210, PAGE_H_MM = 297;
-  const availH = mm(PAGE_H_MM - 2*PRINT_MARGIN_MM);
-  const availW = mm(PAGE_W_MM - 2*PRINT_MARGIN_MM);
+      <!-- اعتماد مدير المدرسة (ديناميكي) -->
+      <div class="box">
+        <div class="title">اعتماد مدير المدرسة</div>
+        <div class="name">{% firstof SCHOOL_PRINCIPAL "فـهــد بن عبدالله الفــهد" %}</div>
+        <div class="sigline" aria-hidden="true"></div>
+      </div>
+    </div>
 
-  const inner = document.getElementById('sheetInner');
-  if(!inner) return;
-
-  function fit(){
-    // إعادة الضبط
-    inner.style.transform = 'none';
-    inner.style.zoom = '1';
-
-    // قياسات المحتوى الحقيقية
-    const fullH = inner.scrollHeight;
-    const fullW = inner.scrollWidth;
-
-    // نمنع تجاوز أي بُعد
-    const sH = Math.min(1, availH / fullH);
-    const sW = Math.min(1, availW / fullW);
-    const scale = Math.max(0.5, Math.min(sH, sW)); // حد أدنى 50%
-
-    if(scale < 1){
-      inner.style.zoom = String(scale);          // فعّال لكروم/ويبكت
-      inner.style.transform = `scale(${scale})`; // احتياطي للعرض/فايرفوكس
-    }
-  }
-
-  function before(){ try{ fit(); }catch(e){} }
-  function after(){ try{
-    inner.style.transform = 'none';
-    inner.style.zoom = '1';
-  }catch(e){} }
-
-  if(window.matchMedia){
-    const mql = window.matchMedia('print');
-    if(typeof mql.addEventListener==='function'){
-      mql.addEventListener('change', e=> e.matches ? before() : after());
-    }else if(typeof mql.addListener==='function'){
-      mql.addListener(e=> e.matches ? before() : after());
-    }
-  }
-  window.addEventListener('beforeprint', before);
-  window.addEventListener('afterprint', after);
-
-  // أعِد الحساب بعد تحميل الصور
-  (function afterImages(){
-    const imgs = Array.from(document.images);
-    if(imgs.length===0){ fit(); return; }
-    let done=0; const once=()=>{ if(++done===imgs.length) fit(); };
-    imgs.forEach(img=>{
-      if(img.complete) return once();
-      img.addEventListener('load', once, {once:true});
-      img.addEventListener('error', once, {once:true});
-    });
-  })();
-
-  // زر الطباعة
-  document.querySelector('.btn.btn-primary')?.addEventListener('click', ()=>{
-    fit();
-    setTimeout(()=>window.print(), 30);
-  });
-})();
-</script>
+  </div>
+</div>
 
 </body>
 </html>
