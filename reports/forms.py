@@ -360,15 +360,10 @@ class TeacherForm(forms.ModelForm):
 # 📌 تذاكر — إنشاء/إجراءات/ملاحظات
 # ==============================
 class TicketCreateForm(forms.ModelForm):
-    """
-    نموذج إنشاء/تعديل التذكرة:
-    - department: ModelChoiceField على Department بالقيمة slug (to_field_name="slug").
-    - assignee: يُفلتر تلقائيًا على أعضاء القسم (بالدور أو العضوية).
-    """
     department = forms.ModelChoiceField(
         label="القسم",
         queryset=Department.objects.filter(is_active=True).order_by("name"),
-        required=False,  # اجعله True إذا رغبت فرض قسم
+        required=False,
         empty_label="— اختر القسم —",
         to_field_name="slug",
         widget=forms.Select(attrs={"class": "form-select"}),
@@ -389,33 +384,34 @@ class TicketCreateForm(forms.ModelForm):
                 attrs={"class": "input", "placeholder": "عنوان الطلب", "maxlength": "255", "autocomplete": "off"}
             ),
             "body": forms.Textarea(attrs={"class": "textarea", "rows": 4, "placeholder": "تفاصيل الطلب"}),
+            "attachment": forms.ClearableFileInput(attrs={"accept": ".pdf,image/*"}),
         }
 
     def __init__(self, *args, **kwargs):
-        kwargs.pop("user", None)  # لا نحتاجه هنا؛ يُمرر في save إن رغبت
+        kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
-
-        # أثناء الإنشاء أو التحرير: جهّز قائمة المستلمين
-        if self.is_bound:
-            dept_value = (self.data.get("department") or "").strip()
-        else:
-            # عند التحرير: slug إذا FK
-            current_dept = getattr(self.instance, "department", None)
-            dept_value = getattr(current_dept, "slug", None)
-
-        if dept_value:
-            self.fields["assignee"].queryset = _teachers_for_dept(dept_value)
-        else:
-            self.fields["assignee"].queryset = Teacher.objects.none()
+        dept_value = (self.data.get("department") or "").strip() if self.is_bound else getattr(getattr(self.instance, "department", None), "slug", None)
+        self.fields["assignee"].queryset = _teachers_for_dept(dept_value) if dept_value else Teacher.objects.none()
 
     def clean(self):
         cleaned = super().clean()
         dept = cleaned.get("department")
         assignee: Optional[Teacher] = cleaned.get("assignee")
 
+        # ✅ تحقق من الانتماء للقسم
         dept_slug: Optional[str] = getattr(dept, "slug", None) if isinstance(dept, Department) else None
         if assignee and dept_slug and not _is_teacher_in_dept(assignee, dept_slug):
             self.add_error("assignee", "الموظّف المختار لا ينتمي إلى هذا القسم.")
+
+        # ✅ تحقق من المرفق (PDF أو صورة بحجم ≤ 5MB)
+        f = cleaned.get("attachment")
+        if f:
+            max_size = 5 * 1024 * 1024
+            if hasattr(f, "size") and f.size > max_size:
+                self.add_error("attachment", "حجم المرفق أكبر من 5MB.")
+            ctype = getattr(f, "content_type", "")
+            if not (ctype.startswith("image/") or ctype == "application/pdf"):
+                self.add_error("attachment", "المرفق يجب أن يكون صورة أو ملف PDF فقط.")
         return cleaned
 
     def save(self, commit=True, user=None):
