@@ -14,7 +14,7 @@ python manage.py runserver
 
 
 git add . 
-git commit -m "الرفع51ريندر"
+git commit -m "الرفع52ريندر"
 git push origin main
 
 
@@ -80,7 +80,7 @@ python manage.py check
 
 
 
-# تصميم و تطوير عقاب الشهري 
+# تصميم و تطوير فهد الشهري 
 
 --------------------------------------------------
 

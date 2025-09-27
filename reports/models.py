@@ -548,6 +548,39 @@ class Report(models.Model):
 # =========================
 # منظومة التذاكر الموحّدة
 # =========================
+# reports/models_ticket.py  ← ضع المحتوى داخل ملف models.py لديك (أو دمجه بعناية)
+# -*- coding: utf-8 -*-
+from __future__ import annotations
+
+from django.conf import settings
+from django.db import models
+from django.core.validators import FileExtensionValidator
+from django.core.exceptions import ValidationError
+
+# تخزين Cloudinary كـ raw للملفات (PDF/Doc/..)
+# هذا يُنتِج مسارات من نوع /raw/upload/ بدلاً من /image/upload/
+try:
+    from cloudinary_storage.storage import RawMediaCloudinaryStorage
+    _RAW_STORAGE = RawMediaCloudinaryStorage()
+except Exception:
+    # في حال عدم توافر الحزمة في بيئة التطوير، سنترك None ليستخدم التخزين الافتراضي
+    _RAW_STORAGE = None
+
+# استيراد Department من تطبيقك
+from .models import Department  # لو كان هذا الملف هو models.py نفسه احذف هذا السطر
+
+
+# ======== أدوات تحقق للمرفق ========
+MAX_ATTACHMENT_MB = 5
+MAX_ATTACHMENT_BYTES = MAX_ATTACHMENT_MB * 1024 * 1024
+
+def validate_attachment_size(file_obj):
+    """تحقق الحجم ≤ 5MB"""
+    size = getattr(file_obj, "size", None)
+    if size is not None and size > MAX_ATTACHMENT_BYTES:
+        raise ValidationError(f"حجم المرفق يتجاوز {MAX_ATTACHMENT_MB}MB.")
+
+
 class Ticket(models.Model):
     class Status(models.TextChoices):
         OPEN = "open", "جديد"
@@ -585,13 +618,21 @@ class Ticket(models.Model):
 
     title = models.CharField("عنوان الطلب", max_length=255)
     body = models.TextField("تفاصيل الطلب", blank=True, null=True)
+
+    # ✅ مرفق يُرفع إلى Cloudinary كـ raw (للدعم السليم للـ PDF و DOCX وغيرها)
     attachment = models.FileField(
         "مرفق",
         upload_to="tickets/",
+        storage=_RAW_STORAGE,  # إن كانت None سيعود للتخزين الافتراضي
         blank=True,
         null=True,
-        validators=[FileExtensionValidator(["pdf", "jpg", "jpeg", "png", "doc", "docx"])],
+        validators=[
+            FileExtensionValidator(["pdf", "jpg", "jpeg", "png", "doc", "docx"]),
+            validate_attachment_size,
+        ],
+        help_text=f"يسمح بـ PDF/صور/DOCX حتى {MAX_ATTACHMENT_MB}MB",
     )
+
     status = models.CharField(
         "الحالة",
         max_length=20,
@@ -614,10 +655,42 @@ class Ticket(models.Model):
     def __str__(self):
         return f"Ticket #{self.pk} - {self.title[:40]}"
 
+    # ======== خصائص مساعدة للقوالب ========
+    @property
+    def attachment_name_lower(self) -> str:
+        name = getattr(self.attachment, "name", "") or ""
+        return name.lower()
+
+    @property
+    def attachment_is_pdf(self) -> bool:
+        return self.attachment_name_lower.endswith(".pdf")
+
+    @property
+    def attachment_download_url(self) -> str:
+        """
+        رابط تنزيل مباشر (يُجبر التحميل في المتصفح الداعم).
+        يمكن استخدامه في القالب: {{ t.attachment_download_url }}
+        """
+        url = getattr(self.attachment, "url", "") or ""
+        if not url:
+            return ""
+        sep = "&" if "?" in url else "?"
+        return f"{url}{sep}fl_attachment=1"
+
 
 class TicketNote(models.Model):
-    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="notes", verbose_name="التذكرة")
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ticket_notes", verbose_name="كاتب الملاحظة")
+    ticket = models.ForeignKey(
+        Ticket,
+        on_delete=models.CASCADE,
+        related_name="notes",
+        verbose_name="التذكرة"
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="ticket_notes",
+        verbose_name="كاتب الملاحظة"
+    )
     body = models.TextField("الملاحظة")
     is_public = models.BooleanField("ظاهرة للمرسل؟", default=True)
     created_at = models.DateTimeField("تاريخ الإضافة", auto_now_add=True)
@@ -629,7 +702,6 @@ class TicketNote(models.Model):
 
     def __str__(self):
         return f"Note #{self.pk} on Ticket #{self.ticket_id}"
-
 
 # =========================
 # نماذج تراثية (تبقى كما هي للاطلاع/أرشفة فقط)
