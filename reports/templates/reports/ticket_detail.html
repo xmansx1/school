@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% load static %}
-{% load cloudinary %}
 
 {% block title %}تفاصيل الطلب #{{ t.id }}{% endblock %}
 
@@ -74,14 +73,6 @@
   .textarea{min-height:120px; white-space:pre-wrap}
   .help{color:var(--muted); font-size:.9rem}
 
-  /* Attach preview */
-  .attach-preview img,
-  .attach-preview img.pdf-thumb{
-    border:1px solid var(--line);
-    box-shadow:var(--shadow);
-    border-radius:12px;
-  }
-
   /* Sticky hint on mobile */
   @media(max-width:720px){
     .sticky-hint{position:sticky; bottom:0; background:linear-gradient(0deg,rgba(248,250,252,.98),rgba(248,250,252,.75));
@@ -122,42 +113,25 @@
         <div class="row"><div class="k">المستلم</div><div class="v">{% firstof t.assignee.name t.assignee "—" %}</div></div>
         <div class="row"><div class="k">المرسل</div><div class="v">{{ t.creator.name|default:"—" }}</div></div>
 
-        <!-- المرفق + المعاينة الذكية -->
+        <!-- Attachment (PDF = تنزيل مباشر / غيره = فتح) -->
         <div class="row">
           <div class="k">المرفق</div>
           <div class="v">
             {% if t.attachment %}
-              {# تمييز PDF بالامتداد، ثم fallback على نوع الرابط #}
-              {% with name_lower=t.attachment.name|lower %}
-                {% if name_lower|slice:"-4:" == ".pdf" %}
-                  <!-- ✅ PDF: زر فتح/تنزيل + مصغّر الصفحة الأولى عبر Cloudinary -->
-                  <div class="attach-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-                    <a class="btn" href="{{ t.attachment.url }}" target="_blank" rel="noopener noreferrer">فتح/تنزيل</a>
-                  </div>
-                  <div class="attach-preview">
-                    {% cloudinary t.attachment.name resource_type="image" width=900 crop="scale" format="jpg" page=1 alt="معاينة PDF (الصفحة الأولى)" class="pdf-thumb" loading="lazy" decoding="async" %}
-                    <div class="help" style="margin-top:6px">المعاينة تعرض الصفحة الأولى فقط. اضغط “فتح/تنزيل” للاطّلاع على الملف كاملاً.</div>
-                  </div>
-
-                {% elif "/image/upload/" in t.attachment.url %}
-                  <!-- ✅ صورة: عرض مباشر + تكبير داخل مودال -->
-                  <a class="btn" href="{{ t.attachment.url }}" target="_blank" rel="noopener noreferrer" style="margin-bottom:8px">فتح في تبويب</a>
-                  <div class="attach-preview">
-                    <img
-                      src="{{ t.attachment.url }}"
-                      alt="معاينة المرفق"
-                      loading="lazy"
-                      decoding="async"
-                      style="max-width:100%;border-radius:12px;cursor:zoom-in"
-                      onclick="openPreviewModal('{{ t.attachment.url|escapejs }}')"
-                    />
-                  </div>
-
-                {% else %}
-                  <!-- نوع آخر (ملف خام بدون PDF) -->
-                  <a class="btn" href="{{ t.attachment.url }}" target="_blank" rel="noopener noreferrer">فتح/تنزيل</a>
-                {% endif %}
-              {% endwith %}
+              {% if t.attachment_is_pdf %}
+                <a class="btn btn-primary"
+                   href="{{ t.attachment_download_url|default:t.attachment.url }}{% if '?' not in t.attachment_download_url|default:t.attachment.url %}?{% else %}&{% endif %}fl_attachment=1"
+                   download
+                   rel="nofollow">
+                  تنزيل المرفق (PDF)
+                </a>
+              {% else %}
+                <a class="btn"
+                   href="{{ t.attachment.url }}"
+                   target="_blank" rel="noopener">
+                  فتح المرفق
+                </a>
+              {% endif %}
             {% else %}
               —
             {% endif %}
@@ -166,7 +140,6 @@
 
         <div class="row"><div class="k">المحتوى</div><div class="content-pre">{{ t.body|default_if_none:"—"|linebreaksbr }}</div></div>
       </div>
-
       {% if is_owner and not can_act %}
         <div class="sticky-hint"><span class="help">أضِف ملاحظة للتواصل — ستتحوّل الحالة تلقائيًا إلى <b>جــديد</b>.</span></div>
       {% endif %}
@@ -192,75 +165,52 @@
     </article>
 
     {% if can_act and form %}
-      <!-- Assignee action form -->
-      <article class="card" id="act" aria-labelledby="act-h">
-        <div class="hd"><h2 id="act-h" class="title">إجراء على الطلب</h2></div>
-        <div class="body">
-          <form method="post" class="form" novalidate>
-            {% csrf_token %}
-            <div>
-              <label class="help">الحالة</label>
-              <select name="status" class="select">
-                {% for value,label in form.fields.status.choices %}
-                  <option value="{{ value }}" {% if value == t.status %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div>
-              <label class="help">ملاحظة (تظهر للمرسل)</label>
-              <textarea name="note" class="textarea" rows="3" placeholder="اكتب ملاحظة (اختياري)"></textarea>
-            </div>
-            <div class="btns">
-              <button type="submit" class="btn btn-primary">حفظ</button>
-              <a class="btn" href="{% url 'reports:ticket_detail' t.id %}">إلغاء</a>
-            </div>
-          </form>
-        </div>
-      </article>
+    <!-- Assignee action form -->
+    <article class="card" id="act" aria-labelledby="act-h">
+      <div class="hd"><h2 id="act-h" class="title">إجراء على الطلب</h2></div>
+      <div class="body">
+        <form method="post" class="form" novalidate>
+          {% csrf_token %}
+          <div>
+            <label class="help">الحالة</label>
+            <select name="status" class="select">
+              {% for value,label in form.fields.status.choices %}
+                <option value="{{ value }}" {% if value == t.status %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="help">ملاحظة (تظهر للمرسل)</label>
+            <textarea name="note" class="textarea" rows="3" placeholder="اكتب ملاحظة (اختياري)"></textarea>
+          </div>
+          <div class="btns">
+            <button type="submit" class="btn btn-primary">حفظ</button>
+            <a class="btn" href="{% url 'reports:ticket_detail' t.id %}">إلغاء</a>
+          </div>
+        </form>
+      </div>
+    </article>
 
     {% elif is_owner and not can_act %}
-      <!-- Creator note-only form -->
-      <article class="card" id="note-only" aria-labelledby="note-h">
-        <div class="hd"><h2 id="note-h" class="title">إضافة ملاحظة</h2></div>
-        <div class="body">
-          <form method="post" class="form" novalidate>
-            {% csrf_token %}
-            <div>
-              <label class="help">ستظهر ملاحظتك في السجل، وتتحوّل الحالة تلقائياً إلى <b>جديد</b>.</label>
-              <textarea name="note" class="textarea" rows="3" placeholder="اكتب ملاحظتك هنا…"></textarea>
-            </div>
-            <div class="btns">
-              <button type="submit" class="btn btn-primary">إضافة الملاحظة</button>
-              <a class="btn" href="{% url 'reports:ticket_detail' t.id %}">إلغاء</a>
-            </div>
-          </form>
-        </div>
-      </article>
+    <!-- Creator note-only form -->
+    <article class="card" id="note-only" aria-labelledby="note-h">
+      <div class="hd"><h2 id="note-h" class="title">إضافة ملاحظة</h2></div>
+      <div class="body">
+        <form method="post" class="form" novalidate>
+          {% csrf_token %}
+          <div>
+            <label class="help">ستظهر ملاحظتك في السجل، وتتحوّل الحالة تلقائياً إلى <b>جديد</b>.</label>
+            <textarea name="note" class="textarea" rows="3" placeholder="اكتب ملاحظتك هنا…"></textarea>
+          </div>
+          <div class="btns">
+            <button type="submit" class="btn btn-primary">إضافة الملاحظة</button>
+            <a class="btn" href="{% url 'reports:ticket_detail' t.id %}">إلغاء</a>
+          </div>
+        </form>
+      </div>
+    </article>
     {% endif %}
 
   </section>
 </div>
-
-<!-- Image Preview Modal -->
-<div id="img-modal" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.7);z-index:1000" onclick="closePreviewModal()">
-  <img id="img-modal-img" src="" alt="معاينة" style="max-width:95vw;max-height:90vh;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35)" />
-</div>
-<script>
-  function openPreviewModal(src){
-    const m = document.getElementById('img-modal');
-    const i = document.getElementById('img-modal-img');
-    i.src = src; m.style.display='flex';
-    document.body.style.overflow='hidden';
-  }
-  function closePreviewModal(){
-    const m = document.getElementById('img-modal');
-    const i = document.getElementById('img-modal-img');
-    i.src=''; m.style.display='none';
-    document.body.style.overflow='';
-  }
-  // إغلاق بالمفتاح ESC
-  document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape'){ closePreviewModal(); }
-  });
-</script>
 {% endblock %}

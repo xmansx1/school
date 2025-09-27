@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from django.utils.text import slugify
 from typing import Optional, List, Tuple
+import os
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -11,7 +13,7 @@ from django.db import models, transaction
 from django.db.models import Q
 
 # ==============================
-# استيراد الموديلات
+# استيراد الموديلات (مباشرة من models.py)
 # ==============================
 from .models import (
     Teacher,
@@ -22,6 +24,8 @@ from .models import (
     Report,
     Ticket,
     TicketNote,
+    Notification,
+    NotificationRecipient,
 )
 
 # (تراثي – اختياري)
@@ -33,13 +37,11 @@ except Exception:
     REQUEST_DEPARTMENTS = []  # type: ignore
     HAS_REQUEST_TICKET = False
 
-
 # ==============================
 # أدوات تحقق عامة (SA-specific)
 # ==============================
 digits10 = RegexValidator(r"^\d{10}$", "يجب أن يتكون من 10 أرقام.")
 sa_phone = RegexValidator(r"^0\d{9}$", "رقم الجوال يجب أن يبدأ بـ 0 ويتكون من 10 أرقام.")
-
 
 # ==============================
 # مساعدات داخلية للأقسام/المستخدمين
@@ -47,15 +49,14 @@ sa_phone = RegexValidator(r"^0\d{9}$", "رقم الجوال يجب أن يبدأ
 def _teachers_for_dept(dept_slug: str):
     """
     إرجاع QuerySet للمعلمين المنتمين لقسم معيّن.
-    - عبر Role.slug = dept_slug (منطقي بسيط ومباشر).
-    - أو عبر عضوية DepartmentMembership (department ←→ teacher).
+    - عبر Role.slug = dept_slug
+    - أو عبر عضوية DepartmentMembership (department ←→ teacher)
     """
     if not dept_slug:
         return Teacher.objects.none()
 
     q = Q(role__slug=dept_slug)
 
-    # عضوية القسم (إن وُجد القسم)
     dep = Department.objects.filter(slug=dept_slug).first()
     if dep:
         teacher_ids = DepartmentMembership.objects.filter(department=dep).values_list("teacher_id", flat=True)
@@ -73,22 +74,19 @@ def _teachers_for_dept(dept_slug: str):
 def _is_teacher_in_dept(teacher: Teacher, dept_slug: str) -> bool:
     """
     يحدد ما إذا كان المعلم ينتمي للقسم المحدد:
-    - عن طريق دور المستخدم Role.slug.
-    - أو عضوية DepartmentMembership.
+    - عن طريق Role.slug
+    - أو عضوية DepartmentMembership
     """
     if not teacher or not dept_slug:
         return False
 
-    # عبر الدور
     if getattr(getattr(teacher, "role", None), "slug", None) == dept_slug:
         return True
 
-    # عبر العضوية
     dep = Department.objects.filter(slug=dept_slug).first()
     if not dep:
         return False
     return DepartmentMembership.objects.filter(department=dep, teacher=teacher).exists()
-
 
 # ==============================
 # 📌 نموذج التقرير العام
@@ -131,11 +129,10 @@ class ReportForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # التصنيف ديناميكي دائمًا من ReportType (نشط فقط) — بالقيمة code
         self.fields["category"] = forms.ModelChoiceField(
             label="نوع التقرير",
             queryset=ReportType.objects.filter(is_active=True).order_by("order", "name"),
-            required=True,  # غيّرها إلى False إذا رغبت السماح بدون تصنيف
+            required=True,
             empty_label="— اختر نوع التقرير —",
             to_field_name="code",
             widget=forms.Select(attrs={"class": "form-select"}),
@@ -157,33 +154,23 @@ class ReportForm(forms.ModelForm):
             if img:
                 if hasattr(img, "size") and img.size > 2 * 1024 * 1024:
                     self.add_error(f, "حجم الصورة أكبر من 2MB.")
-                ctype = getattr(img, "content_type", "")
-                if ctype and not str(ctype).startswith("image/"):
+                ctype = (getattr(img, "content_type", "") or "").lower()
+                if ctype and not ctype.startswith("image/"):
                     self.add_error(f, "الملف يجب أن يكون صورة صالحة.")
-        # ملاحظة: اسم اليوم يُملأ تلقائيًا في model.save() إذا كان فارغًا.
         return cleaned
-
 
 # ==============================
 # 📌 نموذج إدارة المعلّم (إضافة/تعديل)
 # ==============================
 TEACHERS_DEPT_SLUGS = {"teachers", "معلمين", "المعلمين"}
 
-
-# داخل reports/forms.py
-
-# أقسام تعتبر "قسم المعلّمين"
-TEACHERS_DEPT_SLUGS = {"teachers", "معلمين", "المعلمين"}
-
 class TeacherForm(forms.ModelForm):
     """
     إنشاء/تعديل معلّم:
     - إن كان القسم من أقسام "المعلمين" → الدور داخل القسم يقتصر على (معلم) فقط.
-    - بقية الأقسام: الخيارات (مسؤول القسم | موظف/معلم) كما هي.
-    - يضبط Teacher.role تلقائيًا:
-        • قسم المعلمين → Role.slug='teacher' إن وُجد.
-        • غير ذلك → Role.slug = department.slug (إن وُجد).
-    - ينشئ/يحدّث DepartmentMembership (department, teacher, role_type).
+    - بقية الأقسام: (مسؤول القسم | موظف/معلم).
+    - يضبط Teacher.role تلقائيًا.
+    - ينشئ/يحدّث DepartmentMembership.
     """
     password = forms.CharField(
         label="كلمة المرور",
@@ -215,6 +202,7 @@ class TeacherForm(forms.ModelForm):
     phone = forms.CharField(
         label="رقم الجوال",
         min_length=10, max_length=10,
+        validators=[sa_phone],
         widget=forms.TextInput(attrs={
             "class": "form-control", "placeholder": "05XXXXXXXX", "maxlength": "10",
             "inputmode": "numeric", "pattern": r"0\d{9}", "autocomplete": "off"
@@ -223,6 +211,7 @@ class TeacherForm(forms.ModelForm):
     national_id = forms.CharField(
         label="رقم الهوية الوطنية",
         min_length=10, max_length=10, required=False,
+        validators=[digits10],
         widget=forms.TextInput(attrs={
             "class": "form-control", "placeholder": "رقم الهوية (10 أرقام)",
             "maxlength": "10", "inputmode": "numeric", "pattern": r"\d{10}",
@@ -237,7 +226,6 @@ class TeacherForm(forms.ModelForm):
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "الاسم الكامل", "maxlength": "150"}),
         }
 
-    # --- خيارات الأدوار (ثابتة) ---
     ROLE_CHOICES_ALL = (
         (DepartmentMembership.OFFICER, "مسؤول القسم"),
         (DepartmentMembership.TEACHER, "موظف/معلم"),
@@ -246,36 +234,24 @@ class TeacherForm(forms.ModelForm):
         (DepartmentMembership.TEACHER, "معلم"),
     )
 
-    # --- أدوات داخلية ---
     def _current_department_slug(self) -> Optional[str]:
-        """
-        يستنتج slug القسم الحالي من:
-        1) POST عند الربط.
-        2) initial عند التحرير.
-        3) instance (عضوية/دور).
-        """
-        # 1) من البيانات المرتبطة
         if self.is_bound:
             val = (self.data.get("department") or "").strip()
             if val:
                 return val.lower()
 
-        # 2) من initial
         init_dep = (self.initial.get("department") or "")
         if init_dep:
             return str(init_dep).lower()
 
-        # 3) من instance
         dep_slug = None
         if getattr(self.instance, "pk", None):
-            # من أول عضوية
             try:
                 memb = self.instance.dept_memberships.select_related("department").first()  # type: ignore[attr-defined]
                 if memb and getattr(memb.department, "slug", None):
                     dep_slug = memb.department.slug
             except Exception:
                 dep_slug = None
-            # أو من الدور العام
             if not dep_slug:
                 dep_slug = getattr(getattr(self.instance, "role", None), "slug", None)
 
@@ -283,8 +259,6 @@ class TeacherForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # ضبط خيارات "الدور داخل القسم" حسب القسم الحالي
         dep_slug = self._current_department_slug()
         if dep_slug and dep_slug in {s.lower() for s in TEACHERS_DEPT_SLUGS}:
             self.fields["membership_role"].choices = self.ROLE_CHOICES_TEACHERS_ONLY
@@ -292,51 +266,31 @@ class TeacherForm(forms.ModelForm):
         else:
             self.fields["membership_role"].choices = self.ROLE_CHOICES_ALL
 
-    # ---- تحقق أساسي ----
-    def clean_phone(self):
-        phone = (self.cleaned_data.get("phone") or "").strip()
-        if len(phone) != 10:
-            raise ValidationError("رقم الجوال يجب أن يتكون من 10 أرقام.")
-        return phone
-
     def clean_national_id(self):
         nid = (self.cleaned_data.get("national_id") or "").strip()
-        if nid and len(nid) != 10:
-            raise ValidationError("رقم الهوية يجب أن يتكون من 10 أرقام.")
+        if nid:
+            if not nid.isdigit() or len(nid) != 10:
+                raise ValidationError("رقم الهوية يجب أن يتكون من 10 أرقام.")
         return nid or None
 
-    def clean(self):
-        cleaned = super().clean()
-        dep: Optional[Department] = cleaned.get("department")
-        role_in_dept: str = (cleaned.get("membership_role") or "").strip()
-
-        # منع اختيار "مسؤول" عند قسم المعلمين (تحقق خادمي)
-        if dep and dep.slug in TEACHERS_DEPT_SLUGS and role_in_dept == DepartmentMembership.OFFICER:
-            self.add_error("membership_role", "قسم المعلّمين لا يملك مسؤول قسم. الدور المتاح: معلم فقط.")
-        return cleaned
-
-    # ---- حفظ مع ربط الدور/العضوية ----
     def save(self, commit: bool = True):
         instance: Teacher = super().save(commit=False)
         new_pwd = (self.cleaned_data.get("password") or "").strip()
         dep: Optional[Department] = self.cleaned_data.get("department")
 
-        # كلمة المرور
         if new_pwd:
             instance.set_password(new_pwd)
         elif self.instance and self.instance.pk:
             instance.password = self.instance.password  # إبقاء كلمة المرور
 
-        # تعيين Teacher.role وفقًا للقسم المختار
         target_role = None
         if dep:
             if dep.slug in TEACHERS_DEPT_SLUGS:
                 target_role = Role.objects.filter(slug="teacher").first()
             else:
                 target_role = Role.objects.filter(slug=dep.slug).first()
-        instance.role = target_role  # قد تكون None إذا لم يوجد الدور
+        instance.role = target_role  # قد تكون None
 
-        # تحديد الدور داخل القسم النهائي (فرض "معلم" لقسم المعلمين)
         if dep and dep.slug in TEACHERS_DEPT_SLUGS:
             role_in_dept = DepartmentMembership.TEACHER
         else:
@@ -345,7 +299,6 @@ class TeacherForm(forms.ModelForm):
         with transaction.atomic():
             instance.save()
 
-            # أنشئ/حدّث عضوية القسم للمستخدم
             if dep:
                 DepartmentMembership.objects.update_or_create(
                     department=dep,
@@ -355,11 +308,20 @@ class TeacherForm(forms.ModelForm):
 
         return instance
 
-
 # ==============================
 # 📌 تذاكر — إنشاء/إجراءات/ملاحظات
 # ==============================
+# تأكد من وجود هذه الاستيرادات أعلى الملف:
+# from typing import Optional
+# import os
+
 class TicketCreateForm(forms.ModelForm):
+    """
+    إنشاء تذكرة جديدة:
+    - القسم اختياري ويمر بالقيمة slug.
+    - المستلم يتعبأ ديناميكيًا حسب القسم المختار.
+    - المرفق: صور / PDF / DOC / DOCX حتى 5MB (متوافق مع الـ Model).
+    """
     department = forms.ModelChoiceField(
         label="القسم",
         queryset=Department.objects.filter(is_active=True).order_by("name"),
@@ -381,52 +343,98 @@ class TicketCreateForm(forms.ModelForm):
         fields = ["department", "assignee", "title", "body", "attachment"]
         widgets = {
             "title": forms.TextInput(
-                attrs={"class": "input", "placeholder": "عنوان الطلب", "maxlength": "255", "autocomplete": "off"}
+                attrs={
+                    "class": "input",
+                    "placeholder": "عنوان الطلب",
+                    "maxlength": "255",
+                    "autocomplete": "off",
+                }
             ),
-            "body": forms.Textarea(attrs={"class": "textarea", "rows": 4, "placeholder": "تفاصيل الطلب"}),
-            "attachment": forms.ClearableFileInput(attrs={"accept": ".pdf,image/*"}),
+            "body": forms.Textarea(
+                attrs={"class": "textarea", "rows": 4, "placeholder": "تفاصيل الطلب"}
+            ),
+            # ✅ الامتدادات المتوافقة مع الموديل + صور
+            "attachment": forms.ClearableFileInput(
+                attrs={"accept": ".pdf,.doc,.docx,image/*"}
+            ),
         }
 
     def __init__(self, *args, **kwargs):
+        # نسمح بتمرير user من الـ view بدون استخدامه هنا (لتوحيد الواجهات)
         kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
-        dept_value = (self.data.get("department") or "").strip() if self.is_bound else getattr(getattr(self.instance, "department", None), "slug", None)
-        self.fields["assignee"].queryset = _teachers_for_dept(dept_value) if dept_value else Teacher.objects.none()
 
+        # تعبئة قائمة المستلمين حسب القسم المختار (POST) أو قيمة الـ instance عند التعديل
+        if self.is_bound:
+            dept_value = (self.data.get("department") or "").strip()
+        else:
+            dept_value = getattr(getattr(self.instance, "department", None), "slug", None)
+
+        self.fields["assignee"].queryset = (
+            _teachers_for_dept(dept_value) if dept_value else Teacher.objects.none()
+        )
+
+    # تحققات مخصّصة
     def clean(self):
         cleaned = super().clean()
+
+        # 1) تحقق من انتماء المستلم للقسم (إن وُجدا)
         dept = cleaned.get("department")
         assignee: Optional[Teacher] = cleaned.get("assignee")
-
-        # ✅ تحقق من الانتماء للقسم
         dept_slug: Optional[str] = getattr(dept, "slug", None) if isinstance(dept, Department) else None
+
         if assignee and dept_slug and not _is_teacher_in_dept(assignee, dept_slug):
             self.add_error("assignee", "الموظّف المختار لا ينتمي إلى هذا القسم.")
 
-        # ✅ تحقق من المرفق (PDF أو صورة بحجم ≤ 5MB)
+        # 2) تحقق من المرفق: النوع والحجم ≤ 5MB
         f = cleaned.get("attachment")
         if f:
-            max_size = 5 * 1024 * 1024
-            if hasattr(f, "size") and f.size > max_size:
+            max_size = 5 * 1024 * 1024  # 5MB
+            if getattr(f, "size", 0) > max_size:
                 self.add_error("attachment", "حجم المرفق أكبر من 5MB.")
-            ctype = getattr(f, "content_type", "")
-            if not (ctype.startswith("image/") or ctype == "application/pdf"):
-                self.add_error("attachment", "المرفق يجب أن يكون صورة أو ملف PDF فقط.")
+
+            # النوع (Content-Type) — قد لا يكون موثوقًا دائمًا، لذلك نضيف تحققًا بالامتداد
+            ctype = (getattr(f, "content_type", "") or "").lower()
+            ok_ctype = (
+                ctype.startswith("image/")
+                or ctype == "application/pdf"
+                or ctype == "application/msword"
+                or ctype
+                == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+
+            # الامتداد
+            name = str(getattr(f, "name", "") or "")
+            ext = os.path.splitext(name)[1].lower()  # ← (إصلاح) لا تستخدم pop()
+            ok_ext = ext in {".jpg", ".jpeg", ".png", ".webp", ".pdf", ".doc", ".docx"}
+
+            if not (ok_ctype or ok_ext):
+                self.add_error(
+                    "attachment",
+                    "المرفق يجب أن يكون صورة أو PDF أو DOC/DOCX فقط.",
+                )
+
         return cleaned
 
-    def save(self, commit=True, user=None):
+    def save(self, commit: bool = True, user: Optional[Teacher] = None):
+        """
+        - يثبت creator عند الإنشاء.
+        - يضمن الحالة الافتراضية OPEN.
+        """
         obj: Ticket = super().save(commit=False)
+
         if user is not None and not obj.pk:
             obj.creator = user
+
         if not getattr(obj, "status", None):
             try:
                 obj.status = Ticket.Status.OPEN  # type: ignore[attr-defined]
             except Exception:
                 pass
+
         if commit:
             obj.save()
         return obj
-
 
 class TicketActionForm(forms.Form):
     status = forms.ChoiceField(
@@ -447,7 +455,6 @@ class TicketActionForm(forms.Form):
             raise forms.ValidationError("أدخل ملاحظة أو غيّر الحالة.")
         return cleaned
 
-
 class TicketNoteForm(forms.ModelForm):
     class Meta:
         model = TicketNote
@@ -455,7 +462,6 @@ class TicketNoteForm(forms.ModelForm):
         widgets = {
             "body": forms.Textarea(attrs={"rows": 3, "class": "textarea", "placeholder": "أضف ملاحظة"}),
         }
-
 
 # ==============================
 # 📌 نموذج الطلب التراثي (اختياري)
@@ -510,7 +516,6 @@ if HAS_REQUEST_TICKET and RequestTicket is not None:
             if dept_value:
                 qs = _teachers_for_dept(dept_value)
                 self.fields["assignee"].queryset = qs
-                # إن كان هناك مستخدم وحيد مناسب، عيّنه افتراضيًا عند التحرير
                 if qs.count() == 1 and not self.is_bound and not getattr(self.instance, "assignee_id", None):
                     self.initial["assignee"] = qs.first().pk
             else:
@@ -538,7 +543,6 @@ else:
             super().__init__(*args, **kwargs)
             self.add_error(None, "نموذج الطلب التراثي غير مفعّل في هذا المشروع.")
 
-
 # ==============================
 # 📌 نموذج إدارة القسم (اختيار أنواع التقارير)
 # ==============================
@@ -554,7 +558,7 @@ class DepartmentForm(forms.ModelForm):
         widget=forms.SelectMultiple(
             attrs={
                 "class": "form-select",
-                "size": "8",  # واجهة مريحة للاختيار المتعدد
+                "size": "8",
                 "aria-label": "اختر نوع/أنواع التقارير للقسم",
             }
         ),
@@ -574,11 +578,7 @@ class DepartmentForm(forms.ModelForm):
     def clean_slug(self):
         slug = (self.cleaned_data.get("slug") or "").strip().lower()
         if not slug:
-            # اسم بسيط آمن، يمكن توليد slug تلقائيًا
-            from django.utils.text import slugify
-
             slug = slugify(self.cleaned_data.get("name") or "", allow_unicode=True)
-        # تأكد من عدم التضارب مع أقسام أخرى:
         qs = Department.objects.filter(slug=slug)
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
@@ -586,12 +586,9 @@ class DepartmentForm(forms.ModelForm):
             raise forms.ValidationError("المعرّف (slug) مستخدم مسبقًا لقسم آخر.")
         return slug
 
-
-from django import forms
-from django.utils import timezone
-from .models import Notification, NotificationRecipient, Teacher
-from .permissions import restrict_queryset_for_user  # إن رغبت الاستفادة من هذا التصميم لقوائم المعلمين
-
+# ==============================
+# 📌 إنشاء إشعار
+# ==============================
 class NotificationCreateForm(forms.Form):
     title = forms.CharField(max_length=120, required=False, label="عنوان (اختياري)")
     message = forms.CharField(widget=forms.Textarea(attrs={"rows":5}), label="نص الإشعار")
@@ -609,19 +606,19 @@ class NotificationCreateForm(forms.Form):
         user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
 
-        # حصر المعلمين حسب صلاحية المُنشئ:
         qs = Teacher.objects.filter(is_active=True).order_by("name")
-        # إن كان المُنشئ Officer، قصِر القائمة على معلمي قسمه فقط:
+
+        # تقليص القائمة حسب دور المُنشئ (اختياري حسب منطقك الحالي)
         try:
             role_slug = getattr(getattr(user, "role", None), "slug", None)
             if role_slug and role_slug not in (None, "manager"):
-                # استخدم منطقك الحالي لجلب أعضاء القسم
-                from .views import _user_department_codes
+                # احصل على أكواد الأقسام التي يديرها المستخدم
+                from .views import _user_department_codes  # تفادِ الاستيراد في أعلى الملف
                 codes = _user_department_codes(user)
                 if codes:
                     qs = qs.filter(
                         models.Q(role__slug__in=codes) |
-                        models.Q(dept_memberships__department__slug__in=codes)  # إن كانت لديك علاقة عضويات
+                        models.Q(dept_memberships__department__slug__in=codes)
                     ).distinct()
         except Exception:
             pass

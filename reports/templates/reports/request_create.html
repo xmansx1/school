@@ -33,6 +33,12 @@
   .ticket-page .help{font-size:.9rem;color:var(--muted)}
   .ticket-page .field-error{color:var(--error);background:var(--error-bg);border:1px solid #fecaca;padding:10px 12px;border-radius:var(--rsm);font-size:.92rem}
 
+  .ticket-page .preview{display:none;margin-top:8px}
+  .ticket-page .preview img{
+    max-width:220px;max-height:160px;border-radius:12px;border:1px solid var(--line);
+    box-shadow:0 6px 16px rgba(2,6,23,.06);display:block
+  }
+
   .ticket-page .form-actions{display:grid;gap:12px}
   @media(min-width:560px){ .ticket-page .form-actions{grid-template-columns:1fr 1fr} }
   .ticket-page .btn{padding:14px 18px;border:0;border-radius:12px;font-weight:800;cursor:pointer;transition:var(--t);display:inline-flex;justify-content:center;align-items:center;gap:8px;text-decoration:none}
@@ -118,12 +124,15 @@
           {% for e in form.body.errors %}<div class="field-error">• {{ e }}</div>{% endfor %}
         </div>
 
-        <!-- مرفق -->
+        <!-- مرفق (صور فقط) -->
         <div class="form-group">
-          <label for="{{ form.attachment.id_for_label }}">مرفق (اختياري)</label>
+          <label for="{{ form.attachment.id_for_label }}">مرفق صورة (اختياري)</label>
           {{ form.attachment }}
-          <div class="help">الحد الأقصى المقترح 5MB. الصيغ الشائعة: PDF/PNG/JPG.</div>
+          <div class="help">المسموح: ‎JPG / JPEG / PNG / WebP — الحد الأقصى 5MB.</div>
           {% for e in form.attachment.errors %}<div class="field-error">• {{ e }}</div>{% endfor %}
+          <div class="preview" id="img-preview">
+            <img id="img-preview-tag" alt="معاينة الصورة المختارة">
+          </div>
         </div>
 
         <div id="dynamic-msg" class="help" aria-live="polite"></div>
@@ -144,6 +153,8 @@
   const assignee = document.getElementById('id_assignee');
   const msg = document.getElementById('dynamic-msg');
   const attach = document.getElementById('{{ form.attachment.id_for_label }}');
+  const previewWrap = document.getElementById('img-preview');
+  const previewImg = document.getElementById('img-preview-tag');
 
   function getCookie(name){
     const v = `; ${document.cookie}`.split(`; ${name}=`); 
@@ -215,17 +226,40 @@
     {% endif %}
   }
 
+  // اجعل الحقل يقبل الصور فقط حتى إن كان الـ widget لا يحدد ذلك
   if(attach){
+    try { attach.setAttribute('accept', 'image/*'); } catch(e){}
+
     attach.addEventListener('change', function(){
       const f = this.files && this.files[0];
-      if(!f) return;
+      previewWrap.style.display = 'none';
+      if(!f){ setMsg(''); return; }
+
       const MAX = 5 * 1024 * 1024;
+      const okTypes = ['image/jpeg','image/jpg','image/png','image/webp'];
+      const name = (f.name || '').toLowerCase();
+      const okExt = /\.(jpe?g|png|webp)$/i.test(name);
+
       if(f.size > MAX){
-        setMsg('حجم المرفق أكبر من 5MB. الرجاء اختيار ملف أصغر.', 'error');
+        setMsg('حجم الصورة أكبر من 5MB. الرجاء اختيار صورة أصغر.', 'error');
         this.value = '';
-      }else{
-        setMsg('');
+        return;
       }
+      if(!(okTypes.includes(f.type) || okExt)){
+        setMsg('يُسمح فقط بصور ‎JPG/PNG/WebP.', 'error');
+        this.value = '';
+        return;
+      }
+
+      // معاينة
+      try{
+        const url = URL.createObjectURL(f);
+        previewImg.src = url;
+        previewImg.onload = () => URL.revokeObjectURL(url);
+        previewWrap.style.display = 'block';
+      }catch(e){ previewWrap.style.display = 'none'; }
+
+      setMsg('');
     });
   }
 

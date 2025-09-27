@@ -1,7 +1,8 @@
 # reports/models.py
 # -*- coding: utf-8 -*-
 from __future__ import annotations
-
+from urllib.parse import quote
+import os
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.exceptions import ValidationError
@@ -10,6 +11,10 @@ from django.db import models, transaction
 from django.db.models.signals import m2m_changed, post_migrate
 from django.dispatch import receiver
 from django.utils.text import slugify
+from django.utils import timezone
+
+# تخزين Cloudinary العام لملفات raw (PDF/DOCX/ZIP/صور)
+from .storage import PublicRawMediaStorage
 
 # =========================
 # ثوابت عامة
@@ -51,7 +56,7 @@ class Role(models.Model):
         return self.name or self.slug
 
     def save(self, *args, **kwargs):
-        # تطبيع slug إلى lowercase بدون فراغات
+        # تطبيع slug
         if self.slug:
             self.slug = self.slug.strip().lower()
         super().save(*args, **kwargs)
@@ -92,7 +97,6 @@ class Teacher(AbstractBaseUser, PermissionsMixin):
     national_id = models.CharField("الهوية الوطنية", max_length=20, blank=True, null=True, unique=True)
     name = models.CharField("الاسم", max_length=150, db_index=True)
 
-    # دور ديناميكي من المنصّة
     role = models.ForeignKey(
         Role,
         on_delete=models.SET_NULL,
@@ -118,11 +122,9 @@ class Teacher(AbstractBaseUser, PermissionsMixin):
 
     @property
     def role_display(self) -> str:
-        """اسم الدور للعرض في القوالب."""
         return getattr(self.role, "name", "-")
 
     def save(self, *args, **kwargs):
-        # مزامنة is_staff مع الدور إن وُجد
         try:
             if self.role is not None:
                 self.is_staff = bool(self.role.is_staff_by_default)
@@ -175,8 +177,8 @@ class Department(models.Model):
         """
         مزامنة جدول Role مع كل قسم:
         - ينشئ/يحدّث Role بنفس slug.
-        - عند تغيير slug لقسم، إن وُجد Role آخر بالـ slug الجديد، نقوم بـ "دمج" لتفادي UNIQUE.
-        - قسم المدير MANAGER_SLUG: يُجبر الاسم/slug/التفعيل ولا يُسمح بتغييره إلى slug آخر.
+        - عند تغيير slug: دمج/إعادة تسمية.
+        - قسم المدير MANAGER_SLUG: يُجبر خصائصه.
         """
         # تطبيع الحقول
         if self.slug:
@@ -200,7 +202,7 @@ class Department(models.Model):
         role_name = (self.role_label or self.name or "").strip()
 
         with transaction.atomic():
-            # إذا كان السجل الحالي هو قسم المدير وتم تغيير slug بصورة يدوية → نعيده قسرًا
+            # حماية قسم المدير من تغيير slug
             if old_slug == MANAGER_SLUG and self.slug != MANAGER_SLUG:
                 self.slug = MANAGER_SLUG
                 self.name = MANAGER_NAME
@@ -210,24 +212,21 @@ class Department(models.Model):
             super().save(*args, **kwargs)
 
             # --- مزامنة الدور المطابق ---
-            from .models import Role as _Role, Teacher as _Teacher  # تجنّب التحميل الدائري عند فحص الاستيراد
+            _Role = Role
+            _Teacher = Teacher
 
-            # تغيير slug
             if old_slug and old_slug != self.slug:
                 old_role = _Role.objects.filter(slug=old_slug).first()
                 if old_role:
                     target_role = _Role.objects.filter(slug=self.slug).first()
-
                     if target_role and target_role.pk != old_role.pk:
-                        # ✅ دمج: هناك Role موجود بالـ slug الجديد
+                        # ✅ دمج
                         to_update = []
                         if target_role.name != role_name:
                             target_role.name = role_name
                             to_update.append("name")
-                        # قسم المدير يفرض صلاحياته الخاصة
                         desired_is_staff = True if self.slug == MANAGER_SLUG else target_role.is_staff_by_default
                         desired_can_view_all = True if self.slug == MANAGER_SLUG else target_role.can_view_all_reports
-
                         if target_role.is_staff_by_default != desired_is_staff:
                             target_role.is_staff_by_default = desired_is_staff
                             to_update.append("is_staff_by_default")
@@ -240,28 +239,22 @@ class Department(models.Model):
                         if to_update:
                             target_role.save(update_fields=to_update)
 
-                        # دمج allowed_reporttypes
                         try:
                             target_role.allowed_reporttypes.add(
                                 *old_role.allowed_reporttypes.values_list("pk", flat=True)
                             )
                         except Exception:
                             pass
-
-                        # نقل المعلّمين إلى الدور الهدف
                         try:
                             _Teacher.objects.filter(role=old_role).update(role=target_role)
                         except Exception:
                             pass
-
-                        # حذف الدور القديم بعد الدمج
                         try:
                             old_role.delete()
                         except Exception:
                             pass
-
                     else:
-                        # لا يوجد دور هدف → إعادة تسمية الدور القديم
+                        # إعادة تسمية الدور القديم
                         updates = []
                         if old_role.slug != self.slug:
                             old_role.slug = self.slug
@@ -269,7 +262,6 @@ class Department(models.Model):
                         if old_role.name != role_name:
                             old_role.name = role_name
                             updates.append("name")
-                        # خصائص قسم المدير
                         if self.slug == MANAGER_SLUG:
                             if not old_role.is_staff_by_default:
                                 old_role.is_staff_by_default = True
@@ -283,7 +275,7 @@ class Department(models.Model):
                         if updates:
                             old_role.save(update_fields=updates)
                 else:
-                    # لم يُعثر على دور بالـ old_slug → احصل/أنشئ بالـ slug الجديد
+                    # لا يوجد دور بـ old_slug → احصل/أنشئ دورًا بالـ slug الجديد
                     role, created = _Role.objects.get_or_create(
                         slug=self.slug,
                         defaults={
@@ -301,7 +293,6 @@ class Department(models.Model):
                         if role.is_active != self.is_active:
                             role.is_active = self.is_active
                             to_update.append("is_active")
-                        # خصائص قسم المدير
                         if self.slug == MANAGER_SLUG:
                             if not role.is_staff_by_default:
                                 role.is_staff_by_default = True
@@ -330,7 +321,6 @@ class Department(models.Model):
                     if role.is_active != self.is_active:
                         role.is_active = self.is_active
                         to_update.append("is_active")
-                    # خصائص قسم المدير
                     if self.slug == MANAGER_SLUG:
                         if not role.is_staff_by_default:
                             role.is_staff_by_default = True
@@ -342,7 +332,7 @@ class Department(models.Model):
                         role.save(update_fields=to_update)
 
 
-def _sync_dept_reporttypes_to_role(dept: "Department") -> None:
+def _sync_dept_reporttypes_to_role(dept: Department) -> None:
     """
     يقرأ اختيارات القسم (reporttypes) ويعكسها على الدور الموازي.
     - قسم المدير: يفوز بخاصية can_view_all_reports=True ولا يعتمد على القائمة.
@@ -362,8 +352,6 @@ def _sync_dept_reporttypes_to_role(dept: "Department") -> None:
             if updates:
                 role.save(update_fields=updates)
             return
-
-        # الأقسام الأخرى: طابق القائمة كما هي
         role.allowed_reporttypes.set(dept.reporttypes.all())
     except Exception:
         # نتجاهل الأخطاء للحفاظ على استقرار عملية الحفظ
@@ -522,13 +510,8 @@ class Report(models.Model):
         # اليوم باللغة العربية
         if self.report_date and not self.day_name:
             days = {
-                1: "الاثنين",
-                2: "الثلاثاء",
-                3: "الأربعاء",
-                4: "الخميس",
-                5: "الجمعة",
-                6: "السبت",
-                7: "الأحد",
+                1: "الاثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس",
+                5: "الجمعة", 6: "السبت", 7: "الأحد"
             }
             try:
                 self.day_name = days.get(self.report_date.isoweekday())
@@ -548,36 +531,13 @@ class Report(models.Model):
 # =========================
 # منظومة التذاكر الموحّدة
 # =========================
-# reports/models_ticket.py  ← ضع المحتوى داخل ملف models.py لديك (أو دمجه بعناية)
-# -*- coding: utf-8 -*-
-from __future__ import annotations
-
-from django.conf import settings
-from django.db import models
-from django.core.validators import FileExtensionValidator
-from django.core.exceptions import ValidationError
-
-# تخزين Cloudinary كـ raw للملفات (PDF/Doc/..)
-# هذا يُنتِج مسارات من نوع /raw/upload/ بدلاً من /image/upload/
-try:
-    from cloudinary_storage.storage import RawMediaCloudinaryStorage
-    _RAW_STORAGE = RawMediaCloudinaryStorage()
-except Exception:
-    # في حال عدم توافر الحزمة في بيئة التطوير، سنترك None ليستخدم التخزين الافتراضي
-    _RAW_STORAGE = None
-
-# استيراد Department من تطبيقك
-from .models import Department  # لو كان هذا الملف هو models.py نفسه احذف هذا السطر
-
-
-# ======== أدوات تحقق للمرفق ========
 MAX_ATTACHMENT_MB = 5
-MAX_ATTACHMENT_BYTES = MAX_ATTACHMENT_MB * 1024 * 1024
+_MAX_BYTES = MAX_ATTACHMENT_MB * 1024 * 1024
+
 
 def validate_attachment_size(file_obj):
     """تحقق الحجم ≤ 5MB"""
-    size = getattr(file_obj, "size", None)
-    if size is not None and size > MAX_ATTACHMENT_BYTES:
+    if getattr(file_obj, "size", 0) > _MAX_BYTES:
         raise ValidationError(f"حجم المرفق يتجاوز {MAX_ATTACHMENT_MB}MB.")
 
 
@@ -619,11 +579,11 @@ class Ticket(models.Model):
     title = models.CharField("عنوان الطلب", max_length=255)
     body = models.TextField("تفاصيل الطلب", blank=True, null=True)
 
-    # ✅ مرفق يُرفع إلى Cloudinary كـ raw (للدعم السليم للـ PDF و DOCX وغيرها)
+    # ✅ مرفق يُرفع إلى Cloudinary كـ raw عام (type=upload)
     attachment = models.FileField(
         "مرفق",
         upload_to="tickets/",
-        storage=_RAW_STORAGE,  # إن كانت None سيعود للتخزين الافتراضي
+        storage=PublicRawMediaStorage(),   # عام + raw
         blank=True,
         null=True,
         validators=[
@@ -658,8 +618,11 @@ class Ticket(models.Model):
     # ======== خصائص مساعدة للقوالب ========
     @property
     def attachment_name_lower(self) -> str:
-        name = getattr(self.attachment, "name", "") or ""
-        return name.lower()
+        return (getattr(self.attachment, "name", "") or "").lower()
+
+    @property
+    def attachment_is_image(self) -> bool:
+        return self.attachment_name_lower.endswith((".jpg", ".jpeg", ".png", ".webp"))
 
     @property
     def attachment_is_pdf(self) -> bool:
@@ -668,14 +631,25 @@ class Ticket(models.Model):
     @property
     def attachment_download_url(self) -> str:
         """
-        رابط تنزيل مباشر (يُجبر التحميل في المتصفح الداعم).
-        يمكن استخدامه في القالب: {{ t.attachment_download_url }}
+        • إذا كان التخزين Cloudinary → أدخل fl_attachment:<filename> داخل جزء /upload/.
+        • غير Cloudinary → أضف Content-Disposition عبر query كحل احتياطي.
         """
         url = getattr(self.attachment, "url", "") or ""
         if not url:
             return ""
+
+        filename = os.path.basename(getattr(self.attachment, "name", "")) or "download"
+
+        # Cloudinary
+        if "res.cloudinary.com" in url and "/upload/" in url:
+            # مثال: /raw/upload/v123/... → /raw/upload/fl_attachment:my.pdf/v123/...
+            safe_fn = quote(filename, safe="")
+            return url.replace("/upload/", f"/upload/fl_attachment:{safe_fn}/")
+
+        # غير Cloudinary: تلميح للتحميل
         sep = "&" if "?" in url else "?"
-        return f"{url}{sep}fl_attachment=1"
+        dispo = quote(f"attachment; filename*=UTF-8''{filename}", safe="")
+        return f"{url}{sep}response-content-disposition={dispo}"
 
 
 class TicketNote(models.Model):
@@ -703,8 +677,9 @@ class TicketNote(models.Model):
     def __str__(self):
         return f"Note #{self.pk} on Ticket #{self.ticket_id}"
 
+
 # =========================
-# نماذج تراثية (تبقى كما هي للاطلاع/أرشفة فقط)
+# نماذج تراثية (اختياري للأرشفة)
 # =========================
 REQUEST_DEPARTMENTS = [
     (MANAGER_SLUG, "المدير"),
@@ -797,7 +772,7 @@ def ensure_manager_department_and_role(sender, **kwargs):
                 slug=MANAGER_SLUG,
                 defaults={"name": MANAGER_NAME, "role_label": MANAGER_ROLE_LABEL, "is_active": True},
             )
-            # في حال تغيّر الاسم/التفعيل بالخطأ، أعِد ضبطه
+            # إصلاح أي تغييرات غير مقصودة
             updates = []
             if dep.name != MANAGER_NAME:
                 dep.name = MANAGER_NAME
@@ -841,14 +816,9 @@ def ensure_manager_department_and_role(sender, **kwargs):
         pass
 
 
-# -*- coding: utf-8 -*-
-from django.db import models
-from django.conf import settings
-from django.utils import timezone
-
-# استيراد Teacher من موديلاتك الحالية
-from .models import Teacher  # إذا كان هذا السطر داخل نفس الملف، لا تكرره. استورد Teacher من الموضع المناسب لديك.
-
+# =========================
+# الإشعارات
+# =========================
 class Notification(models.Model):
     title = models.CharField(max_length=120, blank=True, default="")
     message = models.TextField()
