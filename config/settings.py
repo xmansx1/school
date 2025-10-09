@@ -1,31 +1,47 @@
+# config/settings.py
 from pathlib import Path
 import os
 from dotenv import load_dotenv
-import dj_database_url
+
+# حاول استخدام dj_database_url إن كان مُثبتًا، بدون كسر المشروع لو غير موجود
+try:
+    import dj_database_url  # type: ignore
+except Exception:
+    dj_database_url = None  # type: ignore
 
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ----------------- البيئة -----------------
-SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-secret")
-ENV = os.getenv("ENV", "development").lower()
-
-# كشف تلقائي لـ Render
-if os.getenv("RENDER", "") or os.getenv("RENDER_EXTERNAL_URL", ""):
-    ENV = "production"
-
-DEBUG = ENV == "development"
+def _env_bool(name: str, default: bool = False) -> bool:
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return str(val).strip().lower() in {"1", "true", "yes", "on"}
 
 def _split_env_list(val: str) -> list[str]:
     return [x.strip() for x in (val or "").split(",") if x.strip()]
+
+SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-secret")
+ENV = os.getenv("ENV", "development").strip().lower()
+
+# كشف تلقائي لـ Render
+if os.getenv("RENDER") or os.getenv("RENDER_EXTERNAL_URL"):
+    ENV = "production"
+
+# يمكنك أيضًا فرض DEBUG عبر متغير DEBUG=1
+DEBUG = (ENV != "production") if os.getenv("DEBUG") is None else _env_bool("DEBUG", False)
 
 ALLOWED_HOSTS = _split_env_list(
     os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,school-7lgm.onrender.com,.onrender.com")
 )
 
 CSRF_TRUSTED_ORIGINS = _split_env_list(
-    os.getenv("CSRF_TRUSTED_ORIGINS", "https://*.onrender.com,https://*.render.com,https://school-7lgm.onrender.com")
+    os.getenv(
+        "CSRF_TRUSTED_ORIGINS",
+        "https://*.onrender.com,https://*.render.com,https://school-7lgm.onrender.com"
+    )
 )
 
 # ----------------- التطبيقات -----------------
@@ -70,8 +86,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "reports.context_processors.nav_context",
-
-                # ⬇️ استبدال المعالج القديم بالجديد المتوافق مع الأيقونة/الهيدر
+                # متوافق مع الأيقونة/الهيدر
                 "reports.context_processors.nav_badges",
             ],
         },
@@ -81,37 +96,56 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # ----------------- قاعدة البيانات -----------------
-if ENV == "production":
+# الأولوية لـ DATABASE_URL إن وُجد وكان dj_database_url متاحًا
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+DB_SSL = _env_bool("DB_SSL", False)
+
+if DATABASE_URL and dj_database_url:
+    # يدعم Postgres و MySQL إلخ عبر URL واحد
     DATABASES = {
-        "default": dj_database_url.config(
-            default=os.getenv("DATABASE_URL"),
+        "default": dj_database_url.parse(
+            DATABASE_URL,
             conn_max_age=600,
-            ssl_require=True,
+            ssl_require=DB_SSL,
         )
     }
 else:
-    DB_ENGINE = os.getenv("DB_ENGINE", "django.db.backends.sqlite3")
-    if "sqlite" in DB_ENGINE:
+    # تكوين يدوي عبر متغيرات منفصلة أو fallback إلى SQLite
+    DB_ENGINE = os.getenv("DB_ENGINE", "django.db.backends.sqlite3").strip()
+    DB_NAME   = os.getenv("DB_NAME", "").strip()
+    DB_USER   = os.getenv("DB_USER", "").strip()
+    DB_PASS   = os.getenv("DB_PASSWORD", "").strip()
+    DB_HOST   = os.getenv("DB_HOST", "").strip()
+    DB_PORT   = os.getenv("DB_PORT", "5432").strip()
+
+    if "sqlite" in DB_ENGINE.lower() or not (DB_NAME and DB_ENGINE and (DB_HOST or "sqlite" in DB_ENGINE.lower())):
         DATABASES = {
             "default": {
-                "ENGINE": DB_ENGINE,
+                "ENGINE": "django.db.backends.sqlite3",
                 "NAME": os.getenv("DB_NAME", BASE_DIR / "db.sqlite3"),
             }
         }
     else:
+        # تهيئة Postgres (أو أي backend آخر تحدده) من المتغيرات الفردية
+        engine = DB_ENGINE
+        if DB_ENGINE.startswith("postgres") or DB_ENGINE.endswith("postgresql"):
+            engine = "django.db.backends.postgresql"
         DATABASES = {
             "default": {
-                "ENGINE": DB_ENGINE,
-                "NAME": os.getenv("DB_NAME", ""),
-                "USER": os.getenv("DB_USER", ""),
-                "PASSWORD": os.getenv("DB_PASSWORD", ""),
-                "HOST": os.getenv("DB_HOST", ""),
-                "PORT": os.getenv("DB_PORT", ""),
+                "ENGINE": engine,
+                "NAME": DB_NAME,
+                "USER": DB_USER,
+                "PASSWORD": DB_PASS,
+                "HOST": DB_HOST,   # تأكد أنه FQDN كامل (مثال: xxx.oregon-postgres.render.com)
+                "PORT": DB_PORT,
+                "CONN_MAX_AGE": 600,
+                "OPTIONS": {"sslmode": "require"} if DB_SSL and "postgresql" in engine else {},
             }
         }
 
-# خلف Proxy (مثل Render) حافظ على HTTPS
+# خلف Proxy (مثل Render) حافظ على HTTPS + اسم المضيف الأصلي
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 
 # ----------------- كلمات المرور -----------------
 AUTH_PASSWORD_VALIDATORS = [
@@ -152,7 +186,9 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         "CLOUD_NAME": CLOUDINARY_CLOUD_NAME,
         "API_KEY": CLOUDINARY_API_KEY,
         "API_SECRET": CLOUDINARY_API_SECRET,
+        # "SECURE": True,  # اختياري
     }
+# ملاحظة: حقل المرفق في Ticket يستخدم PublicRawMediaStorage صراحةً (raw + public) من reports/storage.py
 
 # ----------------- الأمان في الإنتاج -----------------
 if ENV == "production":
@@ -167,7 +203,7 @@ else:
     SECURE_SSL_REDIRECT = False
 
 # ----------------- تسجيل الأحداث (Logging) -----------------
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -194,6 +230,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 PRINT_MULTIHEAD_POLICY = "blank"  # أو "dept"
 
 # كيف نحدد رؤساء القسم؟
-# لو عندك عضوية قسم بعَلم is_head=True؛ اترك DEFAULT.
-# لو عندك أدوار من Teacher.role.slug فحدد السلاج المناسب.
 DEPARTMENT_HEAD_ROLE_SLUG = "department_head"  # غيّرها لو اسم السلاج مختلف

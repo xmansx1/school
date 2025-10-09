@@ -2,18 +2,20 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-from django.utils.text import slugify
 from typing import Optional, List, Tuple
+from io import BytesIO
 import os
 
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import models, transaction
 from django.db.models import Q
+from django.utils.text import slugify
 
 # ==============================
-# استيراد الموديلات (مباشرة من models.py)
+# استيراد الموديلات (من models.py فقط)
 # ==============================
 from .models import (
     Teacher,
@@ -73,19 +75,34 @@ def _teachers_for_dept(dept_slug: str):
 
 def _is_teacher_in_dept(teacher: Teacher, dept_slug: str) -> bool:
     """
-    يحدد ما إذا كان المعلم ينتمي للقسم المحدد:
-    - عن طريق Role.slug
-    - أو عضوية DepartmentMembership
+    هل المعلّم ينتمي للقسم؟
+    - يطابق بحسب role.slug (مع تطبيع للحروف والمسافات)
+    - يستثني "أقسام المعلّمين" بحيث يكفي أن يكون الدور "teacher"
+    - يتحقق بعضوية DepartmentMembership عند الحاجة
     """
     if not teacher or not dept_slug:
         return False
 
-    if getattr(getattr(teacher, "role", None), "slug", None) == dept_slug:
+    # تطبيع
+    dept_slug_norm = (dept_slug or "").strip().lower()
+    role_slug = (getattr(getattr(teacher, "role", None), "slug", None) or "").strip().lower()
+
+    # أقسام المعلّمين المسموح بها (حدّثها عندك إن لزم)
+    TEACHERS_DEPT_SLUGS = {"teachers", "teacher", "معلمين", "المعلمين"}
+
+    # إن كان القسم أحد أقسام المعلّمين، فوجود الدور teacher يكفي
+    if dept_slug_norm in TEACHERS_DEPT_SLUGS and role_slug in {"teacher", "teachers"}:
         return True
 
-    dep = Department.objects.filter(slug=dept_slug).first()
+    # تطابق مباشر role.slug == dept_slug
+    if role_slug and role_slug == dept_slug_norm:
+        return True
+
+    # تحقق بالعضوية
+    dep = Department.objects.filter(slug__iexact=dept_slug_norm).first()
     if not dep:
         return False
+
     return DepartmentMembership.objects.filter(department=dep, teacher=teacher).exists()
 
 # ==============================
@@ -311,16 +328,18 @@ class TeacherForm(forms.ModelForm):
 # ==============================
 # 📌 تذاكر — إنشاء/إجراءات/ملاحظات
 # ==============================
-# تأكد من وجود هذه الاستيرادات أعلى الملف:
-# from typing import Optional
-# import os
+
+# ==== داخل reports/forms.py (استبدل تعريف TicketCreateForm فقط بهذا) ====
+from io import BytesIO
+from django.core.files.uploadedfile import InMemoryUploadedFile
+
+class MultiImageInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
 
 class TicketCreateForm(forms.ModelForm):
     """
-    إنشاء تذكرة جديدة:
-    - القسم اختياري ويمر بالقيمة slug.
-    - المستلم يتعبأ ديناميكيًا حسب القسم المختار.
-    - المرفق: صور / PDF / DOC / DOCX حتى 5MB (متوافق مع الـ Model).
+    إنشاء تذكرة جديدة مع رفع حتى 4 صور (JPG/PNG/WebP) بحجم أقصى 5MB للصورة.
     """
     department = forms.ModelChoiceField(
         label="القسم",
@@ -330,7 +349,6 @@ class TicketCreateForm(forms.ModelForm):
         to_field_name="slug",
         widget=forms.Select(attrs={"class": "form-select"}),
     )
-
     assignee = forms.ModelChoiceField(
         queryset=Teacher.objects.none(),
         required=False,
@@ -338,89 +356,125 @@ class TicketCreateForm(forms.ModelForm):
         widget=forms.Select(attrs={"class": "form-select"}),
     )
 
+    # صور متعددة
+    images = forms.FileField(
+        label="الصور (حتى 4)",
+        required=False,
+        widget=MultiImageInput(attrs={"accept": "image/*", "multiple": True, "id": "id_images"}),
+        help_text="حتى 4 صور، ‎JPG/PNG/WebP، الحد الأقصى لكل صورة 5MB.",
+    )
+
     class Meta:
         model = Ticket
-        fields = ["department", "assignee", "title", "body", "attachment"]
+        # لا نستعمل حقل attachment هنا
+        fields = ["department", "assignee", "title", "body"]
         widgets = {
-            "title": forms.TextInput(
-                attrs={
-                    "class": "input",
-                    "placeholder": "عنوان الطلب",
-                    "maxlength": "255",
-                    "autocomplete": "off",
-                }
-            ),
-            "body": forms.Textarea(
-                attrs={"class": "textarea", "rows": 4, "placeholder": "تفاصيل الطلب"}
-            ),
-            # ✅ الامتدادات المتوافقة مع الموديل + صور
-            "attachment": forms.ClearableFileInput(
-                attrs={"accept": ".pdf,.doc,.docx,image/*"}
-            ),
+            "title": forms.TextInput({
+                "class": "input", "placeholder": "عنوان الطلب",
+                "maxlength": "255", "autocomplete": "off"
+            }),
+            "body": forms.Textarea({"class": "textarea", "rows": 4, "placeholder": "تفاصيل الطلب"}),
         }
 
     def __init__(self, *args, **kwargs):
-        # نسمح بتمرير user من الـ view بدون استخدامه هنا (لتوحيد الواجهات)
-        kwargs.pop("user", None)
+        kwargs.pop("user", None)  # يُمرر في save
         super().__init__(*args, **kwargs)
 
-        # تعبئة قائمة المستلمين حسب القسم المختار (POST) أو قيمة الـ instance عند التعديل
-        if self.is_bound:
-            dept_value = (self.data.get("department") or "").strip()
-        else:
-            dept_value = getattr(getattr(self.instance, "department", None), "slug", None)
-
-        self.fields["assignee"].queryset = (
-            _teachers_for_dept(dept_value) if dept_value else Teacher.objects.none()
+        # قيمة القسم
+        dept_value = (
+            (self.data.get("department") or "").strip()
+            if self.is_bound else getattr(getattr(self.instance, "department", None), "slug", None)
         )
 
-    # تحققات مخصّصة
+        # نبني قائمة القسم
+        base_qs = _teachers_for_dept(dept_value) if dept_value else Teacher.objects.none()
+
+        # ⚠️ أهم إصلاح: إذا أرسل المستخدم assignee بالقيمة X، ندرج X بالقائمة
+        # كي لا يرفضه Django كـ "اختيار غير صالح".
+        assignee_id = (self.data.get("assignee") or "").strip() if self.is_bound else None
+        if assignee_id:
+            try:
+                assignee_id_int = int(assignee_id)
+            except ValueError:
+                assignee_id_int = None
+            if assignee_id_int is not None:
+                base_qs = Teacher.objects.filter(
+                    Q(id=assignee_id_int) | Q(id__in=base_qs.values_list("id", flat=True))
+                )
+
+        self.fields["assignee"].queryset = base_qs
+
+        # سنخزن النسخ المضغوطة مؤقتًا هنا بعد نجاح التحقق
+        self._compressed_images: list[InMemoryUploadedFile] = []
+
+    # ضغط مبسط
+    def _compress_image(self, f, *, max_px=1600, quality=85) -> InMemoryUploadedFile:
+        from PIL import Image
+        img = Image.open(f)
+        img_format = (img.format or "JPEG").upper()
+        has_alpha = img.mode in ("RGBA", "LA", "P")
+        img = img.convert("RGBA" if has_alpha else "RGB")
+
+        w, h = img.size
+        if max(w, h) > max_px:
+            img.thumbnail((max_px, max_px), Image.LANCZOS)
+
+        out_format = "PNG" if (has_alpha and img_format == "PNG") else "WEBP"
+        buf = BytesIO()
+        save_kwargs = {"optimize": True}
+        if out_format in ("JPEG", "WEBP"):
+            save_kwargs["quality"] = quality
+        img.save(buf, format=out_format, **save_kwargs)
+        buf.seek(0)
+
+        base_name = os.path.splitext(getattr(f, "name", "image"))[0]
+        new_ext = ".png" if out_format == "PNG" else ".webp"
+        new_name = f"{base_name}{new_ext}"
+
+        return InMemoryUploadedFile(
+            file=buf,
+            field_name="images",
+            name=new_name,
+            content_type=f"image/{out_format.lower()}",
+            size=buf.getbuffer().nbytes,
+            charset=None,
+        )
+
     def clean(self):
         cleaned = super().clean()
 
-        # 1) تحقق من انتماء المستلم للقسم (إن وُجدا)
+        # تحقق انتماء المستلم للقسم (نُبقي الرسالة المفهومة هنا)
         dept = cleaned.get("department")
         assignee: Optional[Teacher] = cleaned.get("assignee")
         dept_slug: Optional[str] = getattr(dept, "slug", None) if isinstance(dept, Department) else None
-
         if assignee and dept_slug and not _is_teacher_in_dept(assignee, dept_slug):
             self.add_error("assignee", "الموظّف المختار لا ينتمي إلى هذا القسم.")
 
-        # 2) تحقق من المرفق: النوع والحجم ≤ 5MB
-        f = cleaned.get("attachment")
-        if f:
-            max_size = 5 * 1024 * 1024  # 5MB
-            if getattr(f, "size", 0) > max_size:
-                self.add_error("attachment", "حجم المرفق أكبر من 5MB.")
+        # تحقق الصور
+        files = self.files.getlist("images")
+        if files:
+            if len(files) > 4:
+                self.add_error("images", "الحد الأقصى 4 صور.")
+            ok_ext = {".jpg", ".jpeg", ".png", ".webp"}
+            for f in files:
+                name = (getattr(f, "name", "") or "").lower()
+                ext = os.path.splitext(name)[1]
+                ctype = (getattr(f, "content_type", "") or "").lower()
 
-            # النوع (Content-Type) — قد لا يكون موثوقًا دائمًا، لذلك نضيف تحققًا بالامتداد
-            ctype = (getattr(f, "content_type", "") or "").lower()
-            ok_ctype = (
-                ctype.startswith("image/")
-                or ctype == "application/pdf"
-                or ctype == "application/msword"
-                or ctype
-                == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
+                if getattr(f, "size", 0) > 5 * 1024 * 1024:
+                    self.add_error("images", f"({name}) حجم الصورة أكبر من 5MB.")
+                    break
+                if not (ctype.startswith("image/") and ext in ok_ext):
+                    self.add_error("images", f"({name}) يُسمح فقط بصور JPG/PNG/WebP.")
+                    break
 
-            # الامتداد
-            name = str(getattr(f, "name", "") or "")
-            ext = os.path.splitext(name)[1].lower()  # ← (إصلاح) لا تستخدم pop()
-            ok_ext = ext in {".jpg", ".jpeg", ".png", ".webp", ".pdf", ".doc", ".docx"}
-
-            if not (ok_ctype or ok_ext):
-                self.add_error(
-                    "attachment",
-                    "المرفق يجب أن يكون صورة أو PDF أو DOC/DOCX فقط.",
-                )
+            # لو لم توجد أخطاء على الصور نضغطها ونخزّنها مؤقتًا
+            if not self.errors.get("images"):
+                self._compressed_images = [self._compress_image(f) for f in files]
 
         return cleaned
 
     def save(self, commit: bool = True, user: Optional[Teacher] = None):
-        """
-        - يثبت creator عند الإنشاء.
-        - يضمن الحالة الافتراضية OPEN.
-        """
         obj: Ticket = super().save(commit=False)
 
         if user is not None and not obj.pk:
@@ -434,6 +488,12 @@ class TicketCreateForm(forms.ModelForm):
 
         if commit:
             obj.save()
+            # حفظ صور التذكرة
+            if self._compressed_images:
+                from .models import TicketImage
+                for f in self._compressed_images:
+                    TicketImage.objects.create(ticket=obj, image=f)
+
         return obj
 
 class TicketActionForm(forms.Form):

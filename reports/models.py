@@ -853,3 +853,29 @@ class NotificationRecipient(models.Model):
 
     def __str__(self):
         return f"{self.teacher} ← {self.notification}"
+
+
+# reports/models.py  (بعد class Ticket)
+class TicketImage(models.Model):
+    ticket = models.ForeignKey(
+        Ticket,
+        on_delete=models.CASCADE,
+        related_name="images",
+        verbose_name="التذكرة",
+        db_index=True,
+    )
+    image = models.ImageField(
+        "الصورة",
+        upload_to="tickets/images/%Y/%m/%d/",
+        blank=False,
+        null=False,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+        verbose_name = "صورة تذكرة"
+        verbose_name_plural = "صور التذكرة"
+
+    def __str__(self):
+        return f"TicketImage #{self.pk} for Ticket #{self.ticket_id}"

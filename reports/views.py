@@ -681,16 +681,14 @@ def _can_act(user, ticket: Ticket) -> bool:
     return (ticket.assignee_id is not None) and (ticket.assignee_id == user.id)
 
 
+# reports/views.py
 @login_required(login_url="reports:login")
 @require_http_methods(["GET", "POST"])
 def request_create(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = TicketCreateForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
-            t: Ticket = form.save(commit=False)
-            t.creator = request.user
-            t.status = Ticket.Status.OPEN
-            t.save()
+            form.save(commit=True, user=request.user)  # ← يحفظ التذكرة والصور
             messages.success(request, "✅ تم إرسال الطلب بنجاح.")
             return redirect("reports:my_requests")
         messages.error(request, "فضلاً تحقّق من الحقول.")

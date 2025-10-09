@@ -17,10 +17,10 @@
       --chip:#eef2ff; --chip-ink:#1e40af;
       --radius:12px; --print-margin:12mm;
 
-      /* تحكم صور ديناميكي (يُحدثه السكربت في الطباعة) */
-      --cols-print: 4;      /* عدد أعمدة الصور في الطباعة */
-      --slot-h-print: 150px;/* ارتفاع خلية الصورة في الطباعة */
-      --gap-print: 8px;     /* مسافة الشبكة في الطباعة */
+      /* تحكم الطباعة (يضبطه السكربت) */
+      --slot-h-print: 160px;   /* ارتفاع خلية الصورة للطباعة */
+      --gap-print: 10px;       /* مسافة الشبكة في الطباعة */
+      --scale-print: 1;        /* تصغير المحتوى عند الحاجة */
     }
 
     *{box-sizing:border-box}
@@ -52,7 +52,7 @@
       background:linear-gradient(135deg, var(--brand) 0%, var(--accent) 100%);
       color:#fff;padding:16px 20px
     }
-    .hero .logo{width:64px;height:64px;object-fit:contain;background:rgba(255,255,255,.15);border-radius:12px;padding:8px}
+    .hero .logo{width:64px;height:64px;object-fit:contain;background:rgba(255,255,255,.15);border-radius:12px;padding:8px;image-orientation:from-image}
     .hero .title{font-size:1.2rem;font-weight:900;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .hero .sub{opacity:.95;font-size:.9rem}
     .cat-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;font-weight:800;line-height:1.2}
@@ -67,19 +67,31 @@
     .section-title{margin:16px 0 8px;font-weight:900;color:var(--ink);display:inline-flex;align-items:center;gap:8px;background:var(--chip);color:var(--chip-ink);padding:6px 12px;border-radius:999px;font-size:.95rem;break-inside:avoid;page-break-inside:avoid}
     .idea-box{padding:14px;border:1px solid var(--line);border-radius:12px;background:#fbfdff;white-space:pre-wrap;line-height:1.8;font-weight:600;break-inside:avoid;page-break-inside:avoid}
 
-    /* منطقة الصور المرنة */
-    .photos-wrap{padding:0 18px 18px}                 /* نفس حواف content بالأسفل */
-    .photos{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;break-inside:avoid;page-break-inside:avoid}
-    .photos img{width:100%;height:200px;object-fit:cover;border-radius:12px;border:1px solid var(--line);box-shadow:0 4px 10px rgba(0,0,0,.08)}
+    /* الصور — مضبوط لـ ٤ صور كحد أقصى */
+    .photos-wrap{padding:0 18px 18px}
+    .photos{ display:grid;grid-template-columns:repeat(4,1fr);gap:12px;break-inside:avoid;page-break-inside:avoid; }
+    .photos figure{
+      margin:0;border-radius:12px;border:1px solid var(--line);overflow:hidden;
+      background:#fff;box-shadow:0 4px 10px rgba(0,0,0,.08);
+      display:flex;flex-direction:column;isolation:isolate;
+    }
+    .photos .slot{ height:200px; position:relative; }
+    .photos img{
+      width:100%;height:100%;object-fit:cover;display:block;image-orientation:from-image;
+      page-break-inside:avoid;break-inside:avoid;
+    }
 
-    /* ===== التواقيع دائماً بأسفل ===== */
-    .sign{margin-top:auto;display:flex;gap:14px;flex-wrap:wrap;padding:18px;border-top:1px dashed var(--line);background:linear-gradient(180deg,#fff,#f9fbff);break-inside:avoid;page-break-inside:avoid;justify-content:space-between}
+    /* ===== التواقيع ===== */
+    .sign{
+      margin-top:auto;display:flex;gap:14px;flex-wrap:wrap;padding:18px;border-top:1px dashed var(--line);
+      background:linear-gradient(180deg,#fff,#f9fbff);break-inside:avoid;page-break-inside:avoid;justify-content:space-between
+    }
     .sign .box{flex:1 1 260px;border:1px dashed var(--line);border-radius:12px;padding:14px;min-height:110px;background:var(--bg);text-align:center;display:flex;flex-direction:column;justify-content:space-between;gap:8px}
     .sign .title{font-weight:900}
     .sign .name{font-weight:800;opacity:.9}
     .sigline{height:1px;background:repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(0,0,0,.25) 8px,rgba(0,0,0,.25) 16px);margin:10px 0}
 
-    /* ===== طباعة A4 دقيقة ===== */
+    /* ===== طباعة A4 ===== */
     @page{ size:A4; margin: var(--print-margin); }
     @media print{
       .toolbar{display:none!important}
@@ -91,7 +103,11 @@
         height:calc(297mm - (2 * var(--print-margin)));
         margin:auto;box-shadow:none;border:0;border-radius:0;background:#fff;overflow:hidden;page-break-inside:avoid;break-inside:avoid-page;
       }
-      .sheet-inner{min-height:100%;display:flex;flex-direction:column}
+      .sheet-inner{
+        min-height:100%;display:flex;flex-direction:column;
+        transform: scale(var(--scale-print));
+        transform-origin: top center;
+      }
 
       .content{padding:12px}
       .details{gap:8px}
@@ -99,33 +115,35 @@
       .section-title{margin:10px 0 6px;padding:4px 8px;font-size:.9rem}
       .idea-box{padding:10px;line-height:1.65}
 
-      /* الصور في الطباعة تُدار بالمتغيرات (يحددها السكربت) */
+      /* الطباعة: شبكة 2×2 للصور (حد أقصى ٤ صور) + عرض الصورة كاملة */
       .photos-wrap{padding:0 12px 12px}
-      .photos{
-        grid-template-columns:repeat(var(--cols-print), 1fr);
-        gap:var(--gap-print);
-      }
-      .photos img{
-        height:var(--slot-h-print);
-      }
+      .photos{ grid-template-columns:repeat(2,1fr); gap:var(--gap-print); }
+      .photos .slot{ height:var(--slot-h-print); }
+      .photos img{ object-fit:contain; background:#fff; }
 
-      .sign{padding:12px;gap:10px;margin-top:auto}
-      .sign .box{padding:10px;min-height:90px}
+      /* رفع التواقيع قليلاً وترك مساحة بيضاء للتوقيع اليدوي */
+      .sign{ padding:12px; gap:10px; margin-top:auto; margin-bottom:10mm; }
+      .sign .box{ padding:10px; min-height:100px; }
 
       a[href]::after{content:"" !important}
     }
 
-    /* الهواتف */
+    /* ===== التجاوب للشاشات ===== */
     @media (max-width:640px){
       .details{grid-template-columns:1fr}
       .hero .logo{width:54px;height:54px}
+      .photos{ grid-template-columns:repeat(2,1fr); gap:10px; }
+      .photos .slot{ height:140px; }
+    }
+    @media (min-width:641px) and (max-width:1024px){
+      .photos{ grid-template-columns:repeat(3,1fr); }
     }
   </style>
 </head>
 <body>
 
 <div class="toolbar no-print">
-  <button class="btn btn-primary" onclick="window.print()">🖨️ طباعة</button>
+  <button class="btn btn-primary" id="printBtn">🖨️ طباعة</button>
   <span class="muted">عطِّل خيار “Headers and footers” من إعدادات الطباعة لإخفاء رابط الصفحة ورقمها.</span>
 </div>
 
@@ -156,7 +174,7 @@
             <div class="value">{{ r.report_date|date:"Y-m-d" }}{% if r.day_name %} • {{ r.day_name }}{% endif %}</div>
           </div>
           <div class="card-row">
-            <div class="label">المعلم</div>
+            <div class="label">المعلّم</div>
             <div class="value">{{ r.teacher_display_name }}</div>
           </div>
           <div class="card-row">
@@ -180,16 +198,15 @@
       <div class="photos-wrap">
         <h3 class="section-title">📷 الصور المرفقة</h3>
         <div class="photos" id="photos">
-          {% if r.image1 %}<img src="{{ r.image1.url }}" alt="صورة 1" loading="eager">{% endif %}
-          {% if r.image2 %}<img src="{{ r.image2.url }}" alt="صورة 2" loading="eager">{% endif %}
-          {% if r.image3 %}<img src="{{ r.image3.url }}" alt="صورة 3" loading="eager">{% endif %}
-          {% if r.image4 %}<img src="{{ r.image4.url }}" alt="صورة 4" loading="eager">{% endif %}
-          {# لو عندك صور إضافية أضفها هنا بنفس النمط #}
+          {% if r.image1 %}<figure><div class="slot"><img src="{{ r.image1.url }}" alt="صورة 1" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
+          {% if r.image2 %}<figure><div class="slot"><img src="{{ r.image2.url }}" alt="صورة 2" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
+          {% if r.image3 %}<figure><div class="slot"><img src="{{ r.image3.url }}" alt="صورة 3" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
+          {% if r.image4 %}<figure><div class="slot"><img src="{{ r.image4.url }}" alt="صورة 4" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
         </div>
       </div>
       {% endif %}
 
-      <!-- ===== التواقيع (مثبّتة أسفل) ===== -->
+      <!-- ===== التواقيع ===== -->
       <div class="sign" id="sign">
         <div class="box">
           <div class="title">معـد التقرير</div>
@@ -229,99 +246,81 @@
 </div><!-- /.container -->
 
 <script>
-/**
- * وقت الطباعة: نجعل الصور تملأ الفراغ بين التفاصيل والتواقيع
- * بذكاء دون المساس بالنص أو التواقيع.
- *
- * الخوارزمية:
- * - نحسب ارتفاع A4 داخل الهوامش.
- * - نحسب ارتفاع العناصر الأخرى (الهيدر + المحتوى + عنوان الصور + التواقيع).
- * - المتبقي = مساحة الصور. نختار عدد أعمدة مناسب ونحسب ارتفاع الخلية ليملأ المساحة.
- * - لو الخلية < حد أدنى => نقلل عدد الأعمدة تدريجيًا حتى نصل لمظهر مناسب.
+/*
+ * إعداد الطباعة لصفحة واحدة قدر الإمكان + شبكة صور 2×2 (حتى ٤ صور) +
+ * رفع منطقة التواقيع وترك مساحة بيضاء للتوقيع اليدوي + منع التكرار.
  */
 (function(){
-  const mm = (v)=> v * 3.7795275591; // ~96dpi
+  const mm = (v)=> v * 3.7795275591;          // ~96dpi
   const PRINT_MARGIN_MM = 12;
-  const PAGE_H_MM = 297, PAGE_W_MM = 210;
+  const PAGE_H_MM = 297;
   const A4H = mm(PAGE_H_MM - 2*PRINT_MARGIN_MM);
-  const A4W = mm(PAGE_W_MM - 2*PRINT_MARGIN_MM);
 
   const root = document.documentElement;
-  const sheet = document.getElementById('sheet');
   const inner = document.getElementById('sheetInner');
   const photosWrap = document.querySelector('.photos-wrap');
   const photosGrid = document.getElementById('photos');
-  if(!(inner && sheet)) return;
+  const printBtn = document.getElementById('printBtn');
 
-  const MIN_SLOT = 110;     // أقل ارتفاع مقبول لخلية الصورة في الطباعة
-  const MAX_COLS = 6;       // حد أعلى للأعمدة
-  const MIN_COLS = 2;       // حد أدنى للأعمدة
+  if(!inner) return;
+
+  const SIGN_MIN = 120;  // حد أدنى px للتواقيع
+  const MIN_SLOT = 120;  // أقل ارتفاع مقبول لخلية الصورة (أكبر لِوُضوح أفضل مع ٤ صور)
+  const COLS = 2;        // ثابت: عمودان للطباعة
 
   function rectH(el){ return el ? el.getBoundingClientRect().height : 0; }
 
   function computeAndApply(){
-    // إعادة baseline للطباعة
-    root.style.setProperty('--cols-print', '4');
-    root.style.setProperty('--slot-h-print', '150px');
+    // baseline
+    root.style.setProperty('--slot-h-print', '160px');
+    root.style.setProperty('--scale-print', '1');
 
-    // عناصر القياس
     const hero = document.querySelector('.hero');
     const content = document.querySelector('.content');
     const sign = document.getElementById('sign');
 
-    // ارتفاع العناصر الثابتة تقريبًا
-    const fixedTop = rectH(hero) + rectH(content);
-    const fixedBottom = rectH(sign);
+    let fixedTop = rectH(hero) + rectH(content);
+    let fixedBottom = Math.max(rectH(sign), SIGN_MIN);
 
-    // المساحة المتاحة للصور
     let remaining = A4H - fixedTop - fixedBottom;
     if(!photosWrap || !photosGrid || remaining <= 0){
-      // لا يوجد صور أو لا مساحة — لا شيء
-      return;
+      return; // لا صور أو لا مساحة
     }
 
-    // نضيف هوامش/photos-wrap وعنوانها
+    // خصم عنوان الصور وهوامشه
     const photosTitle = photosWrap.querySelector('.section-title');
-    remaining -= rectH(photosTitle) + 12; // حافة بسيطة
+    remaining -= rectH(photosTitle) + 10;
 
-    // اجعل غلاف الصور يلتزم بالارتفاع المتاح
+    // ضبط ارتفاع حاوية الصور
     photosWrap.style.height = remaining + 'px';
 
-    // عدد الصور الفعلي
-    const count = photosGrid.querySelectorAll('img').length || 0;
+    // عدد الصور الفعلي (حتى ٤)
+    const items = photosGrid ? photosGrid.querySelectorAll('.slot') : [];
+    const count = items.length || 0;
     if(count === 0) return;
 
-    // نجرّب من 4 أعمدة حتى 6 ثم ننقص إلى 2 إذا احتجنا ارتفاعاً أكبر
-    const tryOrders = [4,5,6,3,2];
-    for(const cols of tryOrders){
-      if(cols > MAX_COLS || cols < MIN_COLS) continue;
+    const gap = parseFloat(getComputedStyle(root).getPropertyValue('--gap-print')) || 10;
 
-      const rows = Math.ceil(count / cols);
-      // إجمالي الفجوات (gap) يُقرأ من المتغير
-      const gap = parseFloat(getComputedStyle(root).getPropertyValue('--gap-print')) || 8;
-      const totalGaps = gap * (rows - 1);
-      const slot = Math.floor((remaining - totalGaps) / rows); // ارتفاع كل صف
+    // صفوف شبكة 2×2
+    const rows = Math.ceil(count / COLS);
+    const totalGaps = gap * (rows - 1);
+    const slot = Math.floor((remaining - totalGaps) / rows);
+    const finalSlot = Math.max(MIN_SLOT, slot);
 
-      if(slot >= MIN_SLOT){
-        root.style.setProperty('--cols-print', String(Math.min(cols, count)));
-        root.style.setProperty('--slot-h-print', slot + 'px');
-        return;
-      }
+    root.style.setProperty('--slot-h-print', finalSlot + 'px');
+
+    // 🔻 ملاذ أخير: تصغير المحتوى لو بقي أطول من A4
+    const totalH = rectH(inner);
+    if(totalH > A4H){
+      const scale = Math.max(0.85, (A4H - 2) / totalH);
+      root.style.setProperty('--scale-print', String(scale));
     }
-
-    // لو ما وصلنا للحد الأدنى، استخدم أقل عدد أعمدة ممكن واملأ بالارتفاع المتاح (قد تكون أقل من MIN_SLOT)
-    const colsFallback = Math.max(MIN_COLS, Math.min(count, MAX_COLS));
-    const rowsFallback = Math.ceil(count / colsFallback);
-    const gap = parseFloat(getComputedStyle(root).getPropertyValue('--gap-print')) || 8;
-    const slotFallback = Math.floor((remaining - gap*(rowsFallback-1)) / rowsFallback);
-
-    root.style.setProperty('--cols-print', String(colsFallback));
-    root.style.setProperty('--slot-h-print', Math.max(80, slotFallback) + 'px'); // لا نسمح بأقل من 80px أبداً
   }
 
   function before(){ try{ computeAndApply(); }catch(e){} }
-  function after(){ try{ photosWrap && (photosWrap.style.height = ''); }catch(e){} }
+  function after(){ try{ photosWrap && (photosWrap.style.height = ''); root.style.setProperty('--scale-print','1'); }catch(e){} }
 
+  // إعادة الحساب عند الطباعة
   if(window.matchMedia){
     const mql = window.matchMedia('print');
     if(typeof mql.addEventListener==='function'){
@@ -345,10 +344,16 @@
     });
   })();
 
-  // زر الطباعة يضمن الحساب مسبقًا
-  document.querySelector('.btn.btn-primary')?.addEventListener('click', ()=>{
+  // زر الطباعة — مستمع واحد بدون تكرار
+  let printing = false;
+  printBtn?.addEventListener('click', ()=>{
+    if (printing) return;
+    printing = true;
     before();
-    setTimeout(()=>window.print(), 30);
+    setTimeout(()=> {
+      window.print();
+      setTimeout(()=> printing = false, 500);
+    }, 30);
   });
 })();
 </script>
