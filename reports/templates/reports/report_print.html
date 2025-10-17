@@ -16,6 +16,8 @@
       --brand:#2563eb; --accent:#059669; --bg:#f8fafc; --card:#ffffff;
       --chip:#eef2ff; --chip-ink:#1e40af;
       --radius:12px; --print-margin:12mm;
+      /* يضبطه السكربت عند الحاجة لطباعة صفحة واحدة */
+      --scale: 1;
     }
 
     *{box-sizing:border-box}
@@ -28,18 +30,22 @@
 
     /* ===== شريط أدوات (لا يُطبع) ===== */
     .toolbar{
-      display:flex;gap:8px;justify-content:center;align-items:center;
+      display:flex;gap:10px;justify-content:center;align-items:center;
       padding:10px;background:#f3f6ff;border-bottom:1px solid var(--line);
       position:sticky;top:0;z-index:9
     }
     .btn{padding:8px 14px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-weight:700}
     .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
     .muted{color:var(--muted);font-weight:700}
+    .check{display:inline-flex;align-items:center;gap:6px;font-weight:800}
+    .check input{inline-size:18px; block-size:18px}
 
     /* ===== العرض على الشاشة ===== */
     .container{max-width:900px;margin:auto;padding:10px}
     .sheet{border:1px solid var(--line);border-radius:var(--radius);overflow:visible;background:var(--card);box-shadow:0 6px 18px rgba(0,0,0,.05)}
     .sheet-inner{display:flex;flex-direction:column}
+    /* عنصر نُطبق عليه المقياس في الطباعة عند الحاجة */
+    .scale-wrap{transform:scale(1); transform-origin:top center;}
 
     /* الرأس */
     .hero{
@@ -62,31 +68,16 @@
     .section-title{margin:16px 0 8px;font-weight:900;color:var(--ink);display:inline-flex;align-items:center;gap:8px;background:var(--chip);color:var(--chip-ink);padding:6px 12px;border-radius:999px;font-size:.95rem;break-inside:avoid;page-break-inside:avoid}
     .idea-box{padding:14px;border:1px solid var(--line);border-radius:12px;background:#fbfdff;white-space:pre-wrap;line-height:1.8;font-weight:600;break-inside:avoid;page-break-inside:avoid}
 
-    /* الصور — بحد أقصى 4 */
+    /* الصور — حتى 4 */
     .photos-wrap{padding:0 18px 18px}
     .photos{
-      display:grid;
-      grid-template-columns:repeat(4,1fr);   /* شاشة: حتى 4 أعمدة */
-      gap:12px;
-      align-items:stretch;
-      break-inside:avoid; page-break-inside:avoid;
+      display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:stretch;break-inside:avoid;page-break-inside:avoid;
     }
     .photos figure{
-      margin:0;border-radius:12px;border:1px solid var(--line);overflow:hidden;
-      background:#fff;box-shadow:0 4px 10px rgba(0,0,0,.08);
-      display:flex;flex-direction:column;isolation:isolate;
+      margin:0;border-radius:12px;border:1px solid var(--line);overflow:hidden;background:#fff;box-shadow:0 4px 10px rgba(0,0,0,.08);display:flex;flex-direction:column
     }
-    .slot{
-      width:100%;
-      aspect-ratio:4/3;      /* يحافظ على النسبة دون JS */
-      position:relative;
-    }
-    .slot img{
-      width:100%; height:100%;
-      object-fit:cover;      /* شاشة: مظهر ممتلئ */
-      display:block; image-orientation:from-image;
-      page-break-inside:avoid; break-inside:avoid;
-    }
+    .slot{width:100%;aspect-ratio:4/3;position:relative}
+    .slot img{width:100%;height:100%;object-fit:cover;display:block;image-orientation:from-image}
 
     /* ===== التواقيع ===== */
     .sign{
@@ -98,7 +89,7 @@
     .sign .name{font-weight:800;opacity:.9}
     .sigline{height:1px;background:repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(0,0,0,.25) 8px,rgba(0,0,0,.25) 16px);margin:10px 0}
 
-    /* ===== طباعة A4 (نظيفة، بلا قص) ===== */
+    /* ===== طباعة A4 ===== */
     @page{ size:A4; margin: var(--print-margin); }
     @media print{
       .toolbar, .no-print{display:none!important}
@@ -108,10 +99,12 @@
       .sheet{
         width:calc(210mm - (2 * var(--print-margin)));
         margin:auto;box-shadow:none;border:0;border-radius:0;background:#fff;
-        overflow:visible;                 /* لا نقصّ المحتوى */
-        page-break-inside:auto; break-inside:auto;
+        overflow:visible; page-break-inside:auto; break-inside:auto;
       }
       .sheet-inner{ display:flex; flex-direction:column; }
+
+      /* مقياس الصفحة الواحدة (يُطبّق على .scale-wrap فقط) */
+      .scale-wrap{ transform: scale(var(--scale)); transform-origin: top center; }
 
       .content{padding:12px}
       .details{gap:8px}
@@ -119,12 +112,11 @@
       .section-title{margin:10px 0 6px;padding:4px 8px;font-size:.9rem}
       .idea-box{padding:10px;line-height:1.65}
 
-      /* صور الطباعة: شبكة 2×2 دائمًا + contain للحفاظ على كامل الصورة */
+      /* صور الطباعة: 2×2 + contain للحفاظ على كامل الصورة */
       .photos{ grid-template-columns:repeat(2,1fr); gap:10px; }
       .slot{ aspect-ratio:4/3; }
       .slot img{ object-fit:contain; background:#fff; }
 
-      /* مساحة توقيع أريح */
       .sign{ padding:12px; gap:10px; margin-top:auto; margin-bottom:12mm; }
       .sign .box{ padding:10px; min-height:100px; }
 
@@ -145,107 +137,177 @@
 <body>
 
 <div class="toolbar no-print">
-  <button class="btn btn-primary" onclick="window.print()">🖨️ طباعة</button>
-  <span class="muted">عطِّل خيار “Headers and footers” من إعدادات الطباعة لإخفاء رابط الصفحة ورقمها.</span>
+  <button class="btn btn-primary" id="printBtn">🖨️ طباعة</button>
+  <label class="check">
+    <input type="checkbox" id="fitOnePage" checked>
+    تفعيل وضع صفحة واحدة (عند الإمكان)
+  </label>
+  <span class="muted">عطِّل “Headers and footers” من إعدادات الطباعة.</span>
 </div>
 
 <div class="container">
   <div class="sheet">
-    <div class="sheet-inner">
+    <!-- نُغلّف المحتوى بـ scale-wrap ليتم تطبيق المقياس عليه فقط -->
+    <div class="scale-wrap">
+      <div class="sheet-inner" id="sheetInner">
 
-      {% with cat_label=r.category.name|default:"غير مصنّف" %}
-      <div class="hero">
-        <img class="logo"
-             src="{% if SCHOOL_LOGO_URL %}{{ SCHOOL_LOGO_URL }}{% else %}{% static 'img/logo.png' %}{% endif %}"
-             alt="{{ SCHOOL_NAME|default:'شعار المدرسة' }}">
-        <div>
-          <div class="title">تقرير <span class="cat-badge">{{ cat_label }}</span></div>
-          <div class="sub">{% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}نظام توثيق أعمال المعلمين{% endif %}</div>
+        {% with cat_label=r.category.name|default:"غير مصنّف" %}
+        <div class="hero">
+          <img class="logo"
+               src="{% if SCHOOL_LOGO_URL %}{{ SCHOOL_LOGO_URL }}{% else %}{% static 'img/logo.png' %}{% endif %}"
+               alt="{{ SCHOOL_NAME|default:'شعار المدرسة' }}">
+          <div>
+            <div class="title">تقرير <span class="cat-badge">{{ cat_label }}</span></div>
+            <div class="sub">{% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}نظام توثيق أعمال المعلمين{% endif %}</div>
+          </div>
         </div>
-      </div>
-      {% endwith %}
-
-      <div class="content">
-        <div class="details">
-          <div class="card-row">
-            <div class="label">العنوان</div>
-            <div class="value">{{ r.title }}</div>
-          </div>
-          <div class="card-row">
-            <div class="label">التاريخ</div>
-            <div class="value">{{ r.report_date|date:"Y-m-d" }}{% if r.day_name %} • {{ r.day_name }}{% endif %}</div>
-          </div>
-          <div class="card-row">
-            <div class="label">المعلّم</div>
-            <div class="value">{{ r.teacher_display_name }}</div>
-          </div>
-          <div class="card-row">
-            <div class="label">عدد المستفيدين</div>
-            <div class="value">{{ r.beneficiaries_count|default_if_none:"-" }}</div>
-          </div>
-
-          {% if r.department %}
-          <div class="card-row" style="grid-column:1 / -1">
-            <div class="label">القسم</div>
-            <div class="value">{{ r.department.name }}</div>
-          </div>
-          {% endif %}
-        </div>
-
-        <h3 class="section-title">💡 الوصــف</h3>
-        <div class="idea-box">{{ r.idea|default_if_none:"" }}</div>
-      </div>
-
-      {% if r.image1 or r.image2 or r.image3 or r.image4 %}
-      <div class="photos-wrap">
-        <h3 class="section-title">📷 الصور المرفقة</h3>
-        <div class="photos">
-          {% if r.image1 %}<figure><div class="slot"><img src="{{ r.image1.url }}" alt="صورة 1" loading="lazy" referrerpolicy="no-referrer"></div></figure>{% endif %}
-          {% if r.image2 %}<figure><div class="slot"><img src="{{ r.image2.url }}" alt="صورة 2" loading="lazy" referrerpolicy="no-referrer"></div></figure>{% endif %}
-          {% if r.image3 %}<figure><div class="slot"><img src="{{ r.image3.url }}" alt="صورة 3" loading="lazy" referrerpolicy="no-referrer"></div></figure>{% endif %}
-          {% if r.image4 %}<figure><div class="slot"><img src="{{ r.image4.url }}" alt="صورة 4" loading="lazy" referrerpolicy="no-referrer"></div></figure>{% endif %}
-        </div>
-      </div>
-      {% endif %}
-
-      <!-- ===== التواقيع ===== -->
-      <div class="sign">
-        <div class="box">
-          <div class="title">معـد التقرير</div>
-          <div class="name">{{ r.teacher_display_name }}</div>
-          <div class="sigline" aria-hidden="true"></div>
-        </div>
-
-        {% with hd=head_decision %}
-          {% if hd and not hd.no_render %}
-            <div class="box">
-              {% if hd.single %}
-                <div class="title">اعتماد رئيس القسم</div>
-                <div class="name">{{ hd.name }}</div>
-                <div class="sigline" aria-hidden="true"></div>
-              {% elif hd.multi_dept %}
-                <div class="title">اعتماد رئيس قسم {{ hd.dept_name }}</div>
-                <div class="name">____________________</div>
-                <div class="sigline" aria-hidden="true"></div>
-              {% elif hd.multi_blank %}
-                <div class="title">اعتماد رئيس القسم</div>
-                <div class="name">____________________</div>
-                <div class="sigline" aria-hidden="true"></div>
-              {% endif %}
-            </div>
-          {% endif %}
         {% endwith %}
 
-        <div class="box">
-          <div class="title">اعتماد مدير المدرسة</div>
-          <div class="name">{% firstof SCHOOL_PRINCIPAL "فـهــد بن عبدالله الفــهد" %}</div>
-          <div class="sigline" aria-hidden="true"></div>
-        </div>
-      </div>
+        <div class="content">
+          <div class="details">
+            <div class="card-row">
+              <div class="label">العنوان</div>
+              <div class="value">{{ r.title }}</div>
+            </div>
+            <div class="card-row">
+              <div class="label">التاريخ</div>
+              <div class="value">{{ r.report_date|date:"Y-m-d" }}{% if r.day_name %} • {{ r.day_name }}{% endif %}</div>
+            </div>
+            <div class="card-row">
+              <div class="label">المعلّم</div>
+              <div class="value">{{ r.teacher_display_name }}</div>
+            </div>
+            <div class="card-row">
+              <div class="label">عدد المستفيدين</div>
+              <div class="value">{{ r.beneficiaries_count|default_if_none:"-" }}</div>
+            </div>
 
-    </div><!-- /.sheet-inner -->
+            {% if r.department %}
+            <div class="card-row" style="grid-column:1 / -1">
+              <div class="label">القسم</div>
+              <div class="value">{{ r.department.name }}</div>
+            </div>
+            {% endif %}
+          </div>
+
+          <h3 class="section-title">💡 الوصــف</h3>
+          <div class="idea-box">{{ r.idea|default_if_none:"" }}</div>
+        </div>
+
+        {% if r.image1 or r.image2 or r.image3 or r.image4 %}
+        <div class="photos-wrap">
+          <h3 class="section-title">📷 الصور المرفقة</h3>
+          <div class="photos">
+            {% if r.image1 %}<figure><div class="slot"><img src="{{ r.image1.url }}" alt="صورة 1" loading="lazy" referrerpolicy="no-referrer"></div></figure>{% endif %}
+            {% if r.image2 %}<figure><div class="slot"><img src="{{ r.image2.url }}" alt="صورة 2" loading="lazy" referrerpolicy="no-referrer"></div></figure>{% endif %}
+            {% if r.image3 %}<figure><div class="slot"><img src="{{ r.image3.url }}" alt="صورة 3" loading="lazy" referrerpolicy="no-referrer"></div></figure>{% endif %}
+            {% if r.image4 %}<figure><div class="slot"><img src="{{ r.image4.url }}" alt="صورة 4" loading="lazy" referrerpolicy="no-referrer"></div></figure>{% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- ===== التواقيع ===== -->
+        <div class="sign">
+          <div class="box">
+            <div class="title">معـد التقرير</div>
+            <div class="name">{{ r.teacher_display_name }}</div>
+            <div class="sigline" aria-hidden="true"></div>
+          </div>
+
+          {% with hd=head_decision %}
+            {% if hd and not hd.no_render %}
+              <div class="box">
+                {% if hd.single %}
+                  <div class="title">اعتماد رئيس القسم</div>
+                  <div class="name">{{ hd.name }}</div>
+                  <div class="sigline" aria-hidden="true"></div>
+                {% elif hd.multi_dept %}
+                  <div class="title">اعتماد رئيس قسم {{ hd.dept_name }}</div>
+                  <div class="name">____________________</div>
+                  <div class="sigline" aria-hidden="true"></div>
+                {% elif hd.multi_blank %}
+                  <div class="title">اعتماد رئيس القسم</div>
+                  <div class="name">____________________</div>
+                  <div class="sigline" aria-hidden="true"></div>
+                {% endif %}
+              </div>
+            {% endif %}
+          {% endwith %}
+
+          <div class="box">
+            <div class="title">اعتماد مدير المدرسة</div>
+            <div class="name">{% firstof SCHOOL_PRINCIPAL "فـهــد بن عبدالله الفــهد" %}</div>
+            <div class="sigline" aria-hidden="true"></div>
+          </div>
+        </div>
+
+      </div><!-- /.sheet-inner -->
+    </div><!-- /.scale-wrap -->
   </div><!-- /.sheet -->
 </div><!-- /.container -->
+
+<script>
+/**
+ * وضع صفحة واحدة قدر المستطاع:
+ * - إذا كان الارتفاع يتجاوز ارتفاع A4 المتاح بنسبة بسيطة، نُطبّق scale لطيف.
+ * - لن ننزل عن 0.88 حفاظًا على قابلية القراءة.
+ * - يمكن للمستخدم تعطيل/تفعيل الوضع عبر الـ checkbox.
+ */
+(function(){
+  const fitToggle = document.getElementById('fitOnePage');
+  const printBtn  = document.getElementById('printBtn');
+  const root      = document.documentElement;
+  const inner     = document.getElementById('sheetInner');
+
+  const mm = (v)=> v * 3.7795275591; // px تقريبي لكل مم على 96dpi
+  const PAGE_H_MM = 297;
+  const PRINT_MARGIN_MM = 12;
+  const A4H = mm(PAGE_H_MM - 2*PRINT_MARGIN_MM); // الارتفاع المتاح داخل الهوامش
+
+  function computeScale(){
+    if(!inner) return 1;
+    const h = inner.getBoundingClientRect().height;
+    // هامش تسامح: إذا تجاوز بنسبة بسيطة (حتى 12%) نُصغّر
+    if (h <= A4H) return 1;
+    const ratio = A4H / h;
+    // لا نصغّر أكثر من 0.88
+    return Math.max(0.88, Math.min(1, ratio));
+  }
+
+  function beforePrint(){
+    // إن لم يُفعّل المستخدم خيار صفحة واحدة، لا نفعل شيئًا
+    if (!fitToggle || !fitToggle.checked) {
+      root.style.setProperty('--scale', '1');
+      return;
+    }
+    const scale = computeScale();
+    root.style.setProperty('--scale', String(scale));
+  }
+
+  function afterPrint(){
+    // نعيد المقياس للوضع الطبيعي
+    root.style.setProperty('--scale', '1');
+  }
+
+  // زر الطباعة
+  printBtn?.addEventListener('click', ()=>{
+    beforePrint();
+    setTimeout(()=> window.print(), 50);
+  });
+
+  // إشارات الطباعة من المتصفح
+  if (window.matchMedia){
+    const mql = window.matchMedia('print');
+    if (typeof mql.addEventListener === 'function'){
+      mql.addEventListener('change', e => e.matches ? beforePrint() : afterPrint());
+    } else if (typeof mql.addListener === 'function'){
+      mql.addListener(e => e.matches ? beforePrint() : afterPrint());
+    }
+  }
+  window.addEventListener('beforeprint', beforePrint);
+  window.addEventListener('afterprint',  afterPrint);
+})();
+</script>
 
 </body>
 </html>
