@@ -16,10 +16,9 @@
       --brand:#2563eb; --accent:#059669; --bg:#f8fafc; --card:#ffffff;
       --chip:#eef2ff; --chip-ink:#1e40af;
       --radius:12px; --print-margin:12mm;
-
-      /* تحكم الطباعة (يضبطه السكربت) */
-      --slot-h-print: 170px;   /* ارتفاع خلية الصورة للطباعة (fallback إذا لم تدعم المتصفح aspect-ratio) */
-      --gap-print: 8px;        /* مسافة شبكة الصور بالطباعة */
+      /* يضبطه السكربت عند الطباعة */
+      --slot-h-print: 170px;
+      --gap-print: 8px;
     }
 
     *{box-sizing:border-box}
@@ -66,7 +65,7 @@
     .section-title{margin:16px 0 8px;font-weight:900;color:var(--ink);display:inline-flex;align-items:center;gap:8px;background:var(--chip);color:var(--chip-ink);padding:6px 12px;border-radius:999px;font-size:.95rem;break-inside:avoid;page-break-inside:avoid}
     .idea-box{padding:14px;border:1px solid var(--line);border-radius:12px;background:#fbfdff;white-space:pre-wrap;line-height:1.8;font-weight:600;break-inside:avoid;page-break-inside:avoid}
 
-    /* الصور — مضبوط لـ ٤ صور كحد أقصى */
+    /* الصور */
     .photos-wrap{padding:0 18px 18px}
     .photos{ display:grid;grid-template-columns:repeat(4,1fr);gap:12px;break-inside:avoid;page-break-inside:avoid; }
     .photos figure{
@@ -93,16 +92,18 @@
     /* ===== طباعة A4 ===== */
     @page{ size:A4; margin: var(--print-margin); }
     @media print{
-      .toolbar{display:none!important}
+      .toolbar, .no-print{display:none!important}
       body{background:#fff}
       .container{padding:0;margin:0}
 
+      /* لا نثبّت الارتفاع ولا نُخفي الفائض → لا قص */
       .sheet{
         width:calc(210mm - (2 * var(--print-margin)));
-        height:calc(297mm - (2 * var(--print-margin)));
-        margin:auto;box-shadow:none;border:0;border-radius:0;background:#fff;overflow:hidden;page-break-inside:avoid;break-inside:avoid-page;
+        margin:auto;box-shadow:none;border:0;border-radius:0;background:#fff;
+        overflow:visible;                 /* كان hidden */
+        page-break-inside:auto;           /* كان avoid */
+        break-inside:auto;
       }
-      /* لا نستخدم scale للحفاظ على جودة النص */
       .sheet-inner{ min-height:100%; display:flex; flex-direction:column; }
 
       .content{padding:12px}
@@ -111,16 +112,13 @@
       .section-title{margin:10px 0 6px;padding:4px 8px;font-size:.9rem}
       .idea-box{padding:10px;line-height:1.65}
 
-      /* الطباعة: شبكة 2×2 للصور (حد أقصى ٤ صور) + عرض الصورة كاملة */
+      /* صور الطباعة: شبـكة 2×2 بمرونة */
       .photos-wrap{padding:0 10px 10px}
       .photos{ grid-template-columns:repeat(2,1fr); gap:var(--gap-print); }
-      /* إن كان المتصفح يدعم aspect-ratio فهذا الأفضل لثبات النسبة */
-      .photos .slot{ aspect-ratio:4/3; height:auto; }
-      /* fallback لمتصفحات لا تدعم aspect-ratio */
-      .photos .slot{ height:var(--slot-h-print); }
+      .photos .slot{ aspect-ratio:4/3; height:auto; min-height: var(--slot-h-print); }
       .photos img{ object-fit:contain; background:#fff; }
 
-      /* رفع التواقيع قليلاً وترك مساحة بيضاء للتوقيع اليدوي */
+      /* مساحة توقيع أريح */
       .sign{ padding:12px; gap:10px; margin-top:auto; margin-bottom:12mm; }
       .sign .box{ padding:10px; min-height:100px; }
 
@@ -141,7 +139,7 @@
 </head>
 <body>
 
-<div class="toolbar no-print">
+<div class="toolbar">
   <button class="btn btn-primary" id="printBtn">🖨️ طباعة</button>
   <span class="muted">عطِّل خيار “Headers and footers” من إعدادات الطباعة لإخفاء رابط الصفحة ورقمها.</span>
 </div>
@@ -246,8 +244,7 @@
 
 <script>
 /*
- * إعداد الطباعة لصفحة واحدة قدر الإمكان + شبكة صور 2×2 (حتى ٤ صور) +
- * رفع منطقة التواقيع وترك مساحة بيضاء للتوقيع اليدوي + منع تكرار نافذة الطباعة.
+ * طباعة محسّنة بدون قص + شبكة صور مرنة.
  */
 (function(){
   const mm = (v)=> v * 3.7795275591;          // ~96dpi
@@ -256,16 +253,13 @@
   const A4H = mm(PAGE_H_MM - 2*PRINT_MARGIN_MM);
 
   const root = document.documentElement;
-  const inner = document.getElementById('sheetInner');
   const photosWrap = document.querySelector('.photos-wrap');
   const photosGrid = document.getElementById('photos');
   const printBtn = document.getElementById('printBtn');
 
-  if(!inner) return;
-
-  const SIGN_MIN = 110;  // حد أدنى px للتواقيع
-  const MIN_SLOT = 140;  // أقل ارتفاع مناسب لخلية الصورة (وضوح أعلى مع ٤ صور)
-  const COLS = 2;        // ثابت: عمودان للطباعة
+  const SIGN_MIN = 110;   // حد أدنى px للتواقيع
+  const MIN_SLOT = 140;   // أقل ارتفاع مناسب لخلية الصورة
+  const COLS = 2;         // عمودان للطباعة
 
   const rectH = (el)=> el ? el.getBoundingClientRect().height : 0;
 
@@ -287,27 +281,40 @@
     const photosTitle = photosWrap.querySelector('.section-title');
     remaining -= rectH(photosTitle) + 8;
 
-    // ضبط ارتفاع الحاوية
-    photosWrap.style.height = remaining + 'px';
+    // إعادة ضبط أي إخفاء سابق
+    photosGrid.querySelectorAll('figure.no-print').forEach(f => f.classList.remove('no-print'));
 
-    // عدد الصور (حتى ٤)
-    const items = photosGrid.querySelectorAll('.slot, img');
-    const count = items.length || 0;
+    // عناصر الصور (نعدّ الـslot فقط لتفادي العد المزدوج)
+    const slots = photosGrid.querySelectorAll('.slot');
+    let count = slots.length;
     if(count === 0) return;
 
     const gap = parseFloat(getComputedStyle(root).getPropertyValue('--gap-print')) || 8;
+
+    // كم صفًا نستطيع احتواءه بالحد الأدنى؟
+    const maxRows = Math.max(1, Math.floor( (remaining + gap) / (MIN_SLOT + gap) ));
+    const maxItems = maxRows * COLS;
+
+    // إن تجاوز عدد الصور المساحة، نخفي الزائد للطباعة فقط
+    const figures = photosGrid.querySelectorAll('figure');
+    if (count > maxItems) {
+      figures.forEach((fig, idx) => { if (idx >= maxItems) fig.classList.add('no-print'); });
+      count = maxItems;
+    }
+
     const rows = Math.ceil(count / COLS);
     const totalGaps = gap * (rows - 1);
     const slot = Math.floor((remaining - totalGaps) / rows);
     const finalSlot = Math.max(MIN_SLOT, slot);
 
     root.style.setProperty('--slot-h-print', finalSlot + 'px');
+    // لا نفرض ارتفاعًا على الحاوية حتى لا نمنع الانتقال لصفحة ثانية لو لزم
   }
 
-  function before(){ try{ computeAndApply(); }catch(e){} }
-  function after(){ try{ photosWrap && (photosWrap.style.height = ''); }catch(e){} }
+  function before(){ try{ computeAndApply(); }catch(e){ console.error(e);} }
+  function after(){ /* لا شيء خاص */ }
 
-  // إعادة الحساب عند الطباعة
+  // إشارات الطباعة
   if(window.matchMedia){
     const mql = window.matchMedia('print');
     if(typeof mql.addEventListener==='function'){
@@ -319,7 +326,7 @@
   window.addEventListener('beforeprint', before);
   window.addEventListener('afterprint', after);
 
-  // أعد الحساب بعد تحميل الصور
+  // بعد تحميل الصور
   (function afterImages(){
     const imgs = Array.from(document.images);
     if(imgs.length===0) return;
@@ -331,7 +338,7 @@
     });
   })();
 
-  // زر الطباعة — مستمع واحد بدون تكرار
+  // زر الطباعة
   let printing = false;
   printBtn?.addEventListener('click', ()=>{
     if (printing) return;
