@@ -1,19 +1,14 @@
 # reports/views.py
 # -*- coding: utf-8 -*-
 from __future__ import annotations
-from .forms import (
-    ReportForm,
-    TeacherForm,
-    TicketActionForm,
-    TicketCreateForm,
-    DepartmentForm,  # أضف هذا السطر
-)
+from .models import Ticket, TicketNote, TicketImage
+
 import logging
 import os
 import traceback
 from datetime import date
-from urllib.parse import urlparse
 from typing import Optional, Tuple
+from urllib.parse import urlparse
 
 from django import forms
 from django.conf import settings
@@ -46,8 +41,10 @@ from .forms import (
     TeacherForm,
     TicketActionForm,
     TicketCreateForm,
+    DepartmentForm,  # إن لم تكن موجودة في مشروعك سيتم استخدام بديل داخلي
 )
-# إشعارات
+
+# إشعارات (اختياري)
 try:
     from .forms import NotificationCreateForm  # type: ignore
 except Exception:
@@ -62,30 +59,18 @@ from .models import (
     Role,
 )
 
-# موديلات الإشعارات
+# موديلات الإشعارات (اختياري)
 try:
     from .models import Notification, NotificationRecipient  # type: ignore
 except Exception:
     Notification = None  # type: ignore
     NotificationRecipient = None  # type: ignore
 
-# ===== صلاحيات =====
-from .permissions import allowed_categories_for, role_required, restrict_queryset_for_user
-
-logger = logging.getLogger(__name__)
-
-# ========= استيراد مرن للنماذج المرجعية =========
+# موديلات مرجعية اختيارية
 try:
     from .models import ReportType  # type: ignore
 except Exception:  # pragma: no cover
     ReportType = None  # type: ignore
-
-try:
-    from .forms import ReportTypeForm  # type: ignore
-except Exception:  # pragma: no cover
-    ReportTypeForm = None  # type: ignore
-
-HAS_RTYPE: bool = ReportType is not None
 
 try:
     from .models import Department  # type: ignore
@@ -97,14 +82,12 @@ try:
 except Exception:  # pragma: no cover
     DepartmentMembership = None  # type: ignore
 
-try:
-    from django.apps import apps as _apps
-except Exception:  # pragma: no cover
-    _apps = None  # type: ignore
-
+# ===== صلاحيات =====
+from .permissions import allowed_categories_for, role_required, restrict_queryset_for_user
 try:
     from .permissions import is_officer  # type: ignore
 except Exception:
+    # بديل مرن إن لم تتوفر الدالة في permissions
     def is_officer(user) -> bool:
         try:
             if not getattr(user, "is_authenticated", False):
@@ -117,9 +100,19 @@ except Exception:
         except Exception:
             return False
 
+# ===== إعدادات محلية =====
+HAS_RTYPE: bool = ReportType is not None
 DM_TEACHER = getattr(DepartmentMembership, "TEACHER", "teacher") if DepartmentMembership else "teacher"
 DM_OFFICER = getattr(DepartmentMembership, "OFFICER", "officer") if DepartmentMembership else "officer"
 
+# إيقاف/تشغيل الرجوع التلقائي للحالة عند ملاحظة المرسل (افتراضي معطّل)
+AUTO_REOPEN_ON_SENDER_NOTE: bool = getattr(settings, "TICKETS_AUTO_REOPEN_ON_SENDER_NOTE", False)
+
+logger = logging.getLogger(__name__)
+
+# =========================
+# أدوات مساعدة عامة
+# =========================
 def _is_staff(user) -> bool:
     return bool(user and user.is_authenticated and user.is_staff)
 
@@ -128,10 +121,6 @@ def _is_staff_or_officer(user) -> bool:
     return bool(getattr(user, "is_authenticated", False) and
                 (getattr(user, "is_staff", False) or is_officer(user)))
 
-
-# =========================
-# أدوات مساعدة عامة
-# =========================
 def _safe_next_url(next_url: str | None) -> str | None:
     if not next_url:
         return None
@@ -161,7 +150,6 @@ def _parse_date_safe(value: str | None) -> date | None:
         return None
     return parse_date(value)
 
-
 # =========================
 # الدخول / الخروج
 # =========================
@@ -183,14 +171,12 @@ def login_view(request: HttpRequest) -> HttpResponse:
     context = {"next": _safe_next_url(request.GET.get("next"))}
     return render(request, "reports/login.html", context)
 
-
 @require_http_methods(["GET", "POST"])
 def logout_view(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         logout(request)
         messages.success(request, "تم تسجيل الخروج بنجاح.")
     return redirect("reports:login")
-
 
 # =========================
 # الرئيسية (لوحة المعلم)
@@ -247,7 +233,6 @@ def home(request: HttpRequest) -> HttpResponse:
             return HttpResponse(html, status=500)
     return redirect("reports:home")
 
-
 # =========================
 # التقارير: إضافة/عرض/إدارة
 # =========================
@@ -274,7 +259,6 @@ def add_report(request: HttpRequest) -> HttpResponse:
         form = ReportForm()
 
     return render(request, "reports/add_report.html", {"form": form})
-
 
 @login_required(login_url="reports:login")
 @require_http_methods(["GET"])
@@ -309,7 +293,6 @@ def my_reports(request: HttpRequest) -> HttpResponse:
             "end_date": request.GET.get("end_date", ""),
         },
     )
-
 
 @user_passes_test(_is_staff, login_url="reports:login")
 @role_required({"manager"})
@@ -365,7 +348,6 @@ def admin_reports(request: HttpRequest) -> HttpResponse:
         "categories": allowed_choices,
     }
     return render(request, "reports/admin_reports.html", context)
-
 
 # =========================
 # لوحة تقارير المسؤول (Officer)
@@ -459,7 +441,6 @@ def officer_reports(request: HttpRequest) -> HttpResponse:
         },
     )
 
-
 # =========================
 # حذف تقرير (لوحة المدير)
 # =========================
@@ -470,7 +451,6 @@ def admin_delete_report(request: HttpRequest, pk: int) -> HttpResponse:
     report.delete()
     messages.success(request, "تم حذف التقرير بنجاح.")
     return _safe_redirect(request, "reports:admin_reports")
-
 
 # =========================
 # حذف تقرير (لوحة المسؤول Officer)
@@ -486,7 +466,6 @@ def officer_delete_report(request: HttpRequest, pk: int) -> HttpResponse:
     except Exception:
         messages.error(request, "تعذّر حذف التقرير أو لا تملك صلاحية لذلك.")
     return _safe_redirect(request, "reports:officer_reports")
-
 
 # =========================
 # الوصول إلى تقرير معيّن
@@ -513,46 +492,98 @@ def _get_report_for_user_or_404(user, pk: int):
 
     return get_object_or_404(qs, pk=pk, teacher=user)
 
+# =========================
+# طباعة التقرير (نسخة مُحسّنة)
+# =========================
+def _resolve_department_for_category(cat):
+    """يستخرج كائن القسم المرتبط بالتصنيف (إن وُجد)."""
+    if not cat or Department is None:
+        return None
+
+    # 1) علاقة مباشرة cat.department (إن وُجدت)
+    try:
+        d = getattr(cat, "department", None)
+        if d:
+            return d
+    except Exception:
+        pass
+
+    # 2) علاقات M2M شائعة: departments / depts / dept_list
+    for rel_name in ("departments", "depts", "dept_list"):
+        rel = getattr(cat, rel_name, None)
+        if rel is not None:
+            try:
+                d = rel.all().first()
+                if d:
+                    return d
+            except Exception:
+                pass
+
+    # 3) استعلام احتياطي
+    try:
+        return Department.objects.filter(reporttypes=cat).first()
+    except Exception:
+        return None
+
+def _build_head_decision(dept):
+    """
+    يُرجع dict يحدّد ماذا نطبع في خانة (اعتماد رئيس القسم).
+    - بدون قسم: لا نعرض شيئًا.
+    - رئيس واحد: نعرض اسمه.
+    - أكثر من رئيس: حسب السياسة PRINT_MULTIHEAD_POLICY = "blank" أو "dept".
+    """
+    if not dept or DepartmentMembership is None:
+        return {"no_render": True}
+
+    try:
+        role_officer = getattr(DepartmentMembership, "OFFICER", "officer")
+        qs = (DepartmentMembership.objects
+              .select_related("teacher")
+              .filter(department=dept, role_type=role_officer, teacher__is_active=True))
+        heads = [m.teacher for m in qs]
+    except Exception:
+        heads = []
+
+    count = len(heads)
+    policy = getattr(settings, "PRINT_MULTIHEAD_POLICY", "blank")  # "blank" أو "dept"
+
+    if count == 1:
+        return {"single": True, "name": getattr(heads[0], "name", str(heads[0]))}
+
+    if policy == "dept":
+        return {"multi_dept": True, "dept_name": getattr(dept, "name", "")}
+
+    return {"multi_blank": True}
 
 @login_required(login_url="reports:login")
 @require_http_methods(["GET"])
 def report_print(request: HttpRequest, pk: int) -> HttpResponse:
     r = _get_report_for_user_or_404(request.user, pk)
 
-    dept_name = None
-    try:
+    # اختيار القسم يدويًا عبر ?dept=slug-or-id (اختياري)
+    dept = None
+    if Department is not None:
+        pref = request.GET.get("dept")
+        if pref:
+            dept = (Department.objects.filter(Q(slug=pref) | Q(id=pref)).first()
+                    or dept)
+
+    if dept is None:
         cat = getattr(r, "category", None)
-        if cat:
-            if hasattr(cat, "department") and getattr(cat, "department", None):
-                d = getattr(cat, "department")
-                dept_name = getattr(d, "name", None) or getattr(d, "role_label", None) or getattr(d, "slug", None)
+        dept = _resolve_department_for_category(cat)
 
-            if not dept_name and Department is not None:
-                for rel_name in ("departments", "depts", "dept_list"):
-                    if hasattr(cat, rel_name):
-                        rel = getattr(cat, rel_name)
-                        try:
-                            first = rel.all().first() if hasattr(rel, "all") else None
-                        except Exception:
-                            first = None
-                        if first:
-                            dept_name = getattr(first, "name", None) or getattr(first, "role_label", None) or getattr(first, "slug", None)
-                            if dept_name:
-                                break
+    head_decision = _build_head_decision(dept)
+    school_principal = getattr(settings, "SCHOOL_PRINCIPAL", "")
 
-            if not dept_name and Department is not None:
-                try:
-                    d = Department.objects.filter(reporttypes=cat).only("name", "role_label", "slug").first()
-                    if d:
-                        dept_name = getattr(d, "name", None) or getattr(d, "role_label", None) or getattr(d, "slug", None)
-                except Exception:
-                    pass
-    except Exception:
-        pass
-
-    signer_label = (dept_name or "القسم")
-    return render(request, "reports/report_print.html", {"r": r, "signer_label": signer_label})
-
+    return render(
+        request,
+        "reports/report_print.html",
+        {
+            "r": r,
+            "head_decision": head_decision,   # ← القالب يعتمد عليه
+            "SCHOOL_PRINCIPAL": school_principal,
+        },
+    )
 
 @login_required(login_url="reports:login")
 @require_http_methods(["GET"])
@@ -571,7 +602,6 @@ def report_pdf(request: HttpRequest, pk: int) -> HttpResponse:
     resp = HttpResponse(pdf, content_type="application/pdf")
     resp["Content-Disposition"] = f'inline; filename="report-{r.pk}.pdf"'
     return resp
-
 
 # =========================
 # إدارة المعلّمين (مدير فقط)
@@ -593,7 +623,6 @@ def manage_teachers(request: HttpRequest) -> HttpResponse:
 
     page = Paginator(qs, 20).get_page(request.GET.get("page"))
     return render(request, "reports/manage_teachers.html", {"teachers_page": page, "term": term})
-
 
 @login_required(login_url="reports:login")
 @role_required({"manager"})
@@ -618,7 +647,6 @@ def add_teacher(request: HttpRequest) -> HttpResponse:
     else:
         form = TeacherForm()
     return render(request, "reports/add_teacher.html", {"form": form, "title": "إضافة مستخدم"})
-
 
 @login_required(login_url="reports:login")
 @role_required({"manager"})
@@ -655,7 +683,6 @@ def edit_teacher(request: HttpRequest, pk: int) -> HttpResponse:
 
     return render(request, "reports/edit_teacher.html", {"form": form, "teacher": teacher, "title": "تعديل مستخدم"})
 
-
 @login_required(login_url="reports:login")
 @role_required({"manager"})
 @require_http_methods(["POST"])
@@ -671,7 +698,6 @@ def delete_teacher(request: HttpRequest, pk: int) -> HttpResponse:
     next_url = _safe_next_url(request.POST.get("next") or request.GET.get("next"))
     return redirect(next_url or "reports:manage_teachers")
 
-
 # =========================
 # التذاكر (Tickets)
 # =========================
@@ -680,22 +706,19 @@ def _can_act(user, ticket: Ticket) -> bool:
         return False
     return (ticket.assignee_id is not None) and (ticket.assignee_id == user.id)
 
-
-# reports/views.py
 @login_required(login_url="reports:login")
 @require_http_methods(["GET", "POST"])
 def request_create(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = TicketCreateForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
-            form.save(commit=True, user=request.user)  # ← يحفظ التذكرة والصور
+            form.save(commit=True, user=request.user)  # يحفظ التذكرة والصور
             messages.success(request, "✅ تم إرسال الطلب بنجاح.")
             return redirect("reports:my_requests")
         messages.error(request, "فضلاً تحقّق من الحقول.")
     else:
         form = TicketCreateForm(user=request.user)
     return render(request, "reports/request_create.html", {"form": form})
-
 
 @login_required(login_url="reports:login")
 @require_http_methods(["GET"])
@@ -750,10 +773,10 @@ def my_requests(request: HttpRequest) -> HttpResponse:
         {"tickets": page, "page_obj": page, "stats": stats, "view_mode": view_mode},
     )
 
-
 @login_required(login_url="reports:login")
 @require_http_methods(["GET", "POST"])
 def ticket_detail(request: HttpRequest, pk: int) -> HttpResponse:
+    # احضر التذكرة مع الحقول المطلوبة
     t: Ticket = get_object_or_404(
         Ticket.objects.select_related("creator", "assignee", "department").only(
             "id", "title", "body", "status", "department", "created_at",
@@ -770,40 +793,41 @@ def ticket_detail(request: HttpRequest, pk: int) -> HttpResponse:
         note_txt   = (request.POST.get("note") or "").strip()
         changed = False
 
-        # ملاحظة من المرسل أو المستلم
+        # إضافة ملاحظة (المرسل أو من يملك الصلاحية)
         if note_txt and (is_owner or can_act):
             try:
                 with transaction.atomic():
-                    # 1) احفظ الملاحظة
-                    TicketNote.objects.create(ticket=t, author=request.user, body=note_txt, is_public=True)
-                    changed = True
+                    TicketNote.objects.create(
+                        ticket=t, author=request.user, body=note_txt, is_public=True
+                    )
 
-                    # 2) إذا المرسل هو من أضافها والحالة غير "جديد"
-                    #    وكانت ضمن (مكتمل/مرفوض/قيد المعالجة) ⇒ نحول إلى "جديد"
-                    if is_owner and t.status in {Ticket.Status.DONE, Ticket.Status.REJECTED, Ticket.Status.IN_PROGRESS}:
+                    # خيار: إعادة الفتح تلقائيًا عند ملاحظة المرسل (إن كانت مفعّلة)
+                    if AUTO_REOPEN_ON_SENDER_NOTE and is_owner and t.status in {
+                        Ticket.Status.DONE, Ticket.Status.REJECTED, Ticket.Status.IN_PROGRESS
+                    }:
                         old_status = t.status
                         t.status = Ticket.Status.OPEN
                         try:
                             t.save(update_fields=["status"])
                         except Exception:
                             t.save()
-                        # ملاحظة نظام توضّح التغيير
                         TicketNote.objects.create(
                             ticket=t,
                             author=request.user,
                             body=f"تغيير الحالة تلقائيًا بسبب ملاحظة المرسل: {old_status} → {Ticket.Status.OPEN}",
                             is_public=True,
                         )
+                    changed = True
             except Exception:
-                logger.exception("Failed to create note / auto reopen")
+                logger.exception("Failed to create note")
                 messages.error(request, "تعذّر حفظ الملاحظة.")
-        
-        # تغيير الحالة يدويًا (فقط للمستلم/المصرّح له)
+
+        # تغيير الحالة (لمن له صلاحية فقط)
         if status_val:
             if not can_act:
                 messages.warning(request, "لا يمكنك تغيير حالة هذا الطلب. يمكنك فقط إضافة ملاحظة.")
             else:
-                valid_statuses = dict(Ticket.Status.choices).keys()
+                valid_statuses = {k for k, _ in Ticket.Status.choices}
                 if status_val in valid_statuses and status_val != t.status:
                     old = t.status
                     t.status = status_val
@@ -828,6 +852,18 @@ def ticket_detail(request: HttpRequest, pk: int) -> HttpResponse:
             messages.info(request, "لا يوجد تغييرات.")
         return redirect("reports:ticket_detail", pk=pk)
 
+    # ===== صور التذكرة (بغض النظر عن related_name) =====
+    images_manager = getattr(t, "images", None)  # لو related_name='images'
+    if images_manager is None:
+        images_manager = getattr(t, "ticketimage_set", None)  # الاسم الافتراضي إن وُجد
+
+    if images_manager is not None and hasattr(images_manager, "all"):
+        images = list(images_manager.all().only("id", "image"))
+    else:
+        # fallback مضمون
+        images = list(TicketImage.objects.filter(ticket_id=t.id).only("id", "image"))
+
+    # سجلّ الملاحظات + نموذج الإجراء (إن وُجدت صلاحية)
     notes_qs = (
         t.notes.select_related("author")
         .only("id", "body", "created_at", "author__name")
@@ -835,16 +871,21 @@ def ticket_detail(request: HttpRequest, pk: int) -> HttpResponse:
     )
     form = TicketActionForm(initial={"status": t.status}) if can_act else None
 
-    ctx = {"t": t, "notes": notes_qs, "form": form, "can_act": can_act, "is_owner": is_owner}
+    ctx = {
+        "t": t,
+        "images": images,     # ← استخدم هذا في القالب
+        "notes": notes_qs,
+        "form": form,
+        "can_act": can_act,
+        "is_owner": is_owner,
+    }
     return render(request, "reports/ticket_detail.html", ctx)
-
 
 @login_required(login_url="reports:login")
 @user_passes_test(_is_staff, login_url="reports:login")
 @require_http_methods(["GET", "POST"])
 def admin_request_update(request: HttpRequest, pk: int) -> HttpResponse:
     return ticket_detail(request, pk)
-
 
 # ========= دعم الأقسام =========
 def _dept_code_for(dept_obj_or_code) -> str:
@@ -908,8 +949,10 @@ def _user_department_codes(user) -> list[str]:
 
     if DepartmentMembership is not None:
         try:
-            mem_codes = DepartmentMembership.objects.filter(teacher=user)\
-                          .values_list("department__slug", flat=True)
+            mem_codes = (
+                DepartmentMembership.objects.filter(teacher=user)
+                .values_list("department__slug", flat=True)
+            )
             for c in mem_codes:
                 if c:
                     codes.add(c)
@@ -972,7 +1015,6 @@ def get_department_form():
         return _DepartmentForm
     return None
 
-
 # ---- لوحة المدير المجمعة ----
 @login_required(login_url="reports:login")
 @user_passes_test(_is_staff, login_url="reports:login")
@@ -1007,8 +1049,7 @@ def admin_dashboard(request: HttpRequest) -> HttpResponse:
 
     return render(request, "reports/admin_dashboard.html", ctx)
 
-
-# ---- الأقسام: عرض ----
+# ---- الأقسام: عرض/إنشاء/تعديل/حذف ----
 @login_required(login_url="reports:login")
 @role_required({"manager"})
 @require_http_methods(["GET"])
@@ -1020,8 +1061,6 @@ def departments_list(request: HttpRequest) -> HttpResponse:
         {"departments": depts, "has_dept_model": Department is not None},
     )
 
-
-# ---- الأقسام: إنشاء ----
 @login_required(login_url="reports:login")
 @role_required({"manager"})
 @require_http_methods(["GET", "POST"])
@@ -1040,8 +1079,6 @@ def department_create(request: HttpRequest) -> HttpResponse:
         messages.error(request, "تعذّر الحفظ. تحقّق من الحقول.")
     return render(request, "reports/department_form.html", {"form": form, "mode": "create"})
 
-
-# ---- الأقسام: تحديث (بالـ pk) ----
 @login_required(login_url="reports:login")
 @role_required({"manager"})
 @require_http_methods(["GET", "POST"])
@@ -1058,8 +1095,6 @@ def department_update(request: HttpRequest, pk: int) -> HttpResponse:
         return redirect("reports:departments_list")
     return render(request, "reports/department_form.html", {"form": form, "title": "تعديل قسم", "dep": dep})
 
-
-# ---- الأقسام: تعديل (بالـ slug/code أو pk) ----
 @login_required(login_url="reports:login")
 @role_required({"manager"})
 @require_http_methods(["GET", "POST"])
@@ -1087,8 +1122,6 @@ def department_edit(request: HttpRequest, code: str) -> HttpResponse:
         messages.error(request, "تعذّر الحفظ. تحقّق من الحقول.")
     return render(request, "reports/department_form.html", {"form": form, "mode": "edit", "department": obj})
 
-
-# ---- مساعد لتعيين الدور عبر slug ----
 def _assign_role_by_slug(teacher: Teacher, slug: str) -> bool:
     role_obj = Role.objects.filter(slug=slug).first()
     if not role_obj:
@@ -1100,8 +1133,6 @@ def _assign_role_by_slug(teacher: Teacher, slug: str) -> bool:
         teacher.save()
     return True
 
-
-# ---- الأقسام: حذف ----
 @login_required(login_url="reports:login")
 @role_required({"manager"})
 @require_http_methods(["POST"])
@@ -1124,7 +1155,6 @@ def department_delete(request: HttpRequest, code: str) -> HttpResponse:
         logger.exception("department_delete failed")
         messages.error(request, "تعذّر حذف القسم.")
     return redirect("reports:departments_list")
-
 
 def _dept_m2m_field_name_to_teacher(dep_obj) -> str | None:
     try:
@@ -1209,7 +1239,6 @@ def _dept_remove_member(dep, teacher: Teacher) -> bool:
 
     return False
 
-
 @login_required(login_url="reports:login")
 @role_required({"manager"})
 @require_http_methods(["GET", "POST"])
@@ -1284,7 +1313,6 @@ def department_members(request: HttpRequest, code: str | int) -> HttpResponse:
         },
     )
 
-
 # ===== ReportType CRUD =====
 @login_required(login_url="reports:login")
 @role_required({"manager"})
@@ -1301,7 +1329,6 @@ def reporttypes_list(request: HttpRequest) -> HttpResponse:
         items.append({"obj": rt, "code": rt.code, "name": rt.name, "is_active": rt.is_active, "order": rt.order, "count": cnt})
     return render(request, "reports/reporttypes_list.html", {"items": items, "db_backed": True})
 
-
 @login_required(login_url="reports:login")
 @role_required({"manager"})
 @require_http_methods(["GET", "POST"])
@@ -1310,14 +1337,15 @@ def reporttype_create(request: HttpRequest) -> HttpResponse:
         messages.error(request, "إنشاء الأنواع يتطلب تفعيل موديل ReportType.")
         return redirect("reports:reporttypes_list")
 
-    if ReportTypeForm is None:
+    try:
+        from .forms import ReportTypeForm  # type: ignore
+        FormCls = ReportTypeForm
+    except Exception:
         class _RTForm(forms.ModelForm):
             class Meta:
                 model = ReportType
                 fields = ("name", "code", "description", "order", "is_active")
         FormCls = _RTForm
-    else:
-        FormCls = ReportTypeForm
 
     form = FormCls(request.POST or None)
     if request.method == "POST":
@@ -1327,7 +1355,6 @@ def reporttype_create(request: HttpRequest) -> HttpResponse:
             return redirect("reports:reporttypes_list")
         messages.error(request, "تعذّر الحفظ. تحقّق من الحقول.")
     return render(request, "reports/reporttype_form.html", {"form": form, "mode": "create"})
-
 
 @login_required(login_url="reports:login")
 @role_required({"manager"})
@@ -1339,14 +1366,15 @@ def reporttype_update(request: HttpRequest, pk: int) -> HttpResponse:
 
     obj = get_object_or_404(ReportType, pk=pk)
 
-    if ReportTypeForm is None:
+    try:
+        from .forms import ReportTypeForm  # type: ignore
+        FormCls = ReportTypeForm
+    except Exception:
         class _RTForm(forms.ModelForm):
             class Meta:
                 model = ReportType
                 fields = ("name", "code", "description", "order", "is_active")
         FormCls = _RTForm
-    else:
-        FormCls = ReportTypeForm
 
     form = FormCls(request.POST or None, instance=obj)
     if request.method == "POST":
@@ -1356,7 +1384,6 @@ def reporttype_update(request: HttpRequest, pk: int) -> HttpResponse:
             return redirect("reports:reporttypes_list")
         messages.error(request, "تعذّر الحفظ. تحقّق من الحقول.")
     return render(request, "reports/reporttype_form.html", {"form": form, "mode": "edit", "obj": obj})
-
 
 @login_required(login_url="reports:login")
 @role_required({"manager"})
@@ -1381,7 +1408,6 @@ def reporttype_delete(request: HttpRequest, pk: int) -> HttpResponse:
 
     return redirect("reports:reporttypes_list")
 
-
 # =========================
 # واجهة برمجية مساعدة
 # =========================
@@ -1394,7 +1420,6 @@ def api_department_members(request: HttpRequest) -> HttpResponse:
 
     users = _members_for_department(dept).values("id", "name")
     return JsonResponse({"results": list(users)})
-
 
 # =========================
 # صناديق التذاكر بحسب القسم/المُعيّن
@@ -1430,7 +1455,6 @@ def tickets_inbox(request: HttpRequest) -> HttpResponse:
         "status_choices": Ticket.Status.choices,
     }
     return render(request, "reports/tickets_inbox.html", ctx)
-
 
 @login_required(login_url="reports:login")
 @require_http_methods(["GET"])
@@ -1472,7 +1496,6 @@ def assigned_to_me(request: HttpRequest) -> HttpResponse:
 
     return render(request, "reports/assigned_to_me.html", {"page_obj": page_obj, "stats": stats, "view_mode": view_mode})
 
-
 # =========================
 # تقارير: تعديل/حذف للمستخدم الحالي
 # =========================
@@ -1494,7 +1517,6 @@ def edit_my_report(request: HttpRequest, pk: int) -> HttpResponse:
 
     return render(request, "reports/edit_report.html", {"form": form, "report": r})
 
-
 @login_required(login_url="reports:login")
 @require_http_methods(["POST"])
 def delete_my_report(request: HttpRequest, pk: int) -> HttpResponse:
@@ -1504,13 +1526,11 @@ def delete_my_report(request: HttpRequest, pk: int) -> HttpResponse:
     nxt = request.POST.get("next") or request.GET.get("next")
     return redirect(nxt or "reports:my_reports")
 
-
 # =========================
 # الإشعارات (إرسال/استقبال)
 # =========================
-
 @login_required(login_url="reports:login")
-@user_passes_test(_is_staff_or_officer, login_url="reports:login")   # فتح للمسؤول Officer أيضًا
+@user_passes_test(_is_staff_or_officer, login_url="reports:login")
 @require_http_methods(["GET", "POST"])
 def notifications_create(request: HttpRequest) -> HttpResponse:
     if NotificationCreateForm is None:
@@ -1522,7 +1542,7 @@ def notifications_create(request: HttpRequest) -> HttpResponse:
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    n = form.save(creator=request.user)
+                    form.save(creator=request.user)
                 messages.success(request, "✅ تم إرسال الإشعار.")
                 return redirect("reports:notifications_sent")
             except Exception:
@@ -1532,8 +1552,6 @@ def notifications_create(request: HttpRequest) -> HttpResponse:
             messages.error(request, "الرجاء تصحيح الأخطاء.")
     return render(request, "reports/notifications_create.html", {"form": form, "title": "إنشاء إشعار"})
 
-
-# حذف إشعار (مدير/سوبر/المرسِل)
 @login_required(login_url="reports:login")
 @user_passes_test(_is_staff_or_officer, login_url="reports:login")
 @require_http_methods(["POST"])
@@ -1556,8 +1574,6 @@ def notification_delete(request: HttpRequest, pk: int) -> HttpResponse:
         messages.error(request, "تعذّر حذف الإشعار.")
     return redirect("reports:notifications_sent")
 
-
-# تفاصيل إشعار: عنوان + محتوى + جدول المستلمين (اسم، دور، حالة)
 def _recipient_is_read(rec) -> tuple[bool, str | None]:
     for flag in ("is_read", "read", "seen", "opened"):
         if hasattr(rec, flag):
@@ -1650,8 +1666,6 @@ def notification_detail(request: HttpRequest, pk: int) -> HttpResponse:
     }
     return render(request, "reports/notification_detail.html", ctx)
 
-
-# إشعاراتي (للمعلّم)
 @login_required(login_url="reports:login")
 @require_http_methods(["GET"])
 def my_notifications(request: HttpRequest) -> HttpResponse:
@@ -1676,8 +1690,6 @@ def my_notifications(request: HttpRequest) -> HttpResponse:
     page = Paginator(qs, 12).get_page(request.GET.get("page") or 1)
     return render(request, "reports/my_notifications.html", {"page_obj": page})
 
-
-# قائمة المرسلة (للمدير/المسؤول)
 @login_required(login_url="reports:login")
 @user_passes_test(_is_staff_or_officer, login_url="reports:login")
 @require_http_methods(["GET"])
@@ -1728,7 +1740,7 @@ def notifications_sent(request: HttpRequest) -> HttpResponse:
             for row in rc:
                 stats[row[f"{notif_fk_name}_id"]] = {"total": row["total"], "read": row["read"]}
 
-    # أسماء مستلمين مختصرة (نستعملها فقط لو أردتها لاحقًا؛ حالياً صفحة التفاصيل هي الأساس)
+    # أسماء مستلمين مختصرة
     rec_names_map: dict[int, list[str]] = {i: [] for i in notif_ids}
 
     def _name_of(person) -> str:
@@ -1784,7 +1796,6 @@ def notifications_sent(request: HttpRequest) -> HttpResponse:
 
     return render(request, "reports/notifications_sent.html", {"page_obj": page, "stats": stats})
 
-
 # تعليم الإشعار كمقروء (حسب Recipient pk)
 @login_required(login_url="reports:login")
 @require_http_methods(["POST"])
@@ -1805,7 +1816,6 @@ def notification_mark_read(request: HttpRequest, pk: int) -> HttpResponse:
         except Exception:
             item.save()
     return redirect(request.POST.get("next") or "reports:my_notifications")
-
 
 # تحديد الكل كمقروء
 @login_required(login_url="reports:login")
@@ -1836,7 +1846,6 @@ def notifications_mark_all_read(request: HttpRequest) -> HttpResponse:
     messages.success(request, "تم تحديد جميع الإشعارات كمقروءة.")
     return redirect(request.POST.get("next") or "reports:my_notifications")
 
-
 # تعليم الإشعار كمقروء (حسب رقم الإشعار نفسه لا الـRecipient)
 @login_required(login_url="reports:login")
 @require_http_methods(["POST"])
@@ -1863,179 +1872,8 @@ def notification_mark_read_by_notification(request: HttpRequest, pk: int) -> Htt
     except Exception:
         return JsonResponse({"ok": False}, status=400)
 
-
 # إبقاء المسار القديم للتوافق الخلفي: تحويل إلى صفحة الإنشاء
 @login_required(login_url="reports:login")
 @user_passes_test(_is_staff, login_url="reports:login")
 def send_notification(request: HttpRequest) -> HttpResponse:
     return redirect("reports:notifications_create")
-
-
-
-from django.conf import settings
-
-def _get_department_heads(dept):
-    """
-    تُعيد Queryset/قائمة برؤساء القسم الفعّالين.
-    تدعم حالتين:
-    1) وجود Membership بعلم is_head=True (الأفضل).
-    2) أو اعتمادًا على Teacher.role.slug == DEPARTMENT_HEAD_ROLE_SLUG.
-    """
-    if not dept:
-        return []
-
-    # 1) لو عندك نموذج عضوية مثلاً DepartmentMember فيه is_head
-    try:
-        # افترض أن العلاقة dept.members تعيد معلمين، مع وسيط عضوية اسمه through
-        through = getattr(dept.members, "through", None)
-        if through and hasattr(through, "is_head"):
-            return dept.members.filter(departmentmember__is_head=True, is_active=True)
-    except Exception:
-        pass
-
-    # 2) رجوع للخيار التراثي حسب السلاج
-    slug = getattr(settings, "DEPARTMENT_HEAD_ROLE_SLUG", "department_head")
-    try:
-        return dept.members.filter(role__slug=slug, is_active=True)
-    except Exception:
-        # لو ما فيه members، جرّب كل المعلّمين المنتمين للقسم
-        try:
-            return dept.teacher_set.filter(role__slug=slug, is_active=True)
-        except Exception:
-            return []
-
-def decide_department_head_for_print(dept):
-    """
-    تُعيد dict يوضح ما الذي يجب طباعته في خانة اعتماد رئيس القسم.
-    الحالات:
-      - no_render: لا نطبع شيئًا (لا يوجد قسم)
-      - single: يوجد اسم رئيس واحد (نطبعه)
-      - multi_blank: أكثر من رئيس، اتركها فارغة
-      - multi_dept: أكثر من رئيس، اطبع اسم القسم فقط مع خانة توقيع
-    """
-    if not dept:
-        return {"no_render": True}
-
-    heads = list(_get_department_heads(dept))
-    count = len(heads)
-    policy = getattr(settings, "PRINT_MULTIHEAD_POLICY", "blank")
-
-    if count == 1:
-        return {"single": True, "name": getattr(heads[0], "name", str(heads[0]))}
-
-    if count == 0:
-        # لا رؤساء محددين للقسم → نتعامل كـ "متعدد" بنفس السياسة (فارغ/اسم قسم)
-        if policy == "dept":
-            return {"multi_dept": True, "dept_name": getattr(dept, "name", "")}
-        return {"multi_blank": True}
-
-    # count > 1
-    if policy == "dept":
-        return {"multi_dept": True, "dept_name": getattr(dept, "name", "")}
-    return {"multi_blank": True}
-
-
-
-# views.py
-from django.conf import settings
-from django.db.models import Q
-
-try:
-    from .models import Department, DepartmentMembership
-except Exception:
-    Department = None
-    DepartmentMembership = None
-
-
-def _resolve_department_for_category(cat):
-    """يستخرج كائن القسم المرتبط بالتصنيف (إن وُجد)."""
-    if not cat or Department is None:
-        return None
-
-    # 1) علاقة مباشرة cat.department (إن وُجدت)
-    try:
-        d = getattr(cat, "department", None)
-        if d:
-            return d
-    except Exception:
-        pass
-
-    # 2) علاقات M2M شائعة: departments / depts / dept_list
-    for rel_name in ("departments", "depts", "dept_list"):
-        rel = getattr(cat, rel_name, None)
-        if rel is not None:
-            try:
-                d = rel.all().first()
-                if d:
-                    return d
-            except Exception:
-                pass
-
-    # 3) استعلام احتياطي
-    try:
-        return Department.objects.filter(reporttypes=cat).first()
-    except Exception:
-        return None
-
-
-def _build_head_decision(dept):
-    """
-    يُرجع dict يحدّد ماذا نطبع في خانة (اعتماد رئيس القسم).
-    - بدون قسم: لا نعرض شيئًا.
-    - رئيس واحد: نعرض اسمه.
-    - أكثر من رئيس: حسب السياسة PRINT_MULTIHEAD_POLICY = "blank" أو "dept".
-    """
-    if not dept or DepartmentMembership is None:
-        return {"no_render": True}
-
-    try:
-        role_officer = getattr(DepartmentMembership, "OFFICER", "officer")
-        qs = (DepartmentMembership.objects
-              .select_related("teacher")
-              .filter(department=dept, role_type=role_officer, teacher__is_active=True))
-        heads = [m.teacher for m in qs]
-    except Exception:
-        heads = []
-
-    count = len(heads)
-    policy = getattr(settings, "PRINT_MULTIHEAD_POLICY", "blank")  # "blank" أو "dept"
-
-    if count == 1:
-        return {"single": True, "name": getattr(heads[0], "name", str(heads[0]))}
-
-    if policy == "dept":
-        return {"multi_dept": True, "dept_name": getattr(dept, "name", "")}
-
-    return {"multi_blank": True}
-
-
-# ⬇️ استبدل دالة report_print بالكامل بهذه النسخة
-def report_print(request, pk):
-    r = _get_report_for_user_or_404(request.user, pk)
-
-    # لو حابّ تسمح بتحديد القسم يدويًا في رابط الطباعة ?dept=slug-or-id
-    dept = None
-    if Department is not None:
-        pref = request.GET.get("dept")
-        if pref:
-            dept = (Department.objects.filter(Q(slug=pref) | Q(id=pref)).first()
-                    or dept)
-
-    if dept is None:
-        cat = getattr(r, "category", None)
-        dept = _resolve_department_for_category(cat)
-
-    head_decision = _build_head_decision(dept)
-
-    # اسم مدير المدرسة (اختياري): مرّره من إعداداتك أو اتركه فارغًا
-    school_principal = getattr(settings, "SCHOOL_PRINCIPAL", "")
-
-    return render(
-        request,
-        "reports/report_print.html",
-        {
-            "r": r,
-            "head_decision": head_decision,   # ← القالب يعتمد عليه
-            "SCHOOL_PRINCIPAL": school_principal,
-        },
-    )

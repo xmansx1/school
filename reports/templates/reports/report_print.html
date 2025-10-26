@@ -7,8 +7,7 @@
   {% with cat_label=r.category.name|default:"غير مصنّف" %}
   <title>تقرير {{ cat_label }} - {{ r.title }}</title>
   {% endwith %}
-
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet" />
 
   <style>
     :root{
@@ -17,8 +16,14 @@
       --chip:#eef2ff; --chip-ink:#1e40af;
       --radius:12px; --print-margin:15mm;
 
-      /* تحكم الطباعة */
-      --slot-h-print: 170px;
+      /* ارتفاع الصفحة A4 (يُحتسب بالـ JS) */
+      --page-h: 0px;
+
+      /* ارتفاع خلية الصورة في كل صفحة (يُضبط بالـ JS) */
+      --slot1-h: 170px;
+      --slot2-h: 170px;
+
+      /* فجوات الشبكة في الطباعة */
       --gap-print: 8px;
     }
 
@@ -40,10 +45,10 @@
     .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
     .muted{color:var(--muted);font-weight:700}
 
-    /* ===== العرض على الشاشة ===== */
+    /* ===== المعاينة على الشاشة ===== */
     .container{max-width:900px;margin:auto;padding:10px}
-    .sheet{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--card);box-shadow:0 6px 18px rgba(0,0,0,.05)}
-    .sheet-inner{display:flex;flex-direction:column;min-height:calc(100vh - 120px)}
+    .page{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--card);box-shadow:0 6px 18px rgba(0,0,0,.05);margin-bottom:20px}
+    .inner{display:flex;flex-direction:column;min-height:calc(100vh - 120px)}
 
     /* الرأس */
     .hero{
@@ -56,7 +61,7 @@
     .hero .sub{opacity:.95;font-size:.9rem}
     .cat-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;font-weight:800;line-height:1.2}
 
-    /* المحتوى */
+    /* المحتوى العام */
     .content{padding:18px}
     .details{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
     .card-row{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;padding:14px;border:1px dashed var(--line);border-radius:12px;background:#fafafa;text-align:center;break-inside:avoid;page-break-inside:avoid}
@@ -66,7 +71,7 @@
     .section-title{margin:16px 0 8px;font-weight:900;color:var(--ink);display:inline-flex;align-items:center;gap:8px;background:var(--chip);color:var(--chip-ink);padding:6px 12px;border-radius:999px;font-size:.95rem;break-inside:avoid;page-break-inside:avoid}
     .idea-box{padding:14px;border:1px solid var(--line);border-radius:12px;background:#fbfdff;white-space:pre-wrap;line-height:1.8;font-weight:600;break-inside:avoid;page-break-inside:avoid}
 
-    /* الصور — مضبوط لـ ٤ صور كحد أقصى */
+    /* الصور */
     .photos-wrap{padding:0 18px 18px}
     .photos{ display:grid;grid-template-columns:repeat(4,1fr);gap:12px;break-inside:avoid;page-break-inside:avoid; }
     .photos figure{
@@ -74,7 +79,8 @@
       background:#fff;box-shadow:0 4px 10px rgba(0,0,0,.08);
       display:flex;flex-direction:column;isolation:isolate;
     }
-    .photos .slot{ height:200px; position:relative; }
+    .photos1 .slot{ height: var(--slot1-h); position:relative; }
+    .photos2 .slot{ height: var(--slot2-h); position:relative; }
     .photos img{
       width:100%;height:100%;object-fit:cover;display:block;image-orientation:from-image;
       page-break-inside:avoid;break-inside:avoid;
@@ -90,172 +96,52 @@
     .sign .name{font-weight:800;opacity:.9}
     .sigline{height:1px;background:repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(0,0,0,.25) 8px,rgba(0,0,0,.25) 16px);margin:10px 0}
 
-    /* ===== طباعة A4 محسنة ===== */
+    /* ===== طباعة A4 ===== */
     @media print {
-      /* إعدادات الصفحة الأساسية */
-      @page {
-        size: A4;
-        margin: var(--print-margin);
-        marks: crop cross;
-      }
-      
-      /* إخفاء العناصر غير المرغوب فيها */
-      .toolbar, .no-print { display: none !important; }
-      
-      /* إعدادات الجسم الأساسية */
-      body {
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        font-size: 12pt;
-        line-height: 1.4;
-        color: #000;
-        background: white !important;
-      }
-      
-      .container {
-        padding: 0;
-        margin: 0;
-        max-width: none;
-      }
-
-      .sheet {
-        width: calc(210mm - (2 * var(--print-margin)));
-        height: calc(297mm - (2 * var(--print-margin)));
+      @page { size: A4; margin: var(--print-margin); }
+      .toolbar { display:none !important; }
+      body{ background:#fff!important; margin:0!important; padding:0!important; font-size:12pt; line-height:1.4; color:#000 }
+      .container{ padding:0; margin:0; max-width:none }
+      .page{
+        width: calc(210mm - 2*var(--print-margin));
+        height: calc(297mm - 2*var(--print-margin));
         margin: auto;
-        box-shadow: none;
-        border: 0;
-        border-radius: 0;
-        background: #fff;
-        overflow: hidden;
-        page-break-inside: avoid;
-        break-inside: avoid-page;
+        box-shadow: none; border:0; border-radius:0; background:#fff; overflow:hidden;
+        page-break-after: always;
       }
-      
-      .sheet-inner {
-        min-height: 100%;
-        display: flex;
-        flex-direction: column;
-      }
+      .page:last-child{ page-break-after: auto; }
+      .inner{ min-height:100%; display:flex; flex-direction:column }
+      .content{ padding:12px }
+      .details{ gap:8px; margin-top:8px }
+      .card-row{ padding:10px; font-size:11pt }
+      .section-title{ margin:12px 0 6px; padding:4px 10px; font-size:13pt }
+      .idea-box{ padding:12px; line-height:1.6; font-size:11pt; border:1px solid #ddd }
+      .photos-wrap{ padding:0 10px 10px }
+      .photos{ grid-template-columns: repeat(2,1fr); gap: var(--gap-print) }
+      .photos1 .slot{ height: var(--slot1-h) }
+      .photos2 .slot{ height: var(--slot2-h) }
+      .photos img{ object-fit: contain; max-width:100%; height:auto }
+      .photos figure{ page-break-inside: avoid; break-inside: avoid; margin-bottom:10px }
+      .sign{ padding:15px; gap:12px; margin-top:auto; }
+      .sign .box{ padding:12px; min-height:100px; font-size:11pt }
+      .sigline{ margin:12px 0 }
 
-      /* تحسين التنسيقات */
-      .content {
-        padding: 12px;
-      }
-      
-      .details {
-        gap: 8px;
-        margin-top: 8px;
-      }
-      
-      .card-row {
-        padding: 10px;
-        font-size: 11pt;
-      }
-      
-      .section-title {
-        margin: 12px 0 6px;
-        padding: 4px 10px;
-        font-size: 13pt;
-      }
-      
-      .idea-box {
-        padding: 12px;
-        line-height: 1.6;
-        font-size: 11pt;
-        border: 1px solid #ddd;
-      }
-
-      /* تحسين الصور للطباعة */
-      .photos-wrap {
-        padding: 0 10px 10px;
-      }
-      
-      .photos {
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--gap-print);
-      }
-      
-      .photos .slot {
-        aspect-ratio: 4/3;
-        height: auto;
-        min-height: var(--slot-h-print);
-      }
-      
-      .photos img {
-        object-fit: contain;
-        background: #fff;
-        max-width: 100%;
-        height: auto;
-        page-break-inside: avoid;
-        break-inside: avoid;
-      }
-      
-      .photos figure {
-        page-break-inside: avoid;
-        break-inside: avoid;
-        margin-bottom: 10px;
-      }
-
-      /* تحسين التواقيع */
-      .sign {
-        padding: 15px;
-        gap: 12px;
-        margin-top: auto;
-        margin-bottom: 10mm;
-      }
-      
-      .sign .box {
-        padding: 12px;
-        min-height: 100px;
-        font-size: 11pt;
-      }
-      
-      .sigline {
-        margin: 12px 0;
-      }
-
-      /* منع انقسام العناصر بين الصفحات */
-      h1, h2, h3, h4, h5, h6, p, .section-title, .idea-box {
-        page-break-inside: avoid;
-        break-inside: avoid;
-      }
-      
-      .section-title {
-        page-break-after: avoid;
-        break-after: avoid;
-      }
-      
-      /* إخفاء الروابط المطبوعة */
-      a[href]:after {
-        content: "" !important;
-      }
-      
-      /* تحسين الخطوط للطباعة */
-      * {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        color-adjust: exact;
-      }
+      /* منع الانقسام */
+      h1,h2,h3,h4,h5,h6,p,.section-title,.idea-box{ page-break-inside:avoid; break-inside:avoid }
+      .section-title{ page-break-after:avoid; break-after:avoid }
+      a[href]:after{ content:"" !important }
+      *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact }
     }
 
-    /* ===== التجاوب للشاشات ===== */
+    /* ===== تجاوب الشاشات ===== */
     @media (max-width:640px){
       .details{grid-template-columns:1fr}
       .hero .logo{width:54px;height:54px}
-      .photos{ grid-template-columns:repeat(2,1fr); gap:10px; }
-      .photos .slot{ height:140px; }
+      .photos{ grid-template-columns:repeat(2,1fr); gap:10px }
+      .photos1 .slot, .photos2 .slot{ height:140px }
     }
     @media (min-width:641px) and (max-width:1024px){
-      .photos{ grid-template-columns:repeat(3,1fr); }
-    }
-    
-    /* معاينة الطباعة على الشاشة */
-    @media screen and (max-width: 900px) {
-      .container {
-        max-width: 100%;
-        padding: 5px;
-      }
+      .photos{ grid-template-columns:repeat(3,1fr) }
     }
   </style>
 </head>
@@ -267,11 +153,11 @@
 </div>
 
 <div class="container">
-  <div class="sheet" id="sheet">
-    <div class="sheet-inner" id="sheetInner">
-
+  <!-- الصفحة 1 -->
+  <section class="page" id="page1">
+    <div class="inner">
       {% with cat_label=r.category.name|default:"غير مصنّف" %}
-      <div class="hero">
+      <div class="hero" id="hero1">
         <img class="logo"
              src="{% if SCHOOL_LOGO_URL %}{{ SCHOOL_LOGO_URL }}{% else %}{% static 'img/logo.png' %}{% endif %}"
              alt="{{ SCHOOL_NAME|default:'شعار المدرسة' }}">
@@ -282,7 +168,7 @@
       </div>
       {% endwith %}
 
-      <div class="content">
+      <div class="content" id="content1">
         <div class="details">
           <div class="card-row">
             <div class="label">العنوان</div>
@@ -314,19 +200,14 @@
       </div>
 
       {% if r.image1 or r.image2 or r.image3 or r.image4 %}
-      <div class="photos-wrap">
+      <div class="photos-wrap" id="photosWrap1">
         <h3 class="section-title">📷 الصور المرفقة</h3>
-        <div class="photos" id="photos">
-          {% if r.image1 %}<figure><div class="slot"><img src="{{ r.image1.url }}" alt="صورة 1" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
-          {% if r.image2 %}<figure><div class="slot"><img src="{{ r.image2.url }}" alt="صورة 2" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
-          {% if r.image3 %}<figure><div class="slot"><img src="{{ r.image3.url }}" alt="صورة 3" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
-          {% if r.image4 %}<figure><div class="slot"><img src="{{ r.image4.url }}" alt="صورة 4" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
-        </div>
+        <div class="photos photos1" id="photos1"></div>
       </div>
       {% endif %}
 
-      <!-- ===== التواقيع ===== -->
-      <div class="sign" id="sign">
+      <!-- مبدئيًا التواقيع تُعرض في الصفحة 2، لكن لو كل المحتوى يَدخل في الأولى سننقلها للأولى بالـJS -->
+      <div class="sign no-print" id="signTemplate" hidden>
         <div class="box">
           <div class="title">معـد التقرير</div>
           <div class="name">{{ r.teacher_display_name }}</div>
@@ -360,138 +241,278 @@
         </div>
       </div>
 
-    </div><!-- /.sheet-inner -->
-  </div><!-- /.sheet -->
+    </div><!-- /.inner -->
+  </section>
+
+  <!-- الصفحة 2 (تُظهر فقط عند الحاجة) -->
+  <section class="page" id="page2" hidden>
+    <div class="inner">
+      {% with cat_label=r.category.name|default:"غير مصنّف" %}
+      <div class="hero" id="hero2">
+        <img class="logo"
+             src="{% if SCHOOL_LOGO_URL %}{{ SCHOOL_LOGO_URL }}{% else %}{% static 'img/logo.png' %}{% endif %}"
+             alt="{{ SCHOOL_NAME|default:'شعار المدرسة' }}">
+        <div>
+          <div class="title">تقرير <span class="cat-badge">{{ cat_label }}</span></div>
+          <div class="sub">{% if SCHOOL_NAME %}{{ SCHOOL_NAME }}{% else %}نظام توثيق أعمال المعلمين{% endif %}</div>
+        </div>
+      </div>
+      {% endwith %}
+
+      <div class="photos-wrap" id="photosWrap2">
+        <h3 class="section-title">📷 الصور المرفقة (تابع)</h3>
+        <div class="photos photos2" id="photos2"></div>
+      </div>
+
+      <!-- التواقيع مكانها الافتراضي أسفل الصفحة 2 -->
+      <div class="sign" id="sign2"></div>
+    </div>
+  </section>
+
+  {# مستودع صور مخفية: نضع كل الصور هنا ثم الـJS يوزعها بين الصفحتين #}
+  {% if r.image1 or r.image2 or r.image3 or r.image4 %}
+  <template id="allPhotos">
+    {% if r.image1 %}<figure><div class="slot"><img src="{{ r.image1.url }}" alt="صورة 1" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
+    {% if r.image2 %}<figure><div class="slot"><img src="{{ r.image2.url }}" alt="صورة 2" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
+    {% if r.image3 %}<figure><div class="slot"><img src="{{ r.image3.url }}" alt="صورة 3" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
+    {% if r.image4 %}<figure><div class="slot"><img src="{{ r.image4.url }}" alt="صورة 4" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
+  </template>
+  {% endif %}
 </div><!-- /.container -->
 
 <script>
 /*
- * إعداد الطباعة لصفحة واحدة مع تحسينات للصور والتوقيعات
+ * توزيع المحتوى على صفحة واحدة أو صفحتين بلا تداخل:
+ * - إن كانت كل العناصر + الصور + التواقيع تدخل في صفحة 1 → نضع التواقيع في الصفحة 1 ونخفي الصفحة 2.
+ * - غير ذلك → نوزّع الصور بين الصفحة 1 و2، ونُبقي التواقيع في أسفل الصفحة 2.
  */
 (function(){
-  const mm = (v) => v * 3.7795275591; // ~96dpi
+  const mmToPx = v => v * 3.7795275591; // ~96dpi
   const PRINT_MARGIN_MM = 15;
   const PAGE_H_MM = 297;
-  const A4H = mm(PAGE_H_MM - 2 * PRINT_MARGIN_MM);
+  const A4H = mmToPx(PAGE_H_MM - 2 * PRINT_MARGIN_MM);
 
   const root = document.documentElement;
-  const inner = document.getElementById('sheetInner');
-  const photosWrap = document.querySelector('.photos-wrap');
-  const photosGrid = document.getElementById('photos');
-  const printBtn = document.getElementById('printBtn');
+  root.style.setProperty('--page-h', A4H + 'px');
 
-  if (!inner) return;
+  const page1 = document.getElementById('page1');
+  const page2 = document.getElementById('page2');
 
-  const SIGN_MIN = 110;
-  const MIN_SLOT = 140;
-  const COLS = 2;
+  const hero1 = document.getElementById('hero1');
+  const content1 = document.getElementById('content1');
+  const photosWrap1 = document.getElementById('photosWrap1');
+  const photos1 = document.getElementById('photos1');
 
-  const rectH = (el) => el ? el.getBoundingClientRect().height : 0;
+  const photosWrap2 = document.getElementById('photosWrap2');
+  const photos2 = document.getElementById('photos2');
 
-  function computeAndApply() {
-    // تعيين قيمة افتراضية
-    root.style.setProperty('--slot-h-print', '170px');
+  const signTemplate = document.getElementById('signTemplate');
+  const sign2 = document.getElementById('sign2');
 
-    const hero = document.querySelector('.hero');
-    const content = document.querySelector('.content');
-    const sign = document.getElementById('sign');
+  const photosTpl = document.getElementById('allPhotos');
 
-    const fixedTop = rectH(hero) + rectH(content);
-    const fixedBottom = Math.max(rectH(sign), SIGN_MIN);
+  const COLS = 2;            // في الطباعة عمودين
+  const GAP = 8;             // فجوة الشبكة
+  const MIN_SLOT = 140;      // أقل ارتفاع لخلية الصورة
 
-    let remaining = A4H - fixedTop - fixedBottom;
-    if (!photosWrap || !photosGrid || remaining <= 0) return;
+  const h = el => el ? el.getBoundingClientRect().height : 0;
 
-    // خصم عنوان الصور وهوامشه
-    const photosTitle = photosWrap.querySelector('.section-title');
-    remaining -= rectH(photosTitle) + 8;
+  // أنشئ عناصر التوقيع من القالب
+  function cloneSign() {
+    const frag = document.createDocumentFragment();
+    Array.from(signTemplate.content ? signTemplate.content.children : signTemplate.children).forEach(n => {
+      frag.appendChild(n.cloneNode(true));
+    });
+    return frag;
+  }
 
-    // ضبط ارتفاع الحاوية
-    photosWrap.style.height = remaining + 'px';
+  // جهّز كل الصور كعناصر قابلة للتوزيع
+  function collectFigures() {
+    if (!photosTpl) return [];
+    const frag = photosTpl.content.cloneNode(true);
+    return Array.from(frag.querySelectorAll('figure'));
+  }
 
-    // عدد الصور (حتى 4)
-    const items = photosGrid.querySelectorAll('.slot, img');
-    const count = items.length || 0;
-    if (count === 0) return;
-
-    const gap = parseFloat(getComputedStyle(root).getPropertyValue('--gap-print')) || 8;
-    const rows = Math.ceil(count / COLS);
-    const totalGaps = gap * (rows - 1);
+  // يحسب ارتفاع الخلية المطلوب لملء المساحة المتبقية لعدد صور محدد
+  function computeSlotHeight(remaining, itemsCount){
+    if (itemsCount <= 0) return 0;
+    const rows = Math.ceil(itemsCount / COLS);
+    const totalGaps = GAP * (rows - 1);
     const slot = Math.floor((remaining - totalGaps) / rows);
-    const finalSlot = Math.max(MIN_SLOT, slot);
-
-    root.style.setProperty('--slot-h-print', finalSlot + 'px');
+    return Math.max(MIN_SLOT, slot);
   }
 
-  function before() { 
-    try { 
-      computeAndApply(); 
-    } catch(e) {
-      console.error('Error in before print:', e);
+  // يحاول وضع كل شيء بصفحة واحدة
+  function trySinglePage(figs){
+    // نفترض أن التواقيع ستكون بالصفحة 1 ونقيس
+    const topH = h(hero1) + h(content1) + (photosWrap1 ? h(photosWrap1.querySelector('.section-title')) + 10 : 0);
+    const signFrag = cloneSign();
+
+    // نُحقن التواقيع مؤقتًا لقياس الارتفاع
+    const tempSign = document.createElement('div');
+    tempSign.style.visibility = 'hidden';
+    tempSign.style.position = 'absolute';
+    tempSign.style.left = '-9999px';
+    tempSign.className = 'sign';
+    tempSign.appendChild(signFrag);
+    page1.appendChild(tempSign);
+    const signH = h(tempSign);
+    page1.removeChild(tempSign);
+
+    const remaining = A4H - topH - signH;
+    if (!photos1 || remaining <= 0) return false;
+
+    const need = figs.length;
+    if (need === 0){
+      // لا صور، كل شيء يدخل في صفحة واحدة
+      page2.hidden = true;
+      const s = cloneSign();
+      page1.querySelector('.inner').appendChild(s);
+      return true;
     }
+
+    // نحسب ارتفاع الخلية لمحاولة إدخال كل الصور
+    const slotH = computeSlotHeight(remaining - (photosWrap1 ? 0 : 0), need);
+    const canFitAll = (slotH > MIN_SLOT) || (need <= Math.floor(remaining / MIN_SLOT));
+
+    if (!canFitAll) return false;
+
+    // نعرض الحاوية ونوزّع كل الصور في الصفحة 1
+    photosWrap1?.removeAttribute('hidden');
+    figs.forEach(f => photos1.appendChild(f));
+    root.style.setProperty('--slot1-h', Math.max(MIN_SLOT, slotH) + 'px');
+
+    // ضع التواقيع في الصفحة 1
+    const signFrag2 = cloneSign();
+    page1.querySelector('.inner').appendChild(signFrag2);
+
+    // الصفحة الثانية غير لازمة
+    page2.hidden = true;
+    return true;
   }
-  
-  function after() { 
-    try { 
-      if (photosWrap) {
-        photosWrap.style.height = ''; 
+
+  // تقسيم إلى صفحتين: املأ الصفحة 1 قدر ما يمكن، والباقي + التواقيع في الصفحة 2
+  function twoPages(figs){
+    page2.hidden = false;
+
+    const top1 = h(hero1) + h(content1) + (photosWrap1 ? h(photosWrap1.querySelector('.section-title')) + 10 : 0);
+    const bottom1 = 0; // ما في توقيع بالصفحة الأولى
+    let rem1 = A4H - top1 - bottom1;
+    if (rem1 < 0) rem1 = 0;
+
+    // حساب كم صورة تدخل في الصفحة الأولى
+    let n1 = 0;
+    while (n1 < figs.length){
+      const testN = n1 + 1;
+      const slotH = computeSlotHeight(rem1, testN);
+      const rows = Math.ceil(testN / COLS);
+      const totalGaps = GAP * (rows - 1);
+      const needH = rows * slotH + totalGaps;
+      if (needH <= rem1 || (slotH === MIN_SLOT && rows * MIN_SLOT + totalGaps <= rem1)){
+        n1 = testN;
+      } else {
+        break;
       }
-    } catch(e) {
-      console.error('Error in after print:', e);
+    }
+
+    const firstPage = figs.slice(0, n1);
+    const secondPage = figs.slice(n1);
+
+    // وزّع صور الصفحة الأولى
+    if (photosWrap1 && firstPage.length){
+      photosWrap1.removeAttribute('hidden');
+      firstPage.forEach(f => photos1.appendChild(f));
+      const slotH1 = computeSlotHeight(rem1, firstPage.length);
+      root.style.setProperty('--slot1-h', Math.max(MIN_SLOT, slotH1) + 'px');
+    } else {
+      // لو لم تدخل أي صورة في الأولى، اخفِ الحاوية
+      photosWrap1?.setAttribute('hidden','hidden');
+    }
+
+    // جهّز الصفحة الثانية: صور + تواقيع
+    const hero2 = document.getElementById('hero2');
+    const top2 = h(hero2) + (photosWrap2 ? h(photosWrap2.querySelector('.section-title')) + 10 : 0);
+    const signFrag = cloneSign();
+    sign2.innerHTML = ''; // تنظيف
+    sign2.appendChild(signFrag);
+    const signH2 = h(sign2);
+    let rem2 = A4H - top2 - signH2;
+    if (rem2 < 0) rem2 = 0;
+
+    if (secondPage.length){
+      photosWrap2.removeAttribute('hidden');
+      secondPage.forEach(f => photos2.appendChild(f));
+      const slotH2 = computeSlotHeight(rem2, secondPage.length);
+      root.style.setProperty('--slot2-h', Math.max(MIN_SLOT, slotH2) + 'px');
+    } else {
+      // لا صور في الثانية: ارفع التواقيع أسفل الصفحة تلقائيًا عبر flex
+      photosWrap2.setAttribute('hidden','hidden');
     }
   }
 
-  // إعداد مستمعي الطباعة
+  function layout(){
+    // اجمع الصور
+    const figures = collectFigures();
+
+    // إعادة ضبط أماكن الصور
+    photos1 && (photos1.innerHTML = '');
+    photos2 && (photos2.innerHTML = '');
+
+    // أولًا: حاول صفحة واحدة
+    if (trySinglePage(figures)) return;
+
+    // ثانيًا: قسّم لصفحتين
+    twoPages(figures);
+  }
+
+  function beforePrintSafe(){
+    try { layout(); } catch(e){ console.error(e); }
+  }
+
+  // عند تحميل الصور: أعد الحساب لضمان عدم التداخل
+  function afterImages(){
+    const imgs = Array.from(document.images);
+    if (imgs.length === 0) { beforePrintSafe(); return; }
+    let done = 0;
+    const once = () => { if (++done === imgs.length) setTimeout(beforePrintSafe, 60); };
+    imgs.forEach(img => {
+      if (img.complete) return once();
+      img.addEventListener('load', once, {once:true});
+      img.addEventListener('error', once, {once:true});
+    });
+  }
+
+  // مستمعو الطباعة
   if (window.matchMedia) {
     const mql = window.matchMedia('print');
     if (typeof mql.addEventListener === 'function') {
-      mql.addEventListener('change', e => e.matches ? before() : after());
+      mql.addEventListener('change', e => e.matches ? beforePrintSafe() : null);
     } else if (typeof mql.addListener === 'function') {
-      mql.addListener(e => e.matches ? before() : after());
+      mql.addListener(e => e.matches ? beforePrintSafe() : null);
     }
   }
-  
-  window.addEventListener('beforeprint', before);
-  window.addEventListener('afterprint', after);
-
-  // إعادة الحساب بعد تحميل الصور
-  (function afterImages() {
-    const imgs = Array.from(document.images);
-    if (imgs.length === 0) return;
-    
-    let done = 0;
-    const once = () => {
-      if (++done === imgs.length) {
-        setTimeout(before, 100);
-      }
-    };
-    
-    imgs.forEach(img => {
-      if (img.complete) return once();
-      img.addEventListener('load', once, { once: true });
-      img.addEventListener('error', once, { once: true });
-    });
-  })();
+  window.addEventListener('beforeprint', beforePrintSafe);
 
   // زر الطباعة
+  const printBtn = document.getElementById('printBtn');
   let printing = false;
   printBtn?.addEventListener('click', () => {
     if (printing) return;
     printing = true;
-    
-    before();
+    beforePrintSafe();
     setTimeout(() => {
       window.print();
-      setTimeout(() => printing = false, 500);
+      setTimeout(() => printing = false, 400);
     }, 50);
   });
 
-  // إعادة الحساب عند تغيير حجم النافذة
+  // إعادة الحساب عند تغيّر الحجم (للمعاينة)
   window.addEventListener('resize', () => {
-    if (!printing) {
-      setTimeout(before, 100);
-    }
+    if (!printing) setTimeout(beforePrintSafe, 80);
   });
+
+  // بدء التشغيل
+  afterImages();
 })();
 </script>
 

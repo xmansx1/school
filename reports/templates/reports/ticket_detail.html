@@ -20,11 +20,11 @@
     background:var(--card); border:1px solid var(--line); border-radius:16px;
     box-shadow:var(--shadow); padding:12px 14px; display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;
   }
-  .bar h1{margin:0; font-size:1.15rem; font-weight:900; color:var(--ink-soft)}
-  .bar .minor{color:var(--muted); font-weight:700}
+  .bar h1{margin:0; font-size:1.15rem; font-weight:900; color:#1f2937}
+  .bar .minor{color:#6b7280; font-weight:700}
   .bar .btns{display:flex; gap:8px; flex-wrap:wrap}
-  .btn{height:42px; padding:0 14px; border-radius:12px; border:1px solid var(--line);
-       background:var(--card); color:var(--ink-soft); font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:8px; transition:var(--t)}
+  .btn{height:42px; padding:0 14px; border-radius:12px; border:1px solid:#e5e7eb;
+       background:#fff; color:#111827; font-weight:800; text-decoration:none; display:inline-flex; align-items:center; gap:8px; transition:var(--t)}
   .btn:hover{background:#f6f9ff; border-color:#dbeafe}
   .btn-primary{background:var(--brand); color:#fff; border-color:var(--brand)}
   .btn-danger{background:#fee2e2; color:#991b1b; border-color:#fecaca}
@@ -34,16 +34,16 @@
   @media(min-width:980px){ .grid{ grid-template-columns:1.1fr .9fr } }
 
   /* ===== Card ===== */
-  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);}
-  .hd{padding:16px 18px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:10px}
-  .title{margin:0; font-weight:900; color:var(--ink-soft)}
+  .card{background:#fff; border:1px solid #e5e7eb; border-radius:var(--radius); box-shadow:var(--shadow);}
+  .hd{padding:16px 18px; border-bottom:1px solid #e5e7eb; display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .title{margin:0; font-weight:900; color:#1f2937}
   .body{padding:16px 18px}
 
   /* ===== Summary table ===== */
   .summary{display:grid; gap:12px}
   .row{display:grid; grid-template-columns:180px 1fr; gap:12px}
-  .row .k{color:var(--muted); font-weight:800}
-  .row .v{color:var(--ink-soft); font-weight:900}
+  .row .k{color:#6b7280; font-weight:800}
+  .row .v{color:#1f2937; font-weight:900}
   .content-pre{white-space:pre-wrap}
   @media(max-width:600px){ .row{grid-template-columns:1fr} .row .k{order:-1} }
 
@@ -55,28 +55,35 @@
   .s-done{background:#e0f2fe; color:#075985}                .s-done .dot{background:#0ea5e9}
   .s-rejected,.s-cancelled{background:#fee2e2; color:#991b1b} .s-rejected .dot,.s-cancelled .dot{background:#ef4444}
 
-  /* ===== Notes timeline ===== */
+  /* ===== Notes ===== */
   .notes{display:grid; gap:12px; position:relative}
   .note{
-    border:1px solid var(--line); border-radius:14px; padding:12px 14px; background:var(--card);
+    border:1px solid #e5e7eb; border-radius:14px; padding:12px 14px; background:#fff;
     box-shadow:0 6px 18px rgba(2,6,23,.06);
   }
-  .note .meta{color:var(--muted); font-size:.9rem; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .note .meta{color:#6b7280; font-size:.9rem; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
   .note .txt{margin-top:6px; white-space:pre-wrap}
-  .empty{color:var(--muted)}
+  .empty{color:#6b7280}
 
   /* ===== Forms ===== */
   .form{display:grid; gap:12px}
   .input, .select, .textarea{
-    width:100%; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--card); font:inherit;
+    width:100%; padding:12px; border:1px solid #e5e7eb; border-radius:12px; background:#fff; font:inherit;
   }
   .textarea{min-height:120px; white-space:pre-wrap}
-  .help{color:var(--muted); font-size:.9rem}
+  .help{color:#6b7280; font-size:.9rem}
 
+  /* ===== Images gallery ===== */
+  .gallery{display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px}
+  .thumb{display:block; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; background:#fff}
+  .thumb img{width:100%; height:100%; object-fit:cover; aspect-ratio:4/3}
+  .thumb:hover{box-shadow:0 4px 16px rgba(2,6,23,.12)}
+  .thumb .cap{display:block; padding:6px 8px; font-size:.85rem; color:#6b7280}
+  
   /* Sticky hint on mobile */
   @media(max-width:720px){
     .sticky-hint{position:sticky; bottom:0; background:linear-gradient(0deg,rgba(248,250,252,.98),rgba(248,250,252,.75));
-      border-top:1px solid var(--line); padding:10px; border-bottom-left-radius:16px; border-bottom-right-radius:16px}
+      border-top:1px solid #e5e7eb; padding:10px; border-bottom-left-radius:16px; border-bottom-right-radius:16px}
   }
 </style>
 {% endblock %}
@@ -113,7 +120,7 @@
         <div class="row"><div class="k">المستلم</div><div class="v">{% firstof t.assignee.name t.assignee "—" %}</div></div>
         <div class="row"><div class="k">المرسل</div><div class="v">{{ t.creator.name|default:"—" }}</div></div>
 
-        <!-- Attachment (PDF = تنزيل مباشر / غيره = فتح) -->
+        <!-- مرفق واحد (إن وُجد) -->
         <div class="row">
           <div class="k">المرفق</div>
           <div class="v">
@@ -121,25 +128,38 @@
               {% if t.attachment_is_pdf %}
                 <a class="btn btn-primary"
                    href="{{ t.attachment_download_url|default:t.attachment.url }}{% if '?' not in t.attachment_download_url|default:t.attachment.url %}?{% else %}&{% endif %}fl_attachment=1"
-                   download
-                   rel="nofollow">
-                  تنزيل المرفق (PDF)
-                </a>
+                   download rel="nofollow">تنزيل المرفق (PDF)</a>
               {% else %}
-                <a class="btn"
-                   href="{{ t.attachment.url }}"
-                   target="_blank" rel="noopener">
-                  فتح المرفق
-                </a>
+                <a class="btn" href="{{ t.attachment.url }}" target="_blank" rel="noopener">فتح المرفق</a>
               {% endif %}
+            {% else %} — {% endif %}
+          </div>
+        </div>
+
+        <!-- الصور المرفقة المتعددة (تُمرَّر من الفيو في المتغيّر images) -->
+        <div class="row">
+          <div class="k">الصور</div>
+          <div class="v">
+            {% if images and images|length %}
+              <div class="gallery">
+                {% for im in images %}
+                  {# غيّر im.image إلى اسم حقل الملف في TicketImage إن كان مختلفًا #}
+                  <a class="thumb" href="{{ im.image.url }}" target="_blank" rel="noopener">
+                    <img src="{{ im.image.url }}" alt="صورة {{ forloop.counter }}" loading="lazy">
+                    <span class="cap">صورة #{{ forloop.counter }}</span>
+                  </a>
+                {% endfor %}
+              </div>
             {% else %}
-              —
+              <span class="help">لا توجد صور مرفقة.</span>
             {% endif %}
           </div>
         </div>
 
         <div class="row"><div class="k">المحتوى</div><div class="content-pre">{{ t.body|default_if_none:"—"|linebreaksbr }}</div></div>
       </div>
+
+      {# ✅ استخدم and بدل && #}
       {% if is_owner and not can_act %}
         <div class="sticky-hint"><span class="help">أضِف ملاحظة للتواصل — ستتحوّل الحالة تلقائيًا إلى <b>جــديد</b>.</span></div>
       {% endif %}
@@ -181,7 +201,7 @@
           </div>
           <div>
             <label class="help">ملاحظة (تظهر للمرسل)</label>
-            <textarea name="note" class="textarea" rows="3" placeholder="اكتب ملاحظة (اختياري)"></textarea>
+            <textarea name="note" class="textarea" rows="3" placeholder="اكتب ملاحظتك (اختياري)"></textarea>
           </div>
           <div class="btns">
             <button type="submit" class="btn btn-primary">حفظ</button>
@@ -199,7 +219,6 @@
         <form method="post" class="form" novalidate>
           {% csrf_token %}
           <div>
-            <label class="help">ستظهر ملاحظتك في السجل، وتتحوّل الحالة تلقائياً إلى <b>جديد</b>.</label>
             <textarea name="note" class="textarea" rows="3" placeholder="اكتب ملاحظتك هنا…"></textarea>
           </div>
           <div class="btns">

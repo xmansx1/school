@@ -63,7 +63,7 @@
         {% csrf_token %}
 
         <div class="form-row">
-          <!-- القسم (يرسل slug فعليًا) -->
+          <!-- القسم: يرسل slug كما يتوقعه الـForm -->
           <div class="form-group">
             <label for="{{ form.department.id_for_label }}">القسم <span aria-hidden="true" style="color:#ef4444">*</span></label>
             <select id="{{ form.department.id_for_label }}" name="{{ form.department.html_name }}" required>
@@ -115,12 +115,13 @@
           {% for e in form.body.errors %}<div class="field-error">• {{ e }}</div>{% endfor %}
         </div>
 
-        <!-- صور متعددة حتى 4 (ضغط قبل الإرسال) -->
+        <!-- صور متعددة حتى 4 -->
         <div class="form-group">
           <label for="id_images">الصور (حتى 4)</label>
           <input id="id_images" name="images" type="file" accept="image/*" multiple>
-          <div class="help">المسموح: JPG / PNG / WebP — كل صورة سيتم ضغطها تلقائيًا (جودة عالية) قبل الإرسال. الحد الأقصى 4 صور.</div>
+          <div class="help">المسموح: JPG / PNG / WebP — سيتم ضغط الصور تلقائيًا قبل الإرسال. الحد الأقصى 4 صور.</div>
           <div class="previews" id="previews"></div>
+          {% for e in form.images.errors %}<div class="field-error">• {{ e }}</div>{% endfor %}
         </div>
 
         <div id="dynamic-msg" class="help" aria-live="polite"></div>
@@ -163,7 +164,7 @@
     }
   }
 
-  // ==== تحميل أعضاء القسم حسب الـ slug ====
+  // ==== تحميل أعضاء القسم حسب الـ slug (القيمة مباشرة من الـselect) ====
   async function loadMembers(roleSlug){
     if(!assignee) return;
     setAssigneeDisabled(true);
@@ -194,12 +195,15 @@
     }
   }
 
+  // عند تغيير القسم: استخدم القيمة (slug)
   if(dept && assignee){
     dept.addEventListener('change', (e)=>{
-      const v = e.target.value; // ← slug
-      if(!v){ setAssigneeDisabled(true); setMsg('اختر قسمًا أولاً'); return; }
-      loadMembers(v);
+      const slug = e.target.value;
+      if(!slug){ setAssigneeDisabled(true); setMsg('اختر قسمًا أولاً'); return; }
+      loadMembers(slug);
     });
+
+    // عند تحميل الصفحة: إن كان هناك اختيار قسم مسبقًا، حمّل الموظفين
     {% if form.is_bound and form.fields.assignee.queryset %}
       setAssigneeDisabled(false);
       setMsg('تم استعادة القائمة من المحاولة السابقة', 'ok');
@@ -236,7 +240,7 @@
     });
   }
 
-  // ==== ضغط الصور قبل الإرسال ====
+  // ==== ضغط الصور قبل الإرسال (اختياري لتحسين الأداء) ====
   async function compressImage(file, {maxW=1600, maxH=1600, quality=0.82, format='image/webp'} = {}){
     const img = document.createElement('img');
     const src = URL.createObjectURL(file);
@@ -247,8 +251,7 @@
 
     const canvas = document.createElement('canvas');
     canvas.width = tw; canvas.height = th;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, tw, th);
+    const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, tw, th);
 
     const blob = await new Promise(res => canvas.toBlob(res, format, quality));
     URL.revokeObjectURL(src);
@@ -265,7 +268,6 @@
     const dataT = new DataTransfer();
     for (const f of files){
       const compressed = await compressImage(f, {maxW:1600, maxH:1600, quality:0.82, format:'image/webp'});
-      // محاولة ثانية إن بقي الحجم كبيرًا
       if (compressed.size > 1.2 * 1024 * 1024){
         const retry = await compressImage(f, {maxW:1600, maxH:1600, quality:0.7, format:'image/webp'});
         dataT.items.add(retry);

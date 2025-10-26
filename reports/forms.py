@@ -334,30 +334,55 @@ from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
 class MultiImageInput(forms.ClearableFileInput):
+    """عنصر إدخال يسمح باختيار عدة صور."""
     allow_multiple_selected = True
 
+class MultiFileField(forms.FileField):
+    """
+    حقل ملفات متعدد:
+    - يقبل [] بدون أخطاء عندما لا تُرفع صور.
+    - يعيد list[UploadedFile] عند وجود صور.
+    """
+    def to_python(self, data):
+        if not data:
+            return []
+        # في حال مر ملف مفرد من متصفح قديم
+        if not isinstance(data, (list, tuple)):
+            return [data]
+        return list(data)
+
+    def validate(self, data):
+        # لا نريد رسالة "لم يتم إرسال ملف..." عند عدم وجود صور
+        if self.required and not data:
+            raise forms.ValidationError(self.error_messages["required"], code="required")
+        # أي تحقق إضافي خاص بالحقل نفسه يمكن وضعه هنا (نحن نتحقق لاحقًا في form.clean)
 
 class TicketCreateForm(forms.ModelForm):
     """
     إنشاء تذكرة جديدة مع رفع حتى 4 صور (JPG/PNG/WebP) بحجم أقصى 5MB للصورة.
+    - department يُرسل slug (to_field_name="slug")
+    - assignee يُبنى ديناميكيًا
+    - images اختيارية ومتعددة (MultiFileField)
     """
+
     department = forms.ModelChoiceField(
         label="القسم",
         queryset=Department.objects.filter(is_active=True).order_by("name"),
-        required=False,
+        required=True,
         empty_label="— اختر القسم —",
         to_field_name="slug",
-        widget=forms.Select(attrs={"class": "form-select"}),
-    )
-    assignee = forms.ModelChoiceField(
-        queryset=Teacher.objects.none(),
-        required=False,
-        label="المستلم",
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=forms.Select(attrs={"class": "form-select", "id": "id_department"}),
     )
 
-    # صور متعددة
-    images = forms.FileField(
+    assignee = forms.ModelChoiceField(
+        label="المستلم",
+        queryset=Teacher.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select", "id": "id_assignee"}),
+    )
+
+    # ✅ حقل متعدد ينسجم مع الـ multiple في القالب
+    images = MultiFileField(
         label="الصور (حتى 4)",
         required=False,
         widget=MultiImageInput(attrs={"accept": "image/*", "multiple": True, "id": "id_images"}),
@@ -366,92 +391,77 @@ class TicketCreateForm(forms.ModelForm):
 
     class Meta:
         model = Ticket
-        # لا نستعمل حقل attachment هنا
         fields = ["department", "assignee", "title", "body"]
         widgets = {
-            "title": forms.TextInput({
-                "class": "input", "placeholder": "عنوان الطلب",
-                "maxlength": "255", "autocomplete": "off"
+            "title": forms.TextInput(attrs={
+                "class": "input", "placeholder": "عنوان الطلب", "maxlength": "255", "autocomplete": "off"
             }),
-            "body": forms.Textarea({"class": "textarea", "rows": 4, "placeholder": "تفاصيل الطلب"}),
+            "body": forms.Textarea(attrs={"class": "textarea", "rows": 4, "placeholder": "تفاصيل الطلب"}),
         }
 
     def __init__(self, *args, **kwargs):
-        kwargs.pop("user", None)  # يُمرر في save
+        kwargs.pop("user", None)  # يُمرَّر في save
         super().__init__(*args, **kwargs)
 
-        # قيمة القسم
-        dept_value = (
-            (self.data.get("department") or "").strip()
-            if self.is_bound else getattr(getattr(self.instance, "department", None), "slug", None)
-        )
+        # تأكيد اختياريّة الصور (تحصين إضافي)
+        self.fields["images"].required = False
 
-        # نبني قائمة القسم
+        # بناء قائمة المستلمين حسب القسم
+        dept_value = (self.data.get("department") or "").strip() if self.is_bound \
+            else getattr(getattr(self.instance, "department", None), "slug", "") or ""
         base_qs = _teachers_for_dept(dept_value) if dept_value else Teacher.objects.none()
 
-        # ⚠️ أهم إصلاح: إذا أرسل المستخدم assignee بالقيمة X، ندرج X بالقائمة
-        # كي لا يرفضه Django كـ "اختيار غير صالح".
-        assignee_id = (self.data.get("assignee") or "").strip() if self.is_bound else None
-        if assignee_id:
-            try:
-                assignee_id_int = int(assignee_id)
-            except ValueError:
-                assignee_id_int = None
-            if assignee_id_int is not None:
-                base_qs = Teacher.objects.filter(
-                    Q(id=assignee_id_int) | Q(id__in=base_qs.values_list("id", flat=True))
-                )
-
+        # إدراج المستلم المرسل ضمن queryset لتفادي "اختيار غير صالح"
+        assignee_id = (self.data.get("assignee") or "").strip() if self.is_bound else ""
+        if assignee_id.isdigit():
+            base_qs = Teacher.objects.filter(Q(id=int(assignee_id)) | Q(id__in=base_qs.values_list("id", flat=True)))
         self.fields["assignee"].queryset = base_qs
 
-        # سنخزن النسخ المضغوطة مؤقتًا هنا بعد نجاح التحقق
-        self._compressed_images: list[InMemoryUploadedFile] = []
+        # سنخزن النسخ المضغوطة بعد التحقق
+        self._compressed_images: List[InMemoryUploadedFile] = []
 
-    # ضغط مبسط
+    # ضغط صورة مع fallback
     def _compress_image(self, f, *, max_px=1600, quality=85) -> InMemoryUploadedFile:
         from PIL import Image
         img = Image.open(f)
-        img_format = (img.format or "JPEG").upper()
         has_alpha = img.mode in ("RGBA", "LA", "P")
         img = img.convert("RGBA" if has_alpha else "RGB")
-
-        w, h = img.size
-        if max(w, h) > max_px:
+        if max(img.size) > max_px:
             img.thumbnail((max_px, max_px), Image.LANCZOS)
 
-        out_format = "PNG" if (has_alpha and img_format == "PNG") else "WEBP"
         buf = BytesIO()
-        save_kwargs = {"optimize": True}
-        if out_format in ("JPEG", "WEBP"):
-            save_kwargs["quality"] = quality
-        img.save(buf, format=out_format, **save_kwargs)
+        try:
+            img.save(buf, format="WEBP", quality=quality, optimize=True)
+            new_ext, ctype = ".webp", "image/webp"
+        except Exception:
+            buf = BytesIO()
+            fmt = "PNG" if has_alpha else "JPEG"
+            save_kwargs = {"optimize": True}
+            if fmt == "JPEG":
+                save_kwargs["quality"] = quality
+            img.save(buf, format=fmt, **save_kwargs)
+            new_ext = ".png" if has_alpha else ".jpg"
+            ctype = "image/png" if has_alpha else "image/jpeg"
         buf.seek(0)
 
-        base_name = os.path.splitext(getattr(f, "name", "image"))[0]
-        new_ext = ".png" if out_format == "PNG" else ".webp"
-        new_name = f"{base_name}{new_ext}"
-
-        return InMemoryUploadedFile(
-            file=buf,
-            field_name="images",
-            name=new_name,
-            content_type=f"image/{out_format.lower()}",
-            size=buf.getbuffer().nbytes,
-            charset=None,
-        )
+        base = os.path.splitext(getattr(f, "name", "image"))[0]
+        return InMemoryUploadedFile(buf, "images", f"{base}{new_ext}", ctype, buf.getbuffer().nbytes, None)
 
     def clean(self):
         cleaned = super().clean()
 
-        # تحقق انتماء المستلم للقسم (نُبقي الرسالة المفهومة هنا)
-        dept = cleaned.get("department")
+        dept: Optional[Department] = cleaned.get("department")
         assignee: Optional[Teacher] = cleaned.get("assignee")
-        dept_slug: Optional[str] = getattr(dept, "slug", None) if isinstance(dept, Department) else None
-        if assignee and dept_slug and not _is_teacher_in_dept(assignee, dept_slug):
+
+        if not dept:
+            self.add_error("department", "الرجاء اختيار القسم.")
+        if dept and not assignee and self.fields["assignee"].queryset.count() > 1:
+            self.add_error("assignee", "يرجى اختيار الموظّف.")
+        if assignee and dept and not _is_teacher_in_dept(assignee, dept.slug):
             self.add_error("assignee", "الموظّف المختار لا ينتمي إلى هذا القسم.")
 
-        # تحقق الصور
-        files = self.files.getlist("images")
+        # الآن images هي list[UploadedFile] قادمة من الحقل نفسه
+        files = self.cleaned_data.get("images") or []
         if files:
             if len(files) > 4:
                 self.add_error("images", "الحد الأقصى 4 صور.")
@@ -468,7 +478,6 @@ class TicketCreateForm(forms.ModelForm):
                     self.add_error("images", f"({name}) يُسمح فقط بصور JPG/PNG/WebP.")
                     break
 
-            # لو لم توجد أخطاء على الصور نضغطها ونخزّنها مؤقتًا
             if not self.errors.get("images"):
                 self._compressed_images = [self._compress_image(f) for f in files]
 
@@ -479,7 +488,6 @@ class TicketCreateForm(forms.ModelForm):
 
         if user is not None and not obj.pk:
             obj.creator = user
-
         if not getattr(obj, "status", None):
             try:
                 obj.status = Ticket.Status.OPEN  # type: ignore[attr-defined]
@@ -488,7 +496,32 @@ class TicketCreateForm(forms.ModelForm):
 
         if commit:
             obj.save()
-            # حفظ صور التذكرة
+            if self._compressed_images:
+                from .models import TicketImage
+                for f in self._compressed_images:
+                    TicketImage.objects.create(ticket=obj, image=f)
+        return obj
+
+    # -----------------------------
+    # الحفظ وإنشاء سجلات الصور
+    # -----------------------------
+    def save(self, commit: bool = True, user: Optional[Teacher] = None):
+        obj: Ticket = super().save(commit=False)
+
+        # تعيين المُنشئ لأول مرة
+        if user is not None and not obj.pk:
+            obj.creator = user
+
+        # حالة افتراضية إن وُجدت في الموديل
+        if not getattr(obj, "status", None):
+            try:
+                obj.status = Ticket.Status.OPEN  # type: ignore[attr-defined]
+            except Exception:
+                pass
+
+        if commit:
+            obj.save()
+            # حفظ الصور (إن وُجدت)
             if self._compressed_images:
                 from .models import TicketImage
                 for f in self._compressed_images:
