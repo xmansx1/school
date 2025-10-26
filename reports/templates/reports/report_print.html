@@ -15,18 +15,8 @@
       --brand:#2563eb; --accent:#059669; --bg:#f8fafc; --card:#ffffff;
       --chip:#eef2ff; --chip-ink:#1e40af;
       --radius:12px; --print-margin:15mm;
-
-      /* أبعاد الصفحة A4 */
-      --page-w: 210mm;
-      --page-h: 297mm;
-      --content-w: calc(210mm - 2*var(--print-margin));
-      --content-h: calc(297mm - 2*var(--print-margin));
-
-      /* ارتفاع خلية الصورة في كل صفحة (يُضبط بالـ JS) */
-      --slot1-h: 170px;
-      --slot2-h: 170px;
-
-      /* فجوات الشبكة في الطباعة */
+      --page-h: 0px;
+      --slot1-h: 170px; --slot2-h: 170px;
       --gap-print: 8px;
     }
 
@@ -50,7 +40,7 @@
 
     /* ===== المعاينة على الشاشة ===== */
     .container{max-width:900px;margin:auto;padding:10px}
-    .page{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--card);box-shadow:0 6px 18px rgba(0,0,0,.05);margin-bottom:20px}
+    .page{border:1px solid var(--line);border-radius:var(--radius);overflow:visible;background:var(--card);box-shadow:0 6px 18px rgba(0,0,0,.05);margin-bottom:20px}
     .inner{display:flex;flex-direction:column;min-height:calc(100vh - 120px)}
 
     /* الرأس */
@@ -72,7 +62,9 @@
     .value{font-weight:900;font-size:1rem;word-break:break-word}
 
     .section-title{margin:16px 0 8px;font-weight:900;color:var(--ink);display:inline-flex;align-items:center;gap:8px;background:var(--chip);color:var(--chip-ink);padding:6px 12px;border-radius:999px;font-size:.95rem;break-inside:avoid;page-break-inside:avoid}
-    .idea-box{padding:14px;border:1px solid var(--line);border-radius:12px;background:#fbfdff;white-space:pre-wrap;line-height:1.8;font-weight:600;break-inside:avoid;page-break-inside:avoid}
+    /* نسمح بكسر الوصف للطباعة كي لا يُقص */
+    .idea-box{padding:14px;border:1px solid var(--line);border-radius:12px;background:#fbfdff;white-space:pre-wrap;line-height:1.8;font-weight:600}
+    .idea-box p{margin:0 0 .8em 0;white-space:pre-wrap}
 
     /* الصور */
     .photos-wrap{padding:0 18px 18px}
@@ -101,109 +93,39 @@
 
     /* ===== طباعة A4 ===== */
     @media print {
-      @page { 
-        size: A4; 
-        margin: var(--print-margin);
-      }
-      
+      @page { size: A4; margin: var(--print-margin); }
       .toolbar { display:none !important; }
-      body{ 
-        background:#fff!important; 
-        margin:0!important; 
-        padding:0!important; 
-        font-size:12pt; 
-        line-height:1.4; 
-        color:#000;
-        width: var(--page-w);
-      }
-      
-      .container{ 
-        padding:0; 
-        margin:0; 
-        max-width:none;
-        width: var(--page-w);
-      }
-      
+      body{ background:#fff!important; margin:0!important; padding:0!important; font-size:12pt; line-height:1.45; color:#000 }
+      .container{ padding:0; margin:0; max-width:none }
       .page{
-        width: var(--content-w);
-        height: var(--content-h);
-        margin: 0 auto;
-        box-shadow: none; 
-        border:0; 
-        border-radius:0; 
-        background:#fff; 
-        overflow:hidden;
+        width: calc(210mm - 2*var(--print-margin));
+        height: calc(297mm - 2*var(--print-margin));
+        margin: auto;
+        box-shadow: none; border:0; border-radius:0; background:#fff; overflow:visible;
         page-break-after: always;
       }
-      
       .page:last-child{ page-break-after: auto; }
-      .inner{ 
-        min-height:100%; 
-        display:flex; 
-        flex-direction:column;
-        height: var(--content-h);
-      }
-      
+      .inner{ min-height:100%; display:flex; flex-direction:column }
       .content{ padding:12px }
       .details{ gap:8px; margin-top:8px }
       .card-row{ padding:10px; font-size:11pt }
       .section-title{ margin:12px 0 6px; padding:4px 10px; font-size:13pt }
-      .idea-box{ 
-        padding:12px; 
-        line-height:1.6; 
-        font-size:11pt; 
-        border:1px solid #ddd;
-        max-height: 200px;
-        overflow-y: auto;
-      }
-      
+      .idea-box{ padding:12px; line-height:1.6; font-size:11pt; border:1px solid #ddd; page-break-inside:auto; }
+      .idea-box p{ page-break-inside:auto; }
       .photos-wrap{ padding:0 10px 10px }
       .photos{ grid-template-columns: repeat(2,1fr); gap: var(--gap-print) }
       .photos1 .slot{ height: var(--slot1-h) }
       .photos2 .slot{ height: var(--slot2-h) }
-      .photos img{ 
-        object-fit: contain; 
-        max-width:100%; 
-        max-height: 100%;
-      }
-      
-      .photos figure{ 
-        page-break-inside: avoid; 
-        break-inside: avoid; 
-        margin-bottom:10px 
-      }
-      
-      .sign{ 
-        padding:15px; 
-        gap:12px; 
-        margin-top:auto; 
-      }
-      
-      .sign .box{ 
-        padding:12px; 
-        min-height:100px; 
-        font-size:11pt 
-      }
-      
+      .photos img{ object-fit: contain; max-width:100%; height:auto }
+      .photos figure{ page-break-inside: avoid; break-inside: avoid; margin-bottom:10px }
+      .sign{ padding:15px; gap:12px; margin-top:auto; }
+      .sign .box{ padding:12px; min-height:100px; font-size:11pt }
       .sigline{ margin:12px 0 }
 
-      /* منع الانقسام */
-      h1,h2,h3,h4,h5,h6,p,.section-title,.idea-box{ 
-        page-break-inside:avoid; 
-        break-inside:avoid 
-      }
-      
-      .section-title{ 
-        page-break-after:avoid; 
-        break-after:avoid 
-      }
-      
+      h1,h2,h3,h4,h5,h6,.section-title{ page-break-inside:avoid; break-inside:avoid }
+      .section-title{ page-break-after:avoid; break-after:avoid }
       a[href]:after{ content:"" !important }
-      *{ 
-        -webkit-print-color-adjust:exact; 
-        print-color-adjust:exact; 
-        color-adjust:exact 
-      }
+      *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact }
     }
 
     /* ===== تجاوب الشاشات ===== */
@@ -213,7 +135,6 @@
       .photos{ grid-template-columns:repeat(2,1fr); gap:10px }
       .photos1 .slot, .photos2 .slot{ height:140px }
     }
-    
     @media (min-width:641px) and (max-width:1024px){
       .photos{ grid-template-columns:repeat(3,1fr) }
     }
@@ -269,19 +190,54 @@
           {% endif %}
         </div>
 
-        <h3 class="section-title">💡 الوصــف</h3>
-        <div class="idea-box" id="descriptionContent">{{ r.idea|default_if_none:"" }}</div>
+        <h3 class="section-title" id="ideaTitle1">💡 الوصــف</h3>
+        <!-- سيتم تقسيم الوصف تلقائياً بين الصفحة 1 و2 عند الحاجة -->
+        <div class="idea-box" id="ideaBoxSource">{{ r.idea|default_if_none:"" }}</div>
+        <div class="idea-box" id="ideaBox1" hidden></div>
       </div>
 
-      {% if r.image1 or r.image2 or r.image3 or r.image4 %}
-      <div class="photos-wrap" id="photosWrap1">
+      {% if r.image1 or r.image2 or r.image3 or r.image4 or r.images1 or r.images2 or r.images3 or r.images4 %}
+      <div class="photos-wrap" id="photosWrap1" hidden>
         <h3 class="section-title">📷 الصور المرفقة</h3>
         <div class="photos photos1" id="photos1"></div>
       </div>
       {% endif %}
 
-      <!-- التواقيع - سيتم نقلها تلقائياً حسب الحاجة -->
-      <div class="sign" id="sign1"></div>
+      <!-- التواقيع ستُنقل تلقائيًا إلى الصفحة المناسبة -->
+      <div class="sign no-print" id="signTemplate" hidden>
+        <div class="box">
+          <div class="title">معـد التقرير</div>
+          <div class="name">{{ r.teacher_display_name }}</div>
+          <div class="sigline" aria-hidden="true"></div>
+        </div>
+
+        {% with hd=head_decision %}
+          {% if hd and not hd.no_render %}
+            <div class="box">
+              {% if hd.single %}
+                <div class="title">اعتماد رئيس القسم</div>
+                <div class="name">{{ hd.name }}</div>
+                <div class="sigline" aria-hidden="true"></div>
+              {% elif hd.multi_dept %}
+                <div class="title">اعتماد رئيس قسم {{ hd.dept_name }}</div>
+                <div class="name">____________________</div>
+                <div class="sigline" aria-hidden="true"></div>
+              {% elif hd.multi_blank %}
+                <div class="title">اعتماد رئيس القسم</div>
+                <div class="name">____________________</div>
+                <div class="sigline" aria-hidden="true"></div>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <div class="box">
+          <div class="title">اعتماد مدير المدرسة</div>
+          <div class="name">{% firstof SCHOOL_PRINCIPAL "فـهــد بن عبدالله الفــهد" %}</div>
+          <div class="sigline" aria-hidden="true"></div>
+        </div>
+      </div>
+
     </div><!-- /.inner -->
   </section>
 
@@ -300,47 +256,66 @@
       </div>
       {% endwith %}
 
-      <!-- محتوى إضافي للوصف إذا كان طويلاً -->
-      <div class="content" id="content2" hidden>
-        <h3 class="section-title">💡 الوصــف (تابع)</h3>
-        <div class="idea-box" id="descriptionContinuation"></div>
+      <!-- تكملة الوصف إن لزم -->
+      <div class="content" id="content2">
+        <h3 class="section-title" id="ideaTitle2" hidden>💡 الوصــف (تابع)</h3>
+        <div class="idea-box" id="ideaBox2" hidden></div>
       </div>
 
-      <div class="photos-wrap" id="photosWrap2">
+      {% if r.image1 or r.image2 or r.image3 or r.image4 or r.images1 or r.images2 or r.images3 or r.images4 %}
+      <div class="photos-wrap" id="photosWrap2" hidden>
         <h3 class="section-title">📷 الصور المرفقة (تابع)</h3>
         <div class="photos photos2" id="photos2"></div>
       </div>
+      {% endif %}
 
       <!-- التواقيع مكانها الافتراضي أسفل الصفحة 2 -->
       <div class="sign" id="sign2"></div>
     </div>
   </section>
 
-  {# مستودع صور مخفية: نضع كل الصور هنا ثم الـJS يوزعها بين الصفحتين #}
-  {% if r.image1 or r.image2 or r.image3 or r.image4 %}
+  {# مستودع صور مخفية: JS يوزّعها بين الصفحتين #}
+  {% if r.image1 or r.image2 or r.image3 or r.image4 or r.images1 or r.images2 or r.images3 or r.images4 %}
   <template id="allPhotos">
-    {% if r.image1 %}<figure><div class="slot"><img src="{{ r.image1.url }}" alt="صورة 1" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
-    {% if r.image2 %}<figure><div class="slot"><img src="{{ r.image2.url }}" alt="صورة 2" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
-    {% if r.image3 %}<figure><div class="slot"><img src="{{ r.image3.url }}" alt="صورة 3" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
-    {% if r.image4 %}<figure><div class="slot"><img src="{{ r.image4.url }}" alt="صورة 4" loading="eager" referrerpolicy="no-referrer"></div></figure>{% endif %}
+    {% if r.image1 %}
+      <figure><div class="slot"><img src="{{ r.image1.url }}" alt="صورة 1" loading="eager" referrerpolicy="no-referrer"></div></figure>
+    {% elif r.images1 %}
+      <figure><div class="slot"><img src="{{ r.images1.url }}" alt="صورة 1" loading="eager" referrerpolicy="no-referrer"></div></figure>
+    {% endif %}
+
+    {% if r.image2 %}
+      <figure><div class="slot"><img src="{{ r.image2.url }}" alt="صورة 2" loading="eager" referrerpolicy="no-referrer"></div></figure>
+    {% elif r.images2 %}
+      <figure><div class="slot"><img src="{{ r.images2.url }}" alt="صورة 2" loading="eager" referrerpolicy="no-referrer"></div></figure>
+    {% endif %}
+
+    {% if r.image3 %}
+      <figure><div class="slot"><img src="{{ r.image3.url }}" alt="صورة 3" loading="eager" referrerpolicy="no-referrer"></div></figure>
+    {% elif r.images3 %}
+      <figure><div class="slot"><img src="{{ r.images3.url }}" alt="صورة 3" loading="eager" referrerpolicy="no-referrer"></div></figure>
+    {% endif %}
+
+    {% if r.image4 %}
+      <figure><div class="slot"><img src="{{ r.image4.url }}" alt="صورة 4" loading="eager" referrerpolicy="no-referrer"></div></figure>
+    {% elif r.images4 %}
+      <figure><div class="slot"><img src="{{ r.images4.url }}" alt="صورة 4" loading="eager" referrerpolicy="no-referrer"></div></figure>
+    {% endif %}
   </template>
   {% endif %}
 </div><!-- /.container -->
 
 <script>
 /*
- * توزيع المحتوى على صفحة واحدة أو صفحتين بلا تداخل:
- * - إن كانت كل العناصر + الصور + التواقيع تدخل في صفحة 1 → نضع التواقيع في الصفحة 1 ونخفي الصفحة 2.
- * - غير ذلك → نوزّع الصور بين الصفحة 1 و2، ونُبقي التواقيع في أسفل الصفحة 2.
- * - إذا كان الوصف طويلاً، نقسمه بين الصفحتين.
+ * توزيع المحتوى على صفحة واحدة أو صفحتين بدون قصّ:
+ * - تقسيم الوصف (idea) تلقائياً على فقرتين بين الصفحة 1 و2 إذا لزم.
+ * - توزيع الصور بين الصفحتين حسب المساحة المتبقية.
+ * - نقل التواقيع حسب الحاجة (صفحة 1 إن كان كل شيء يدخل، وإلا صفحة 2).
  */
 (function(){
   const mmToPx = v => v * 3.7795275591; // ~96dpi
   const PRINT_MARGIN_MM = 15;
   const PAGE_H_MM = 297;
-  const PAGE_W_MM = 210;
   const A4H = mmToPx(PAGE_H_MM - 2 * PRINT_MARGIN_MM);
-  const A4W = mmToPx(PAGE_W_MM - 2 * PRINT_MARGIN_MM);
 
   const root = document.documentElement;
   root.style.setProperty('--page-h', A4H + 'px');
@@ -350,109 +325,42 @@
 
   const hero1 = document.getElementById('hero1');
   const content1 = document.getElementById('content1');
+  const ideaTitle1 = document.getElementById('ideaTitle1');
+  const ideaBoxSource = document.getElementById('ideaBoxSource');
+  const ideaBox1 = document.getElementById('ideaBox1');
+
+  const content2 = document.getElementById('content2');
+  const ideaTitle2 = document.getElementById('ideaTitle2');
+  const ideaBox2 = document.getElementById('ideaBox2');
+
   const photosWrap1 = document.getElementById('photosWrap1');
   const photos1 = document.getElementById('photos1');
-  const sign1 = document.getElementById('sign1');
-
-  const hero2 = document.getElementById('hero2');
-  const content2 = document.getElementById('content2');
   const photosWrap2 = document.getElementById('photosWrap2');
   const photos2 = document.getElementById('photos2');
+
+  const signTemplate = document.getElementById('signTemplate');
   const sign2 = document.getElementById('sign2');
-
-  const descriptionContent = document.getElementById('descriptionContent');
-  const descriptionContinuation = document.getElementById('descriptionContinuation');
-
   const photosTpl = document.getElementById('allPhotos');
 
-  const COLS = 2;            // في الطباعة عمودين
-  const GAP = 8;             // فجوة الشبكة
-  const MIN_SLOT = 140;      // أقل ارتفاع لخلية الصورة
-  const MAX_DESC_HEIGHT = 200; // أقصى ارتفاع للوصف في الصفحة الأولى
+  const COLS = 2;     // في الطباعة عمودان للصور
+  const GAP = 8;      // فجوة الشبكة
+  const MIN_SLOT = 140;
 
   const h = el => el ? el.getBoundingClientRect().height : 0;
 
-  // إنشاء التواقيع
-  function createSignatures() {
-    return `
-      <div class="box">
-        <div class="title">معـد التقرير</div>
-        <div class="name">{{ r.teacher_display_name }}</div>
-        <div class="sigline" aria-hidden="true"></div>
-      </div>
-
-      {% with hd=head_decision %}
-        {% if hd and not hd.no_render %}
-          <div class="box">
-            {% if hd.single %}
-              <div class="title">اعتماد رئيس القسم</div>
-              <div class="name">{{ hd.name }}</div>
-              <div class="sigline" aria-hidden="true"></div>
-            {% elif hd.multi_dept %}
-              <div class="title">اعتماد رئيس قسم {{ hd.dept_name }}</div>
-              <div class="name">____________________</div>
-              <div class="sigline" aria-hidden="true"></div>
-            {% elif hd.multi_blank %}
-              <div class="title">اعتماد رئيس القسم</div>
-              <div class="name">____________________</div>
-              <div class="sigline" aria-hidden="true"></div>
-            {% endif %}
-          </div>
-        {% endif %}
-      {% endwith %}
-
-      <div class="box">
-        <div class="title">اعتماد مدير المدرسة</div>
-        <div class="name">{% firstof SCHOOL_PRINCIPAL "فـهــد بن عبدالله الفــهد" %}</div>
-        <div class="sigline" aria-hidden="true"></div>
-      </div>
-    `;
+  function cloneSign() {
+    const frag = document.createDocumentFragment();
+    const children = signTemplate.content ? signTemplate.content.children : signTemplate.children;
+    Array.from(children).forEach(n => frag.appendChild(n.cloneNode(true)));
+    return frag;
   }
 
-  // تقسيم النص الطويل
-  function splitLongText(textElement, maxHeight) {
-    const originalText = textElement.textContent;
-    const words = originalText.split(' ');
-    let leftPart = '';
-    let rightPart = '';
-    let foundSplit = false;
-    
-    // إنشاء عنصر اختبار لقياس الارتفاع
-    const testElement = textElement.cloneNode(true);
-    testElement.style.visibility = 'hidden';
-    testElement.style.position = 'absolute';
-    document.body.appendChild(testElement);
-    
-    // البحث عن نقطة التقسيم المناسبة
-    for (let i = words.length - 1; i >= 0; i--) {
-      leftPart = words.slice(0, i).join(' ');
-      rightPart = words.slice(i).join(' ');
-      
-      testElement.textContent = leftPart;
-      if (h(testElement) <= maxHeight) {
-        foundSplit = true;
-        break;
-      }
-    }
-    
-    document.body.removeChild(testElement);
-    
-    if (!foundSplit) {
-      // إذا لم نجد تقسيم مناسب، نستخدم النص الأصلي
-      return { left: originalText, right: '' };
-    }
-    
-    return { left: leftPart, right: rightPart };
-  }
-
-  // جهّز كل الصور كعناصر قابلة للتوزيع
   function collectFigures() {
     if (!photosTpl) return [];
     const frag = photosTpl.content.cloneNode(true);
     return Array.from(frag.querySelectorAll('figure'));
   }
 
-  // يحسب ارتفاع الخلية المطلوب لملء المساحة المتبقية لعدد صور محدد
   function computeSlotHeight(remaining, itemsCount){
     if (itemsCount <= 0) return 0;
     const rows = Math.ceil(itemsCount / COLS);
@@ -461,69 +369,119 @@
     return Math.max(MIN_SLOT, slot);
   }
 
-  // يحاول وضع كل شيء بصفحة واحدة
-  function trySinglePage(figs){
-    // تنظيف التواقيع من الصفحة 1
-    sign1.innerHTML = '';
-    
-    // حساب المساحة المتاحة في الصفحة 1
-    const topH = h(hero1) + h(content1) + (photosWrap1 ? h(photosWrap1.querySelector('.section-title')) + 10 : 0);
-    
-    // إضافة التواقيع مؤقتاً للقياس
-    sign1.innerHTML = createSignatures();
-    const signH = h(sign1);
-    
-    const remaining = A4H - topH - signH;
-    if (remaining <= 0) return false;
+  /* تقسيم الوصف إلى فقرات وإعادة توزيعها بين الصفحة 1 و2 حسب المساحة */
+  function splitIdea(availableHeightPage1){
+    const raw = (ideaBoxSource.textContent || "").replace(/\r\n/g, "\n");
+    const paragraphs = raw.split(/\n{2,}/);
+    ideaBox1.innerHTML = "";
+    ideaBox2.innerHTML = "";
+    ideaBox1.hidden = true;
+    ideaBox2.hidden = true;
+    ideaTitle2.hidden = true;
 
-    const need = figs.length;
-    if (need === 0){
-      // لا صور، كل شيء يدخل في صفحة واحدة
+    const makeP = txt => {
+      const p = document.createElement('p');
+      p.textContent = txt;
+      return p;
+    };
+
+    let usedHeight = h(hero1) + h(content1) - h(ideaBoxSource) - h(ideaTitle1);
+    const maxH = A4H - h(cloneMeasureSign());
+    const roomForIdea1 = Math.max(0, Math.min(availableHeightPage1, maxH) - usedHeight);
+
+    let placedAnyInFirst = false;
+    for (let i=0;i<paragraphs.length;i++){
+      const p = makeP(paragraphs[i]);
+      ideaBox1.appendChild(p);
+      ideaBox1.hidden = false;
+      if (h(ideaBox1) > roomForIdea1 && placedAnyInFirst){
+        ideaBox1.removeChild(p);
+        ideaTitle2.hidden = false;
+        ideaBox2.hidden = false;
+        ideaBox2.appendChild(p);
+        for (let j=i+1;j<paragraphs.length;j++){
+          ideaBox2.appendChild(makeP(paragraphs[j]));
+        }
+        return;
+      } else if (h(ideaBox1) > roomForIdea1 && !placedAnyInFirst){
+        ideaBox1.innerHTML = "";
+        ideaBox1.hidden = true;
+        ideaTitle2.hidden = false;
+        ideaBox2.hidden = false;
+        paragraphs.forEach(txt => ideaBox2.appendChild(makeP(txt)));
+        return;
+      } else {
+        placedAnyInFirst = true;
+      }
+    }
+    ideaBox2.hidden = true;
+    ideaTitle2.hidden = true;
+  }
+
+  function cloneMeasureSign(){
+    const temp = document.createElement('div');
+    temp.style.visibility = 'hidden';
+    temp.style.position = 'absolute';
+    temp.style.left = '-9999px';
+    temp.className = 'sign';
+    temp.appendChild(cloneSign());
+    page1.appendChild(temp);
+    const signH = h(temp);
+    page1.removeChild(temp);
+    return signH;
+  }
+
+  function trySinglePage(figs){
+    const topH = h(hero1) + (h(content1) - h(ideaBoxSource));
+    const signH = cloneMeasureSign();
+    const remainingForIdeaAndPhotos = A4H - topH - signH;
+    if (remainingForIdeaAndPhotos <= 0) return false;
+
+    splitIdea(remainingForIdeaAndPhotos);
+
+    const topAfterIdea = h(hero1) + (h(content1) - h(ideaBoxSource)) + (ideaBox1.hidden ? 0 : h(ideaBox1));
+
+    const remaining = A4H - topAfterIdea - signH;
+    const needPhotos = figs.length;
+
+    if (needPhotos === 0){
       page2.hidden = true;
+      page1.querySelector('.inner').appendChild(cloneSign());
       return true;
     }
 
-    // نحسب ارتفاع الخلية لمحاولة إدخال كل الصور
-    const slotH = computeSlotHeight(remaining, need);
-    const canFitAll = (slotH > MIN_SLOT) || (need <= Math.floor(remaining / MIN_SLOT));
+    if (remaining <= 0) return false;
 
-    if (!canFitAll) return false;
+    const slotH = computeSlotHeight(remaining, needPhotos);
+    const rows = Math.ceil(needPhotos / COLS);
+    const totalGaps = GAP * (rows - 1);
+    const needH = rows * slotH + totalGaps;
 
-    // نعرض الحاوية ونوزّع كل الصور في الصفحة 1
-    photosWrap1?.removeAttribute('hidden');
+    if (needH > remaining && !(slotH === MIN_SLOT && rows * MIN_SLOT + totalGaps <= remaining)){
+      return false;
+    }
+
+    photosWrap1 && photosWrap1.removeAttribute('hidden');
     figs.forEach(f => photos1.appendChild(f));
     root.style.setProperty('--slot1-h', Math.max(MIN_SLOT, slotH) + 'px');
 
-    // الصفحة الثانية غير لازمة
+    page1.querySelector('.inner').appendChild(cloneSign());
     page2.hidden = true;
     return true;
   }
 
-  // تقسيم إلى صفحتين
   function twoPages(figs){
     page2.hidden = false;
-    sign1.innerHTML = '';
-    sign2.innerHTML = createSignatures();
 
-    // التحقق مما إذا كان الوصف طويلاً ويتطلب التقسيم
-    const descHeight = h(descriptionContent);
-    let descSplit = null;
-    
-    if (descHeight > MAX_DESC_HEIGHT) {
-      descSplit = splitLongText(descriptionContent, MAX_DESC_HEIGHT);
-      if (descSplit.right) {
-        descriptionContent.textContent = descSplit.left;
-        content2.hidden = false;
-        descriptionContinuation.textContent = descSplit.right;
-      }
-    }
+    const top1BeforeIdea = h(hero1) + (h(content1) - h(ideaBoxSource));
+    const rem1ForIdea = A4H - top1BeforeIdea; // بدون توقيع بالصفحة 1
+    splitIdea(rem1ForIdea);
 
-    // حساب المساحة المتاحة في الصفحة 1
-    const top1 = h(hero1) + h(content1) + (photosWrap1 ? h(photosWrap1.querySelector('.section-title')) + 10 : 0);
-    let rem1 = A4H - top1;
+    const top1AfterIdea = h(hero1) + (h(content1) - h(ideaBoxSource)) + (ideaBox1.hidden ? 0 : h(ideaBox1))
+      + (photosWrap1 && !photosWrap1.hasAttribute('hidden') ? h(photosWrap1.querySelector('.section-title')) + 10 : 0);
+    let rem1 = A4H - top1AfterIdea;
     if (rem1 < 0) rem1 = 0;
 
-    // حساب كم صورة تدخل في الصفحة الأولى
     let n1 = 0;
     while (n1 < figs.length){
       const testN = n1 + 1;
@@ -533,58 +491,56 @@
       const needH = rows * slotH + totalGaps;
       if (needH <= rem1 || (slotH === MIN_SLOT && rows * MIN_SLOT + totalGaps <= rem1)){
         n1 = testN;
-      } else {
-        break;
-      }
+      } else break;
     }
 
     const firstPage = figs.slice(0, n1);
     const secondPage = figs.slice(n1);
 
-    // وزّع صور الصفحة الأولى
-    if (photosWrap1 && firstPage.length){
-      photosWrap1.removeAttribute('hidden');
+    if (firstPage.length){
+      photosWrap1 && photosWrap1.removeAttribute('hidden');
       firstPage.forEach(f => photos1.appendChild(f));
       const slotH1 = computeSlotHeight(rem1, firstPage.length);
       root.style.setProperty('--slot1-h', Math.max(MIN_SLOT, slotH1) + 'px');
     } else {
-      // لو لم تدخل أي صورة في الأولى، اخفِ الحاوية
-      photosWrap1?.setAttribute('hidden','hidden');
+      photosWrap1 && photosWrap1.setAttribute('hidden','hidden');
     }
 
-    // جهّز الصفحة الثانية: صور + تواقيع
-    const top2 = h(hero2) + (content2.hidden ? 0 : h(content2)) + (photosWrap2 ? h(photosWrap2.querySelector('.section-title')) + 10 : 0);
+    const hero2 = document.getElementById('hero2');
+
+    if (!ideaBox2.hidden) {
+      ideaTitle2.hidden = false;
+      ideaBox2.hidden = false;
+    }
+
+    sign2.innerHTML = '';
+    sign2.appendChild(cloneSign());
     const signH2 = h(sign2);
+
+    const top2 = h(hero2) + (ideaBox2.hidden ? 0 : h(content2)) + (photosWrap2 ? h(photosWrap2.querySelector('.section-title')) + 10 : 0);
     let rem2 = A4H - top2 - signH2;
     if (rem2 < 0) rem2 = 0;
 
     if (secondPage.length){
-      photosWrap2.removeAttribute('hidden');
+      photosWrap2 && photosWrap2.removeAttribute('hidden');
       secondPage.forEach(f => photos2.appendChild(f));
       const slotH2 = computeSlotHeight(rem2, secondPage.length);
       root.style.setProperty('--slot2-h', Math.max(MIN_SLOT, slotH2) + 'px');
     } else {
-      // لا صور في الثانية: ارفع التواقيع أسفل الصفحة تلقائيًا عبر flex
-      photosWrap2.setAttribute('hidden','hidden');
+      photosWrap2 && photosWrap2.setAttribute('hidden','hidden');
     }
   }
 
   function layout(){
-    // تنظيف الصفحات
+    ideaBox1.hidden = true;
+    ideaBox2.hidden = true;
+    ideaTitle2.hidden = true;
+
+    const figures = collectFigures();
     photos1 && (photos1.innerHTML = '');
     photos2 && (photos2.innerHTML = '');
-    content2.hidden = true;
-    
-    // استعادة النص الأصلي للوصف
-    descriptionContent.textContent = `{{ r.idea|default_if_none:"" }}`;
 
-    // اجمع الصور
-    const figures = collectFigures();
-
-    // أولًا: حاول صفحة واحدة
     if (trySinglePage(figures)) return;
-
-    // ثانيًا: قسّم لصفحتين
     twoPages(figures);
   }
 
@@ -592,7 +548,6 @@
     try { layout(); } catch(e){ console.error(e); }
   }
 
-  // عند تحميل الصور: أعد الحساب لضمان عدم التداخل
   function afterImages(){
     const imgs = Array.from(document.images);
     if (imgs.length === 0) { beforePrintSafe(); return; }
@@ -605,7 +560,6 @@
     });
   }
 
-  // مستمعو الطباعة
   if (window.matchMedia) {
     const mql = window.matchMedia('print');
     if (typeof mql.addEventListener === 'function') {
@@ -616,7 +570,6 @@
   }
   window.addEventListener('beforeprint', beforePrintSafe);
 
-  // زر الطباعة
   const printBtn = document.getElementById('printBtn');
   let printing = false;
   printBtn?.addEventListener('click', () => {
@@ -629,12 +582,10 @@
     }, 50);
   });
 
-  // إعادة الحساب عند تغيّر الحجم (للمعاينة)
   window.addEventListener('resize', () => {
-    if (!printing) setTimeout(beforePrintSafe, 80);
+    setTimeout(beforePrintSafe, 80);
   });
 
-  // بدء التشغيل
   afterImages();
 })();
 </script>
